@@ -34,7 +34,7 @@ class MongoDBConnectorType:
 '''
 class HadoopConnectorType:
     def __init__(self):
-        print("Mongo db type made")
+        print("Hadoop db connector made")
     def attempt_to_connect(self):
         print("Connecting to mongo")
 
@@ -43,7 +43,7 @@ class HadoopConnectorType:
 '''
 class SQLConnectorType:
     def __init__(self):
-        print("Mongo db type made")
+        print("SQL db connector made")
     def attempt_to_connect(self):
         print("Connecting to mongo")
 
