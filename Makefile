@@ -18,4 +18,4 @@ check:
 run_ui:
 	cd interface/ ; npm start ;
 save_branch:
-	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin main_dev_branch -v;
+	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin master:main_dev_branch -v;
