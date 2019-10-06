@@ -23,7 +23,8 @@ import threading
 import time
 
 '''
-to alter deployed models set
+@name ModelDeployment
+@description to alter deployed models set
 '''
 class ModelDeployment():
     def __init__(self):
@@ -32,8 +33,7 @@ class ModelDeployment():
 
 '''
 @Session
-start model session
-a model session can have several jobs
+@description start model session. A model session can have several jobs
 '''
 
 class Session():

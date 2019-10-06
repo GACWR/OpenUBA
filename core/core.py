@@ -14,11 +14,9 @@ along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 '''
-@name
-@description 
+@name core
+@description manage the overall state of the platform
 '''
-
-
 from flask import Flask
 import logging
 import threading
@@ -39,7 +37,6 @@ def scheduler_run(name):
 
     process_engine_instance = ProcessEngine()
     process_engine_instance.execute()
-
 
     # model session
     #sess = model.Session()

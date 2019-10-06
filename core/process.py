@@ -15,7 +15,7 @@ along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 
 '''
-@name
+@name process
 @description Process engine is the default state of the system, whereby it will ingest
 logs into the system
 
@@ -61,7 +61,7 @@ class ProcessEngine():
     '''
     def process_data(self, data_folder: str, log_data_obj: dict):
 
-        logging.warning("Data Folder: "+str(data_folder))
+        logging.warning("Processing Data for : "+str(data_folder))
 
         log_name = log_data_obj["log_name"]
         log_type = log_data_obj["type"]
@@ -72,9 +72,7 @@ class ProcessEngine():
 
         if log_type == "csv":
             dataset_session.read_csv(data_folder, folder, location_type) # load
-
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
-
             # get size
             dataset_size: int = dataset_session.get_size()
             logging.warning( "Dataset Session size: "+str(dataset_size) )

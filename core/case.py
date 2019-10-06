@@ -14,6 +14,6 @@ along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 '''
-@name
+@name case
 @description to create a case, and manage cases
 '''

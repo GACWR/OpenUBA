@@ -14,7 +14,7 @@ along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 '''
-@name
+@name database
 @description To connect to any database, and submit queries
 '''
 

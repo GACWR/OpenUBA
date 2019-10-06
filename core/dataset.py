@@ -15,7 +15,7 @@ along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 '''
 @name dataset
-@description 
+@description purposed with dataset management, and interaction
 '''
 
 import logging
@@ -47,7 +47,7 @@ class DatasetLogPrior:
 
 
 '''
-@name Dataset
+@name Dataset (parent)
 @description dataset class is the parent class
 '''
 class Dataset():
@@ -84,7 +84,7 @@ class Dataset():
         return self.dataframe;
 
 '''
-@name CSV
+@name CSV - child of Dataset
 @description to handle csv files
 '''
 class CSV(Dataset):
