@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>OpenUEBA - Modeling</title>
+  <meta name="description" content="OpenUEBA">
+  <meta name="author" content="JLP">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+
+  <style> /* set the CSS */
+
+  body { font: 12px Arial;}
+
+  path {
+      stroke: steelblue;
+      stroke-width: 2;
+      fill: none;
+  }
+
+  .axis path,
+  .axis line {
+      fill: none;
+      stroke: grey;
+      stroke-width: 1;
+      shape-rendering: crispEdges;
+  }
+
+  </style>
+
+
+</head>
+
+<body>
+
+  <!-- navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">OpenUEBA</a>
+    <button class="navbar-toggler" type="button"
+    data-toggle="collapse"
+    data-target="#navbarNavAltMarkup"
+    aria-controls="navbarNavAltMarkup"
+    aria-expanded="false"
+    aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav">
+        <a class="nav-item nav-link" href="/">
+          Dashboard <span class="sr-only">(current)</span>
+        </a>
+        <a class="nav-item nav-link" href="/data">
+          Data
+        </a>
+        <a class="nav-item nav-link" href="/modeling">
+          Models
+        </a>
+        <a class="nav-item nav-link active" href="/anomalies">
+          Anomalies
+        </a>
+        <a class="nav-item nav-link" href="/cases">
+          Cases
+        </a>
+        <a class="nav-item nav-link" href="/settings">
+          Settings
+        </a>
+      </div>
+    </div>
+    <form class="form-inline">
+      <a class="nav-item nav-link disabled" href="#">
+        Username
+      </a>
+      <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">
+        Search
+      </button>
+    </form>
+  </nav>
+  <!-- end navigation -->
+
+  <div class="container">
+    <div class="row">
+      <div class="col-sm">
+        <hr>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm">
+        <div class="card">
+          <div class="card-body">
+            <h2><b>Anomalies</b></h2>
+            <hr>
+            <div class="row">
+              <div class="col-sm">
+                <h5>
+                  New Today:
+                  <span class="badge badge-info">100</span>
+                </h5>
+              </div>
+              <div class="col-sm">
+                <h5>
+                  Open Anomalies:
+                  <span class="badge badge-info">100</span>
+                </h5>
+              </div>
+              <div class="col-sm">
+                <h5>
+                  Anomalies Closed:
+                  <span class="badge badge-info">100</span>
+                </h5>
+              </div>
+              <div class="col-sm">
+                <h5>
+                  Users imported from directory:
+                  <span class="badge badge-info">100</span>
+                </h5>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+
+  <br><br><br>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-sm">
+        <hr>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- load the d3.js library -->
+<script src="https://d3js.org/d3.v3.min.js"></script>
+
+<script>
+  // Set the dimensions of the canvas / graph
+  var margin = {
+                top: 30,
+                right: 20,
+                bottom: 30,
+                left: 30
+              },
+              width = 380 - margin.left - margin.right,
+              height = 200 - margin.top - margin.bottom;
+
+  // Parse the date / time
+  var parseDate = d3.time.format("%d-%b-%y").parse;
+
+  // Set the ranges
+  var x = d3.time.scale().range([0, width]);
+  var y = d3.scale.linear().range([height, 0]);
+
+  // Define the axes
+  var xAxis = d3.svg.axis().scale(x).orient("bottom").ticks(5);
+  var yAxis = d3.svg.axis().scale(y).orient("left").ticks(5);
+
+  // Define the line
+  var valueline = d3.svg.line()
+      .x(function(d) { return x(d.date); })
+      .y(function(d) { return y(d.x); });
+
+  // Adds the svg canvas
+  var svg = d3.select("#d3_main")
+  .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+      .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+  // The new data variable.
+var data = [
+  {date: "1-May-12", x: 58.13},
+  {date: "30-Apr-12", x: 68.13},
+];
+
+data.forEach(function(d) {
+    d.date = parseDate(d.date);
+    d.x = +d.x;
+});
+
+// The following code was contained in the callback function.
+x.domain(data.map(function(d) { return d.date; }));
+y.domain([0, d3.max(data, function(d) { return d.x; })]);
+
+// Add the valueline path.
+svg.append("path")
+    .attr("class", "line")
+    .attr("d", valueline(data));
+
+// Add the X Axis
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+// Add the Y Axis
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis);
+
+
+</script>
+
+<script src="js/scripts.js"></script>
+</body>
+</html>
