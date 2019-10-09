@@ -21,7 +21,9 @@ logs into the system
 
 '''
 import logging
-from dataset import *
+from dataset import Dataset, DatasetSession
+from typing import Dict, Tuple, Sequence, List
+
 
 dataset_scheme = {
     "mode": "test",
@@ -67,11 +69,15 @@ class ProcessEngine():
         location_type = log_data_obj["location_type"]
         folder = log_data_obj["folder"]
 
-        dataset_session = Dataset_Session(log_type)
+        dataset_session = DatasetSession(log_type)
 
+        # STEP1: check for new datasets
+
+        #read dataset, if any new
         if log_type == "csv":
             dataset_session.read_csv(data_folder, folder, location_type) # load
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
-            # get size
-            dataset_size: int = dataset_session.get_size()
+            dataset_size: Tuple = dataset_session.get_size()
             logging.warning( "Dataset Session size: "+str(dataset_size) )
+
+        # after read the data, perform entity analysis using Entity class

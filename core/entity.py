@@ -23,3 +23,9 @@ import logging
 class Entity():
     def __init__(self):
         logging.info("Entity is initiated")
+
+    def perform_entity_analysis(self):
+        #check for new entities
+
+        #for each new entity, register in entity db
+        pass

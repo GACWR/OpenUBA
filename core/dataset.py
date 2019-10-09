@@ -21,9 +21,56 @@ along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
 import logging
 import pandas as pd
 import numpy as np
+from typing import Dict, Tuple, Sequence, List
+
+
+
+'''
+@name PreSplitRecord
+@description before split_record
+'''
+
+class PreSplitRecord:
+    def __init__(self, function):
+        logging.info("PreSplitRecord constructor")
+        self.function = function
+
+    def __call__(self, *args) -> List:
+        logging.warning("PreSplitRecord")
+        logging.error("PreSplitRecord args: "+str(args))
+        logging.warning("PreSplitRecord args len: "+str(len(args)))
+        record: str = args[0]
+        sep: str = args[1]
+        parser_result: list = self.function(args[0], record, sep)
+        return parser_result
+
+
+
+
+'''
+@name Parser
+@description parse raw dataset to cleaneddataset
+'''
+class Parser():
+    def __init__(self):
+        logging.info("Parser init: "+str(self))
+
+    '''
+    @name split_record
+    @description, take in a record/row, and
+    return an list of strings. @static because we only need one, and
+    we don't need to keep a parser object in memory
+    '''
+    #@staticmethod
+    @PreSplitRecord
+    def split_record(self, record: str, sep: str) -> List:
+        logging.info("splitting record")
+        split_result = record.split(sep)
+        logging.warning("split record: "+str(split_result))
+        return split_result
+
 
 class DataFrame():
-    data = pd.DataFrame
     def __init__(self, df):
         self.data = df
 
@@ -41,8 +88,9 @@ class DatasetLogPrior:
     assigned to class's public memory
     '''
     def __call__(self, *args) -> None:
-        log_message = args[-1] # last param
+        log_message = args[1] # last param
         logging.info("[DatasetLogPrior Log Message] "+log_message)
+        logging.warning("args[0]: "+str(args[0]))
         self.function(args[0])
 
 
@@ -50,31 +98,14 @@ class DatasetLogPrior:
 @name Dataset (parent)
 @description dataset class is the parent class
 '''
-class Dataset():
+class Dataset(Parser):
 
     file_location: str = "blank_file_location";
     location_type: str = "blank_file_type";
-    #dataframe: DataFrame = DataFrame;
 
     def __init__(self, type):
+        super().__init__()
         logging.info("Dataset constructor, type of ["+type+"]")
-
-    '''
-    @name read_from_disk
-    @description read from disk, and set to objects dataframe
-    '''
-    @DatasetLogPrior
-    def read_from_disk(self) -> None:
-        logging.info("Trying: "+str(self.file_location))
-
-        #hard coded
-        df = pd.read_csv(self.file_location+"/bluecoat.log",
-                         sep=r'\\t',
-                         engine='python')
-
-        logging.info( "Dataframe shape: ["+str(df.shape)+"]" )
-        logging.error( df.describe() )
-        self.dataframe = DataFrame( df )
 
     '''
     Dataset get dataframe
@@ -82,6 +113,8 @@ class Dataset():
     def get_dataframe(self):
         logging.info("Inside Dataset.get_dataframe()")
         return self.dataframe;
+
+
 
 '''
 @name CSV - child of Dataset
@@ -109,17 +142,45 @@ class CSV(Dataset):
     @name get_size
     @description fetch the size of a pandas-based CSV, but still inherit
     '''
-    def get_size(self) -> int:
+    def get_size(self) -> Tuple:
         logging.info("get_size()")
         df = super().get_dataframe() # fetch underlying dataframe from parent
-        shape = df.data.shape
-        return shape[0]
+        return df.data.shape
+
+    '''
+    @name read_from_disk
+    @description read from disk, and set to objects dataframe
+    '''
+    @DatasetLogPrior
+    def read_from_disk(self) -> None:
+        logging.info("Trying: "+str(self.file_location))
+
+        ## TODO: get columns from config
+        df = pd.read_csv(self.file_location+"/bluecoat.log",
+                         sep=r' ',
+                         engine='python',
+                         header=0,
+                         error_bad_lines=False,
+                         warn_bad_lines=False)
+
+        # TODO: Parse class, will parse each row
+        logging.warning("columns: "+str(df.columns)+":"+str(df.shape))
+
+        '''
+        foo = lambda x: pd.Series([ i for i inself.split_record(x, ' ') ])
+        # apply the parser to each record
+        rev = df["date"].head(10).apply(foo)
+        '''
+        logging.info( "Dataframe shape: ["+str(df.shape)+"]" )
+        logging.error( df.describe() )
+        self.dataframe = DataFrame( df )
+
 
 '''
 @name Dataset_Session
 @description instance of using a dataset
 '''
-class Dataset_Session():
+class DatasetSession():
     def __init__(self, type):
         logging.info("dataset session")
         self.dataset_type: str = type
@@ -137,7 +198,7 @@ class Dataset_Session():
     @name get_size
     @description get size of dataset_session's dataset object
     '''
-    def get_size(self) -> int:
+    def get_size(self) -> Tuple:
         logging.warning("Getting Dataset size...")
         return self.dataset.get_size()
 
