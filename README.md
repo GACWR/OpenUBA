@@ -1,4 +1,4 @@
-# OpenUEBA
+# OpenUB
 
 ## Goals
 To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:

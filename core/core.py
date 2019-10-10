@@ -1,16 +1,16 @@
 '''
-Copyright 2019-Present The OpenUEBA Platform Authors
-This file is part of the OpenUEBA Platform library.
-The OpenUEBA Platform is free software: you can redistribute it and/or modify
+Copyright 2019-Present The OpenUB Platform Authors
+This file is part of the OpenUB Platform library.
+The OpenUB Platform is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-The OpenUEBA Platform is distributed in the hope that it will be useful,
+The OpenUB Platform is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
-along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
+along with the OpenUB Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 '''
@@ -22,11 +22,11 @@ from flask import Flask
 import logging
 import threading
 import time
-import model
+from model import ModelLibrary
 from test import Test
 from process import ProcessEngine
 from api import API
-from database import DB
+from display import Display
 
 import unittest
 import trace, sys
@@ -51,16 +51,30 @@ def scheduler_run(name):
     process_engine_instance = ProcessEngine()
     process_engine_instance.execute()
 
-    # model session
-    #sess = model.Session()
 
-    # start an instance of training using activate models
-    #sess.start_job()
-
+'''
+@description endpoint to get varied display information
+'''
 @server.route("/display/<string:name>/")
 def display(name):
     logging.info("Getting display info"+str(name))
     return API.get_display(name)
+
+'''
+@description endpoint to remove a model
+'''
+@server.route("/delete_model/<string:model_name>/")
+def delete_model(model_name):
+    logging.warning("deleting model.... from api")
+    return str(ModelLibrary.remove_model())
+
+'''
+@description endpoint to fetch a model
+'''
+@server.route("/fetch_model/<string:model_name>/")
+def fetch_model(model_name):
+    return ModelLibrary.fetch_model()
+
 
 '''
 @name core
@@ -77,8 +91,21 @@ class Core:
     def initiate(self):
         format = "%(asctime)s: %(message)s"
         logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-        logging.info("core: before creating thread")
+
+        logging.info("Core: creating run_scheduler_job thread")
+        ######run scheduler
         self.run_scheduler_job()
+
+        logging.warning("Core: creating get_display_information thread")
+        #reset display storage
+        self.run_display_information_job()
+
+        # get a model
+        logging.info("Core: creating fetch_model_library thread")
+        self.run_fetch_model_job()
+
+        #begin flask server, after initiation tasks
+        server.run()
 
     '''
     @name run_scheduler_job
@@ -94,21 +121,31 @@ class Core:
         logging.info("core: before running thread")
         x.start()
         logging.info("core: wait for the thread to finish")
-        server.run()
 
+    '''
+    @name run_display_information_job
+    @description run display information job
+    '''
+    def run_display_information_job(self):
+        print("Getting display information")
+        self.display = Display()
+        self.display.get_system_display()
+
+    '''
+    @name run_fetch_model
+    @description get model
+    '''
+    def run_fetch_model_job(self):
+        print("Getting model")
+        ModelLibrary.fetch_model()
 
 if __name__ == "__main__":
 
     print("Core Start")
     ###############
 
-    core: Core = Core()
-    core.initiate()
-
-    ###
-    print("before DB")
-    db = DB()
-    print("after DB")
-
     # Run all tests
     Test.Run()
+
+    core: Core = Core()
+    core.initiate()
