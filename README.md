@@ -32,3 +32,6 @@ The interface is meant to observe system events, and anomalies, but not to repla
 - Cases
 - Data
 - Modeling
+
+## Installation
+Go to [INSTALL.md](https://github.com/kaiiyer/OpenUB/blob/main_dev_branch/docs/INSTALL.md)
