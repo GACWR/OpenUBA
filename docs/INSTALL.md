@@ -1,5 +1,11 @@
 ## Installation
 
+Fork this repository (Click the Fork button in the top right of this page, click your Profile Image)
+Clone your fork down to your local machine
+```
+git clone https://github.com/your-username/OpenUB.git
+```
+
 1. Install pip3 if you don't have it already
 ```    
     curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
