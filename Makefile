@@ -14,6 +14,11 @@ check:
 	process.py \
 	risk.py \
 	riskmanager.py \
+	display.py \
 	--ignore-missing-imports ;
 run_ui:
 	cd interface/ ; npm start ;
+save_branch:
+	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin master:main_dev_branch -v;
+test:
+	python -m unittest discover -s ./core -p "*_test.py" -v

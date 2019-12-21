@@ -1,0 +1,1 @@
+from .model_test import func_try
