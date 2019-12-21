@@ -1,0 +1,6 @@
+keras
+pandas
+numpy
+tensorflow
+coloredlogs
+pymongo
