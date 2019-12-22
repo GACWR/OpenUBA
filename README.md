@@ -1,6 +1,6 @@
 # OpenUB
 
-#Get the updated code on XS code
+# Get the updated code on XS code
 https://cp.xscode.com/Tormorrow-SOC/OpenUB
 
 ## Goals
