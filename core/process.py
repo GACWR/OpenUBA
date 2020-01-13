@@ -1,27 +1,29 @@
 '''
-Copyright 2019-Present The OpenUEBA Platform Authors
-This file is part of the OpenUEBA Platform library.
-The OpenUEBA Platform is free software: you can redistribute it and/or modify
+Copyright 2019-Present The OpenUB Platform Authors
+This file is part of the OpenUB Platform library.
+The OpenUB Platform is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-The OpenUEBA Platform is distributed in the hope that it will be useful,
+The OpenUB Platform is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
-along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
+along with the OpenUB Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 
 '''
-@name
+@name process
 @description Process engine is the default state of the system, whereby it will ingest
 logs into the system
 
 '''
 import logging
-from dataset import *
+from dataset import Dataset, DatasetSession
+from typing import Dict, Tuple, Sequence, List
+
 
 dataset_scheme = {
     "mode": "test",
@@ -42,7 +44,6 @@ class ProcessEngine():
     def __init__(self):
         logging.info("Process engine is initiated")
 
-
     '''
     @name execute
     @description run the process engine
@@ -61,20 +62,27 @@ class ProcessEngine():
     '''
     def process_data(self, data_folder: str, log_data_obj: dict):
 
-        logging.warning("Data Folder: "+str(data_folder))
+        logging.warning("Processing Data for : "+str(data_folder))
 
         log_name = log_data_obj["log_name"]
         log_type = log_data_obj["type"]
         location_type = log_data_obj["location_type"]
         folder = log_data_obj["folder"]
 
-        dataset_session = Dataset_Session(log_type)
+        dataset_session = DatasetSession(log_type)
 
+        '''
+         STEP1: check for new datasets
+         from folder directory
+        '''
+
+        #read dataset, if any new
         if log_type == "csv":
             dataset_session.read_csv(data_folder, folder, location_type) # load
-
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
-
-            # get size
-            dataset_size: int = dataset_session.get_size()
+            dataset_size: Tuple = dataset_session.get_size()
             logging.warning( "Dataset Session size: "+str(dataset_size) )
+
+        # after read the data, perform entity analysis using Entity class
+
+        # adjust risk per entity

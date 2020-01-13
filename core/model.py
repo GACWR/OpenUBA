@@ -1,16 +1,16 @@
 '''
-Copyright 2019-Present The OpenUEBA Platform Authors
-This file is part of the OpenUEBA Platform library.
-The OpenUEBA Platform is free software: you can redistribute it and/or modify
+Copyright 2019-Present The OpenUB Platform Authors
+This file is part of the OpenUB Platform library.
+The OpenUB Platform is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
-The OpenUEBA Platform is distributed in the hope that it will be useful,
+The OpenUB Platform is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
-along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
+along with the OpenUB Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 '''
@@ -21,9 +21,100 @@ along with the OpenUEBA Platform. If not, see <http://www.gnu.org/licenses/>.
 import logging
 import threading
 import time
+import urllib.request
+import sys
+import os
+import shutil
+import io
+
+
 
 '''
-to alter deployed models set
+@name ModelLibrary
+@description manage model library
+'''
+class ModelLibrary():
+    @staticmethod
+    def remove_model() -> bool:
+        path = "model_library/model_test"
+        try:
+            #os.rmdir(path)
+            shutil.rmtree(path)
+            print("Model removed")
+            return True
+        except Exception as e:
+            logging.error(e)
+            return False
+
+    @staticmethod
+    def store_fetched_model():
+        logging.info()
+
+    @staticmethod
+    def run_temp_model():
+        ''' temporary files
+
+        import tempfile
+
+        # create a temporary directory
+        with tempfile.TemporaryDirectory() as directory:
+            print('The created temp dir is %s' % directory)
+
+        '''
+        pass
+
+    @staticmethod
+    def fetch_model():
+
+        logging.error("fetching model...")
+        url = "http://localhost:5000/display/test/"
+
+        access_rights = 0o755
+        path = "model_library/model_test/"
+        try:
+            os.mkdir(path, access_rights)
+        except Exception as e:
+            logging.error(e)
+
+        '''
+        @todo base 64 encode a model
+
+        #sample_code = open('model.py', 'r')
+        #sutf8 = sample_code.encode('UTF-8')
+        '''
+
+        logging.warning("codecs/io")
+
+        with io.open("model.py",
+                     'r',
+                     encoding='utf8',
+                     errors="ignore") as local_model:
+            text = local_model.read()
+            logging.warning(text)
+
+        f = open('model_library/model_test/model_test.py', 'w')
+        f.write("def func_try():\n\tprint(\"model_test testing...\")\n\treturn \"return from model_Test\"")
+        f.close()
+
+        f = open('model_library/model_test/__init__.py', 'w')
+        f.write("from .model_test import func_try")
+        f.close()
+
+        # insert at 1, 0 is the script path (or '' in REPL)
+        sys.path.insert(1, 'model_library/model_test')
+
+        import model_test
+        return model_test.func_try()
+
+
+
+
+
+
+
+'''
+@name ModelDeployment
+@description to alter deployed models set
 '''
 class ModelDeployment():
     def __init__(self):
@@ -32,8 +123,7 @@ class ModelDeployment():
 
 '''
 @Session
-start model session
-a model session can have several jobs
+@description start model session. A model session can have several jobs
 '''
 
 class Session():
