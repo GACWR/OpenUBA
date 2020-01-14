@@ -12,10 +12,9 @@ git clone https://github.com/your-username/OpenUB.git
     python3 get-pip.py     
     sudo python3 get-pip.py
 ```
-2. Install the python dependencies and execute the makefile
+2. Install the python dependencies
 ```
 pip3 install requirements.txt
-make
 ```
 3. Install HADOOP and JDK
 4. Configure Spark environment by running spark_env.sh
@@ -24,14 +23,8 @@ bash spark_env.sh
 OR
 ./spark_env.sh
 ```
-5. Run the node server
+5. Run the Makefile
 ```
-cd interface
-npm init
-npm start
+make
 ```
-6. Point your browser to localhost:3000 to view the web app running
-7. Run the python scripts
-```
-python3 filename.py
-```
+6. Point your browser to localhost:3000 to view the UI and localhost:5000 for Flask app
