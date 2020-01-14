@@ -39,6 +39,8 @@ The interface is meant to observe system events, and anomalies, but not to repla
 ## Installation
 Go to [INSTALL.md](https://github.com/TomorrowSOC/OpenUB/blob/main_dev_branch/docs/INSTALL.md)
 
-Get in touch:
+# Discord
 Discord channel: https://discord.gg/7t4qJk
+
+# Telegram
 Telegram: https://t.me/tomorrowsoc
