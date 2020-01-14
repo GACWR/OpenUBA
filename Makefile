@@ -1,8 +1,8 @@
 dev: check run
 run:
-	cd core/ ; python3 core.py ;
+	cd core/ ; python3.7 core.py ;
 check:
-	cd core/  \
+	cd core/ ; \
 	mypy \
 	anomaly.py \
 	case.py \
@@ -18,7 +18,7 @@ check:
 	--ignore-missing-imports ;
 run_ui:
 	cd interface/ ; npm start ;
-save_branch:
+save_dev:
 	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin master:main_dev_branch -v;
 test:
-	python3 -m unittest discover -s ./core -p "*_test.py" -v
+	python3.7 -m unittest discover -s ./core -p "*_test.py" -v
