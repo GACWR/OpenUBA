@@ -1,4 +1,4 @@
-# OpenUB
+# OpenUBA
 
 # Get the updated code on XS code
 https://cp.xscode.com/Tormorrow-SOC/OpenUB
