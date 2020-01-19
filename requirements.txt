@@ -4,3 +4,4 @@ numpy
 tensorflow
 coloredlogs
 pymongo
+mypy
