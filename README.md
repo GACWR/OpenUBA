@@ -1,4 +1,7 @@
-# OpenUB
+# OpenUBA
+
+# Get the updated code on XS code
+https://cp.xscode.com/Tormorrow-SOC/OpenUB
 
 ## Goals
 To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
@@ -34,4 +37,10 @@ The interface is meant to observe system events, and anomalies, but not to repla
 - Modeling
 
 ## Installation
-Go to [INSTALL.md](https://github.com/kaiiyer/OpenUB/blob/main_dev_branch/docs/INSTALL.md)
+Go to [INSTALL.md](https://github.com/TomorrowSOC/OpenUBA/blob/master/docs/INSTALL.md)
+
+# Discord
+Discord channel: https://discord.gg/7t4qJk
+
+# Telegram
+Telegram: https://t.me/tomorrowsoc
