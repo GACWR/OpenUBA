@@ -14,7 +14,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import unittest
-from display import CSV
+import csv
 
 
 '''
