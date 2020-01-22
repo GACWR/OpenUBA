@@ -31,7 +31,12 @@ make
 ```
 This will invoke the "dev" stage of the Makefile, thus running the mypy linter for syntax checking, and the core.py
 
-### if you have another python execute
+### To run test on your project
+```
+make test
+```
+
+### If you have another python execute
 you may need to alter the "run" stage of the Makefile, similar to:
 ```
 cd core/ ; python3.7 core.py ;
