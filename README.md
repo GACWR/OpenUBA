@@ -37,7 +37,7 @@ The interface is meant to observe system events, and anomalies, but not to repla
 - Modeling
 
 ## Installation
-Go to [INSTALL.md](https://github.com/TomorrowSOC/OpenUBA/blob/master/docs/INSTALL.md)
+Go to [INSTALL.md](/docs/INSTALL.md)
 
 # Discord
 Discord channel: https://discord.gg/7t4qJk
