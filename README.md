@@ -4,7 +4,7 @@
 [![Last commit](https://img.shields.io/github/last-commit/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/commits/master)
 [![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/TomorrowSOC/OpenUBA/blob/master/LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/TomorrowSOC/OpenUBA/total.svg)](https://github.com/TomorrowSOC/OpenUBA/releases)
-[![Latest release](https://img.shields.io/github/v/release/TomorrowSOC/OpenUBA.svg)]((https://github.com/TomorrowSOC/OpenUBA/releases))
+[![Latest release](https://img.shields.io/github/v/release/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/releases)
 [![Top language](https://img.shields.io/github/languages/top/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
 [![Code size in bytes](https://img.shields.io/github/languages/code-size/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
 ![Discord](https://img.shields.io/discord/658176365396361265)
