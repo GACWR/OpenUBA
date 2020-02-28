@@ -1,7 +1,16 @@
 # OpenUBA
-![Python](https://alibahaari.github.io/Badge/Python.png)  ![NPM](https://alibahaari.github.io/Badge/npm.png)		![HTML](https://alibahaari.github.io/Badge/HTML.png)		![CSS](https://alibahaari.github.io/Badge/JavaScript.png)   ![JS](https://alibahaari.github.io/Badge/CSS.png)
+[![Latest release](https://img.shields.io/github/v/release/TomorrowSOC/OpenUBA.svg)](https://img.shields.io/github/v/release/)
+[![Build Status](https://travis-ci.org/TomorrowSOC/OpenUBA.svg?branch=master)](https://travis-ci.org/TomorrowSOC/OpenUBA)
+[![Issues](https://img.shields.io/github/issues/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/issues)
+[![Last commit](https://img.shields.io/github/last-commit/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/commits/master)
+[![License](hhttps://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/TomorrowSOC/OpenUBA/blob/master/LICENSE.md)
+[![Downloads](https://img.shields.io/github/downloads/TomorrowSOC/OpenUBA/total.svg)](https://github.com/TomorrowSOC/OpenUBA/releases)
+[![Top language](https://img.shields.io/github/languages/top/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
+[![Code size in bytes](https://img.shields.io/github/languages/code-size/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
+![Discord](https://img.shields.io/discord/658176365396361265)
 
-# Get the updated code on XS code [here](https://cp.xscode.com/Tormorrow-SOC/OpenUB)
+# Get the updated code & documentation on XS code [here](https://cp.xscode.com/Tormorrow-SOC/OpenUB)
+
 
 ## Goals
 To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
@@ -37,10 +46,10 @@ The interface is meant to observe system events, and anomalies, but not to repla
 - Modeling
 
 ## Installation
-Go to [INSTALL.md](/docs/INSTALL.md)
+Go to [INSTALL.md](https://github.com/TomorrowSOC/OpenUBA/blob/master/docs/INSTALL.md)
 
 # Discord
-Discord channel: https://discord.gg/7t4qJk
+Discord channel: https://discord.gg/RVjVmyv
 
 # Telegram
 Telegram: https://t.me/tomorrowsoc
