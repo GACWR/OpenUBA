@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/TomorrowSOC/OpenUBA.svg?branch=master)](https://travis-ci.org/TomorrowSOC/OpenUBA)
 [![Issues](https://img.shields.io/github/issues/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/issues)
 [![Last commit](https://img.shields.io/github/last-commit/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/commits/master)
-[![License](hhttps://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/TomorrowSOC/OpenUBA/blob/master/LICENSE.md)
+[![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/TomorrowSOC/OpenUBA/blob/master/LICENSE.md)
 [![Downloads](https://img.shields.io/github/downloads/TomorrowSOC/OpenUBA/total.svg)](https://github.com/TomorrowSOC/OpenUBA/releases)
 [![Top language](https://img.shields.io/github/languages/top/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
 [![Code size in bytes](https://img.shields.io/github/languages/code-size/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
