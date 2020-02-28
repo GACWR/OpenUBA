@@ -36,7 +36,7 @@ This will invoke the "dev" stage of the Makefile, thus running the mypy linter f
 make test
 ```
 
-### If you have another python execute
+### If you have another python executable version
 you may need to alter the "run" stage of the Makefile, similar to:
 ```
 cd core/ ; python3.7 core.py ;
