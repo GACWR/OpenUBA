@@ -1,7 +1,7 @@
 # OpenUBA
+![Python](https://alibahaari.github.io/Badge/Python.png)  ![NPM](https://alibahaari.github.io/Badge/npm.png)		![HTML](https://alibahaari.github.io/Badge/HTML.png)		![CSS](https://alibahaari.github.io/Badge/JavaScript.png)   ![JS](https://alibahaari.github.io/Badge/CSS.png)
 
-# Get the updated code on XS code
-https://cp.xscode.com/Tormorrow-SOC/OpenUB
+# Get the updated code on XS code [here](https://cp.xscode.com/Tormorrow-SOC/OpenUB)
 
 ## Goals
 To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
