@@ -16,7 +16,7 @@ check:
 	riskmanager.py \
 	display.py \
 	--ignore-missing-imports ;
-run_ui:
+ui:
 	cd interface/ ; npm start ;
 save_dev:
 	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin master:main_dev_branch -v;

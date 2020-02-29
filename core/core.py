@@ -27,12 +27,10 @@ from test import Test
 from process import ProcessEngine
 from api import API
 from display import Display
-
 import unittest
 import trace, sys
-
-
 import coloredlogs
+
 coloredlogs.install()
 
 
@@ -48,8 +46,15 @@ server = Flask(__name__)
 def scheduler_run(name):
     logging.info("scheduler_run: "+str(name))
 
+    #process engine
     process_engine_instance = ProcessEngine()
     process_engine_instance.execute()
+
+    # model engine
+
+    # risk engine
+
+    # anomaly engine
 
 
 '''
@@ -93,16 +98,14 @@ class Core:
         logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
         logging.info("Core: creating run_scheduler_job thread")
-        ######run scheduler
+
+        # run scheduler
         self.run_scheduler_job()
 
-        logging.warning("Core: creating get_display_information thread")
-        #reset display storage
-        self.run_display_information_job()
+        logging.warning("Core: created run_scheduler_job thread")
 
-        # get a model
-        logging.info("Core: creating fetch_model_library thread")
-        self.run_fetch_model_job()
+        # reset display storage
+        self.run_display_information_job()
 
         #begin flask server, after initiation tasks
         server.run()
@@ -111,9 +114,9 @@ class Core:
     @name run_scheduler_job
     @description start scheduler on a new thread.
     scheduler runs:
-        - process engine,
+        - process engine
+        - model engine
         - risk engine
-        - model engine,
         - anomaly engine
     '''
     def run_scheduler_job(self):
@@ -131,21 +134,9 @@ class Core:
         self.display = Display()
         self.display.get_system_display()
 
-    '''
-    @name run_fetch_model
-    @description get model
-    '''
-    def run_fetch_model_job(self):
-        print("Getting model")
-        ModelLibrary.fetch_model()
 
 if __name__ == "__main__":
-
     print("Core Start")
-    ###############
-
-    # Run all tests
     Test.Run()
-
     core: Core = Core()
     core.initiate()

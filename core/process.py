@@ -25,7 +25,7 @@ from dataset import Dataset, DatasetSession
 from typing import Dict, Tuple, Sequence, List
 
 
-dataset_scheme = {
+dataset_scheme: dict = {
     "mode": "test",
     "folder": "../test_datasets/toy_1",
     "data":
@@ -53,10 +53,12 @@ class ProcessEngine():
         data_folder = dataset_scheme["folder"]
         # load data from scheme above, for test
         for log_obj in dataset_scheme["data"]:
-            self.process_data(data_folder, log_obj)
+            log_file_data = self.process_data(data_folder, log_obj)
 
     '''
         @name process_data
+        @param data_folder: str - the folder holding the files
+        @param log_data_obj: dict -
         @description update the current data in the system for each log type.
         This means that we will load a new set of records into the system
     '''
@@ -78,10 +80,15 @@ class ProcessEngine():
 
         #read dataset, if any new
         if log_type == "csv":
+            # invoke datasetsession to read the csv
             dataset_session.read_csv(data_folder, folder, location_type) # load
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
             dataset_size: Tuple = dataset_session.get_size()
-            logging.warning( "Dataset Session size: "+str(dataset_size) )
+            logging.info( "Dataset Session size: "+str(dataset_size) )
+
+            # fetch actual dataframe
+            print("======GET DATAFRAME ======")
+            print(dataset_session.get_dataset().get_dataframe().data.shape)
 
         # after read the data, perform entity analysis using Entity class
 

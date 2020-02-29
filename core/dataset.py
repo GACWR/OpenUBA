@@ -26,19 +26,19 @@ from typing import Dict, Tuple, Sequence, List
 
 
 '''
-@name PreSplitRecord
+@name PriorSplitRecord
 @description before split_record
 '''
 
-class PreSplitRecord:
+class PriorSplitRecord:
     def __init__(self, function):
-        logging.info("PreSplitRecord constructor")
+        logging.info("PriorSplitRecord constructor")
         self.function = function
 
     def __call__(self, *args) -> List:
-        logging.warning("PreSplitRecord")
-        logging.error("PreSplitRecord args: "+str(args))
-        logging.warning("PreSplitRecord args len: "+str(len(args)))
+        logging.warning("PriorSplitRecord")
+        logging.error("PriorSplitRecord args: "+str(args))
+        logging.warning("PriorSplitRecord args len: "+str(len(args)))
         record: str = args[0]
         sep: str = args[1]
         parser_result: list = self.function(args[0], record, sep)
@@ -56,13 +56,13 @@ class Parser():
         logging.info("Parser init: "+str(self))
 
     '''
-    @name split_record
+    @name PriorSplitRecord
     @description, take in a record/row, and
     return an list of strings. @static because we only need one, and
     we don't need to keep a parser object in memory
     '''
     #@staticmethod
-    @PreSplitRecord
+    @PriorSplitRecord
     def split_record(self, record: str, sep: str) -> List:
         logging.info("splitting record")
         split_result = record.split(sep)
@@ -70,7 +70,11 @@ class Parser():
         return split_result
 
 
-class DataFrame():
+'''
+@name CoreDataFrame
+@description
+'''
+class CoreDataFrame():
     def __init__(self, df):
         self.data = df
 
@@ -108,7 +112,7 @@ class Dataset(Parser):
         logging.info("Dataset constructor, type of ["+type+"]")
 
     '''
-    Dataset get dataframe
+    @description get dataframe set by Dataset
     '''
     def get_dataframe(self):
         logging.info("Inside Dataset.get_dataframe()")
@@ -164,7 +168,7 @@ class CSV(Dataset):
                          warn_bad_lines=False)
 
         # TODO: Parse class, will parse each row
-        logging.warning("columns: "+str(df.columns)+":"+str(df.shape))
+        logging.info("columns: "+str(df.columns)+":"+str(df.shape))
 
         '''
         foo = lambda x: pd.Series([ i for i inself.split_record(x, ' ') ])
@@ -172,12 +176,12 @@ class CSV(Dataset):
         rev = df["date"].head(10).apply(foo)
         '''
         logging.info( "Dataframe shape: ["+str(df.shape)+"]" )
-        logging.error( df.describe() )
-        self.dataframe = DataFrame( df )
+        logging.info( df.describe() )
+        self.dataframe = CoreDataFrame( df )
 
 
 '''
-@name Dataset_Session
+@name DatasetSession
 @description instance of using a dataset
 '''
 class DatasetSession():
@@ -191,9 +195,10 @@ class DatasetSession():
     '''
     def read_csv(self, data_folder: str, folder: str, location_type: str) -> None:
         logging.info("Dataset_Session: read_csv")
-        self.dataset = CSV(data_folder, folder, location_type)
-        self.dataset.read() # load into class dataset field, read from child class, not parent
-
+        self.dataset: CSV = CSV(data_folder, folder, location_type)
+        # load into class dataset field, read from parent class, not child
+        self.dataset.read()
+        #return self.dataset.dataframe
     '''
     @name get_size
     @description get size of dataset_session's dataset object
