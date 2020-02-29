@@ -18,24 +18,21 @@ import json
 
 from database import DB
 
-
-
 class Display():
     def __init__(self):
         logging.info("Display init")
         pass
 
-    def get_system_display(self):
+    def get_system_display(self) -> dict:
 
         logging.warning("get_system_display")
         db = DB()
-        #db = client['pymongo_test']
 
-        # some JSON:
-        x =  '{ "name":"John", "age":30, "city":"New York"}'
+        data_to_display = dict()
 
-        # parse x:
-        y = json.loads(x)
+        # tmp tests
+        data_to_display["monitored_users"] = 23
+        data_to_display["high_risk"] = 102
+        data_to_display["total users"] = 23
 
-        # the result is a Python dictionary:
-        print(y["age"])
+        return data_to_display

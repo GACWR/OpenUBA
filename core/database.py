@@ -26,6 +26,8 @@ class DB():
         print("db initiated")
         #db_connect = Connector()
         #client = MongoClient()
+
+        # tmp test
         try:
             client = MongoClient('localhost', 27017)
             #client = MongoClient('mongodb://localhost:27017')
@@ -52,8 +54,11 @@ class Connector():
         print("connector made")
         if type == "mongodb":
             self.type = MongoDBConnectorType()
+        if type == "hdfs":
+            self.type = HDFSConnector()
         else:
             raise Exception("Unsupported Connector type")
+
     def connect(self):
         self.type.attempt_to_connect()
 
@@ -64,6 +69,16 @@ class Connector():
 '''
 class MongoDBConnector(Connector):
     def __init__(self):
-        print("Mongo db type made")
+        print("Mongo db type initiated")
     def attempt_to_connect(self):
         print("Connecting to mongo")
+
+'''
+@name HDFSConnector
+@description connect to HDFS
+'''
+class HDFSConnector(Connector):
+    def __init__(self):
+        print("HDFS db type initiated")
+    def attempt_to_connect(self):
+        print("Connecting to HDFS")

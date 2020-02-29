@@ -14,9 +14,34 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
+from dataset import DatasetSession
 
+'''
+@name GetDisplayPrior
+@description Grab the data for display
+'''
+class PriorGetDisplay:
+    def __init__(self, function):
+        logging.info("PriorGetDisplay -- __init__: "+str(function))
+
+    def __call__(self, *args):
+        logging.info("PriorGetDisplay -- __call__: "+args[0])
+
+        # fetch the display data
+
+        # insert into object
+        display_object = dict()
+        display_object["test"] = "1";
+        return display_object
+
+
+'''
+@name API
+@description Invoke API calls
+'''
 class API:
     @staticmethod
-    def get_display(name):
+    @PriorGetDisplay
+    def get_display(name) -> None:
         logging.info("API get_display"+str(name))
-        return name+"test"
+        #return name+"test"
