@@ -49,7 +49,7 @@ class DatasetSessionTestCase(unittest.TestCase):
          self.dataset_session.dataset = CSV("", "", "")
          df = pd.DataFrame([("a"),("1")])
          #get_dataframe = MagicMock(return_value=DataFrame(df))
-         self.dataset_session.dataset.dataframe = DataFrame(df)
+         self.dataset_session.dataset.dataframe = CoreDataFrame(df)
 
     def test_read_csv(self):
         self.assertTrue(isinstance(self.
