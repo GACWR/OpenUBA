@@ -15,7 +15,9 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 
 import unittest
-from dataset_test import DatasetTestCase, DatasetSessionTestCase
+
+from dataset_test import DatasetCSVLocationTestCase, DatasetSessionDataFrameShapTestCase
+from process_test import DataSourceTestCase
 
 '''
 @description everything in Dataset File
@@ -25,7 +27,12 @@ class DatasetTest():
     def Run():
 
         # dataset related file
-        test_cases = [DatasetTestCase,DatasetSessionTestCase]
+        test_cases = [
+                        DatasetCSVLocationTestCase,
+                        DatasetSessionDataFrameShapTestCase,
+                        DataSourceTestCase
+                     ]
+
         for test_class in test_cases:
             suite = unittest.TestLoader().loadTestsFromTestCase(test_class)
             unittest.TextTestRunner(verbosity=2).run(suite)

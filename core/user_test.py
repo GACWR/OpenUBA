@@ -13,12 +13,15 @@ You should have received a copy of the GNU Lesser General Public License
 along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import logging
+
+
+import unittest
+
 
 '''
-@name User
-@description fundamental description of 
+@name DisplayTestCase
+@description this is the test case for all User classes
 '''
-class User:
-    def __init__(self):
-        logging.info("user initiated")
+class UserTestCase(unittest.TestCase):
+    def setUp(self):
+        pass

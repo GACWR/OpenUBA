@@ -126,7 +126,7 @@ class ModelDeployment():
 @description start model session. A model session can have several jobs
 '''
 
-class Session():
+class ModelSession():
     def __init__(self):
         self.selected_model_name = "SK"
 
@@ -134,6 +134,18 @@ class Session():
     start a model session
     '''
     def start_job(name):
-        logging.info("Model Server %s: starting job")
+        logging.info("Model Session %s: starting job")
+
         time.sleep(2)
-        logging.info("Model Server %s: finishing job")
+
+        logging.info("Model Session %s: finishing job")
+
+
+'''
+@SimpleAggregation
+@description invoke a simple count model to return results for a set of data
+'''
+class SimpleAggregation(ModelSession):
+
+    def __init__(self):
+        logging.info("SimpleAggregation Session init")

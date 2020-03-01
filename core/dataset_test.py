@@ -24,10 +24,10 @@ from typing import Dict, Tuple, Sequence, List
 from unittest.mock import MagicMock
 
 '''
-@name DatasetTestCase
-@description this is the test case for all Dataset classes
+@name DatasetCSVLocationTestCase
+@description this is the test case for dataset session csv location
 '''
-class DatasetTestCase(unittest.TestCase):
+class DatasetCSVLocationTestCase(unittest.TestCase):
     def setUp(self):
         self.parent_folder = "parent_folder"
         self.folder = "folder"
@@ -40,10 +40,10 @@ class DatasetTestCase(unittest.TestCase):
                          self.parent_folder+"/"+self.folder)
 
 '''
-@name DatasetSessionTestCase
-@description all unit tests for DatasetSession class
+@name DatasetSessionDataFrameShapTestCase
+@description all unit tests for DatasetSession dataframe get shape
 '''
-class DatasetSessionTestCase(unittest.TestCase):
+class DatasetSessionDataFrameShapTestCase(unittest.TestCase):
     def setUp(self):
          self.dataset_session = DatasetSession("csv")
          self.dataset_session.dataset = CSV("", "", "")
@@ -52,12 +52,14 @@ class DatasetSessionTestCase(unittest.TestCase):
          self.dataset_session.dataset.dataframe = CoreDataFrame(df)
 
     def test_read_csv(self):
-        self.assertTrue(isinstance(self.
-                                   dataset_session.
-                                   get_dataset().
-                                   get_dataframe().
-                                   data,
+        self.assertTrue(isinstance(self.dataset_session.get_dataset().get_dataframe().data,
                                    pd.core.frame.DataFrame))
 
     def test_get_size(self):
         self.assertEqual(self.dataset_session.get_size(), (2,1))
+
+
+'''
+@name
+@description
+'''

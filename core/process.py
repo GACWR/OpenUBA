@@ -21,9 +21,9 @@ logs into the system
 
 '''
 import logging
-from dataset import Dataset, DatasetSession
+from dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
-
+from enum import Enum
 
 dataset_scheme: dict = {
     "mode": "test",
@@ -34,10 +34,38 @@ dataset_scheme: dict = {
                 "log_name": "proxy",
                 "type": "csv",
                 "location_type": "disk",
-                "folder": "proxy"
+                "folder": "proxy",
+                "id_column": "cs-username"
             }
         ]
 }
+
+'''
+@name DataSourceFileType
+@description eum for data source file type
+'''
+class DataSourceFileType(Enum):
+    CSV = 1
+    FLAT = 2
+    PARQUET = 3
+
+
+'''
+@name DataSource
+@description class that holds representations for data sources
+'''
+class DataSource:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def data_source_string(data_source: DataSourceFileType):
+        if data_source == DataSourceFileType.CSV:
+            return "csv"
+        elif data_source == DataSourceFileType.FLAT:
+            return "flat"
+        elif data_source == DataSourceFileType.PARQUET:
+            return "parquet"
 
 class ProcessEngine():
 
@@ -46,23 +74,31 @@ class ProcessEngine():
 
     '''
     @name execute
-    @description run the process engine
+    @description run the process engine, which loads data
     '''
     def execute(self):
         logging.info("executing process engine")
         data_folder = dataset_scheme["folder"]
-        # load data from scheme above, for test
+
+        # load data from scheme above
         for log_obj in dataset_scheme["data"]:
-            log_file_data = self.process_data(data_folder, log_obj)
+            log_file_data: CoreDataFrame = self.process_data(data_folder, log_obj)
+            logging.warning("dataframe shape: "+str(log_file_data.data.shape))
+
+            # with the CoreDataFrame from process data, perform user/entity analysis/extraction 
+
+        # after read the data, perform entity analysis using Entity types
+
+        # adjust risk per entity
 
     '''
         @name process_data
         @param data_folder: str - the folder holding the files
-        @param log_data_obj: dict -
+        @param log_data_obj: dict - log config from the log set
         @description update the current data in the system for each log type.
         This means that we will load a new set of records into the system
     '''
-    def process_data(self, data_folder: str, log_data_obj: dict):
+    def process_data(self, data_folder: str, log_data_obj: dict) -> CoreDataFrame:
 
         logging.warning("Processing Data for : "+str(data_folder))
 
@@ -70,26 +106,19 @@ class ProcessEngine():
         log_type = log_data_obj["type"]
         location_type = log_data_obj["location_type"]
         folder = log_data_obj["folder"]
+        id_column = log_data_obj["id_column"]
 
         dataset_session = DatasetSession(log_type)
 
-        '''
-         STEP1: check for new datasets
-         from folder directory
-        '''
-
         #read dataset, if any new
-        if log_type == "csv":
+        if log_type == DataSource.data_source_string(DataSourceFileType.CSV):
             # invoke datasetsession to read the csv
             dataset_session.read_csv(data_folder, folder, location_type) # load
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
             dataset_size: Tuple = dataset_session.get_size()
             logging.info( "Dataset Session size: "+str(dataset_size) )
 
-            # fetch actual dataframe
-            print("======GET DATAFRAME ======")
-            print(dataset_session.get_dataset().get_dataframe().data.shape)
 
-        # after read the data, perform entity analysis using Entity class
-
-        # adjust risk per entity
+        # fetch actual dataframe
+        print("======GET DATAFRAME ======")
+        return dataset_session.get_dataset().get_dataframe()

@@ -16,7 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 import logging
 import json
 
-from database import DB
+from database import DB, DBRead, DBType
 
 class Display():
     def __init__(self):
@@ -26,7 +26,11 @@ class Display():
     def get_system_display(self) -> dict:
 
         logging.warning("get_system_display")
+
+        # db object used for read
         db = DB()
+
+        # todo: read from the system display
 
         data_to_display = dict()
 

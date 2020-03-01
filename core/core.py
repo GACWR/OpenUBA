@@ -36,26 +36,9 @@ coloredlogs.install()
 
 '''
 single server instance
+@note dont use in prod, use a prodution ready WSGI server
 '''
 server = Flask(__name__)
-
-'''
-@name scheduler_run
-@description function to start process engine
-'''
-def scheduler_run(name):
-    logging.info("scheduler_run: "+str(name))
-
-    #process engine
-    process_engine_instance = ProcessEngine()
-    process_engine_instance.execute()
-
-    # model engine
-
-    # risk engine
-
-    # anomaly engine
-
 
 '''
 @description endpoint to get varied display information
@@ -133,6 +116,28 @@ class Core:
         print("Getting display information")
         self.display = Display()
         self.display.get_system_display()
+
+
+
+'''
+@name scheduler_run
+@description function to start process engine
+'''
+def scheduler_run(name):
+    logging.info("scheduler_run: "+str(name))
+
+    #process engine
+    process_engine_instance = ProcessEngine()
+    process_engine_instance.execute()
+
+
+
+    # model engine
+
+    # risk engine
+
+    # anomaly engine
+
 
 
 if __name__ == "__main__":
