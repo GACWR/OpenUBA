@@ -13,32 +13,12 @@ You should have received a copy of the GNU Lesser General Public License
 along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import logging
-from database import DBRead, DBWrite
-from typing import Dict, Tuple, Sequence, List
+import unittest
 
 '''
-@name User
-@description fundamental description of
+@name EntityTestCase
+@description this is the test case for all entity classes
 '''
-class User:
-    def __init__(self):
-        logging.info("user initiated")
-
-'''
-@name UserSet
-@description wrapper to hold a set of users
-'''
-class UserSet():
-    def __init__(self):
+class EntityTestCase(unittest.TestCase):
+    def setUp(self):
         pass
-
-'''
-@name GetAllUser
-@description fetch all users from the actual DB
-'''
-class GetAllUsers(DBRead):
-    def get(self) -> dict:
-        logging.info("read_user")
-        users = self.read()
-        return {"user1": {}, "user2": {}}

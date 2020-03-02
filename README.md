@@ -1,19 +1,19 @@
 # OpenUBA
-[![Build Status](https://travis-ci.org/TomorrowSOC/OpenUBA.svg?branch=master)](https://travis-ci.org/TomorrowSOC/OpenUBA)
-[![Issues](https://img.shields.io/github/issues/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/issues)
-[![Last commit](https://img.shields.io/github/last-commit/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/commits/master)
-[![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/TomorrowSOC/OpenUBA/blob/master/LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/TomorrowSOC/OpenUBA/total.svg)](https://github.com/TomorrowSOC/OpenUBA/releases)
-[![Latest release](https://img.shields.io/github/v/release/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA/releases)
-[![Top language](https://img.shields.io/github/languages/top/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
-[![Code size in bytes](https://img.shields.io/github/languages/code-size/TomorrowSOC/OpenUBA.svg)](https://github.com/TomorrowSOC/OpenUBA)
+[![Build Status](https://travis-ci.org/GACWR/OpenUBA.svg?branch=master)](https://travis-ci.org/GACWR/OpenUBA)
+[![Issues](https://img.shields.io/github/issues/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/issues)
+[![Last commit](https://img.shields.io/github/last-commit/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/commits/master)
+[![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/GACWR/OpenUBA/blob/master/LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/GACWR/OpenUBA/total.svg)](https://github.com/GACWR/OpenUBA/releases)
+[![Latest release](https://img.shields.io/github/v/release/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/releases)
+[![Top language](https://img.shields.io/github/languages/top/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA)
+[![Code size in bytes](https://img.shields.io/github/languages/code-size/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA)
 ![Discord](https://img.shields.io/discord/658176365396361265)
 
-## Get the updated code & documentation on XS code [here](https://cp.xscode.com/Tormorrow-SOC/OpenUB)
+## Get the updated code & documentation on XS code [here](https://cp.xscode.com/GACWR/OpenUBA)
 Our main development, and documentation branches are first pushed to our sponsorship repository, and then eventually pushed to our public free repository. To obtain the most updated code, and documentation for OpenUBA, subscribe to our XS Code repository.
 
 ```
-https://cp.xscode.com/Tormorrow-SOC/OpenUB
+https://cp.xscode.com/GACWR/OpenUBA
 ```
 
 ## Goals
@@ -50,10 +50,10 @@ The interface is meant to observe system events, and anomalies
 - Modeling
 
 ## Installation
-Go to [INSTALL.md](https://github.com/TomorrowSOC/OpenUBA/blob/master/docs/INSTALL.md)
+Go to [INSTALL.md](https://github.com/GACWR/OpenUBA/blob/master/docs/INSTALL.md)
 
 # Discord
 Discord channel: https://discord.gg/RVjVmyv
 
 # Telegram
-Telegram: https://t.me/tomorrowsoc
+Telegram: https://t.me/GACWR

@@ -18,7 +18,8 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 @description manage the overall state of the platform
 '''
 
-from flask import Flask
+from flask import Flask, jsonify
+from flask_cors import CORS
 import logging
 import threading
 import time
@@ -33,44 +34,33 @@ import coloredlogs
 
 coloredlogs.install()
 
-
 '''
 single server instance
+@note dont use in prod, use a prodution ready WSGI server
 '''
 server = Flask(__name__)
-
-'''
-@name scheduler_run
-@description function to start process engine
-'''
-def scheduler_run(name):
-    logging.info("scheduler_run: "+str(name))
-
-    #process engine
-    process_engine_instance = ProcessEngine()
-    process_engine_instance.execute()
-
-    # model engine
-
-    # risk engine
-
-    # anomaly engine
-
+CORS(server)
 
 '''
 @description endpoint to get varied display information
+@note can be system_log, monitored_users, etc
 '''
-@server.route("/display/<string:name>/")
-def display(name):
-    logging.info("Getting display info"+str(name))
-    return API.get_display(name)
+@server.route("/display/<string:display_type>/", methods=['GET'])
+def display(display_type):
+    logging.info("Getting display info with type: "+str(display_type))
+    try:
+        resp = jsonify(API.get_display_of_type(display_type))
+        return resp
+    except Exception as e:
+        logging.error(str(e))
+        return str("ssss")
 
 '''
-@description endpoint to remove a model
+@description endpoint to disable a model
 '''
-@server.route("/delete_model/<string:model_name>/")
+@server.route("/disable_model/<string:model_name>/")
 def delete_model(model_name):
-    logging.warning("deleting model.... from api")
+    logging.warning("disabling model from api")
     return str(ModelLibrary.remove_model())
 
 '''
@@ -95,7 +85,9 @@ class Core:
     '''
     def initiate(self):
         format = "%(asctime)s: %(message)s"
-        logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
+        logging.basicConfig(format=format,
+                            level=logging.INFO,
+                            datefmt="%H:%M:%S")
 
         logging.info("Core: creating run_scheduler_job thread")
 
@@ -133,6 +125,28 @@ class Core:
         print("Getting display information")
         self.display = Display()
         self.display.get_system_display()
+
+
+
+'''
+@name scheduler_run
+@description function to start process engine
+'''
+def scheduler_run(name):
+    logging.info("scheduler_run: "+str(name))
+
+    #process engine
+    process_engine_instance = ProcessEngine()
+    process_engine_instance.execute()
+
+
+
+    # model engine
+
+    # risk engine
+
+    # anomaly engine
+
 
 
 if __name__ == "__main__":

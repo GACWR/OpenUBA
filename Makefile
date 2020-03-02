@@ -15,6 +15,7 @@ check:
 	risk.py \
 	riskmanager.py \
 	display.py \
+	user.py \
 	--ignore-missing-imports ;
 ui:
 	cd interface/ ; npm start ;

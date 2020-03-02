@@ -6,4 +6,5 @@ python:
 #  - "pypy3"  # currently Python 3.6.1,  PyPy 7.1.1-beta0
 install:
   - pip install -r requirements.txt
+  - make check
 script: python3.7 -m unittest discover -s ./core -p "*_test.py" -v

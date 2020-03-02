@@ -22,7 +22,7 @@ import logging
 import pandas as pd
 import numpy as np
 from typing import Dict, Tuple, Sequence, List
-
+from enum import Enum
 
 
 '''
@@ -78,6 +78,16 @@ class CoreDataFrame():
     def __init__(self, df):
         self.data = df
 
+
+'''
+@name LogSourceType
+#description enum of log source type
+'''
+class LogSourceType(Enum):
+    DISK = "disk"
+    HDFS = "hdfs"
+
+
 '''
 @name DatasetPrior
 @description take beh
@@ -127,7 +137,7 @@ class Dataset(Parser):
 class CSV(Dataset):
     def __init__(self, parent_folder, folder, location_type):
         #call to Dataset class
-        super().__init__("CSV") # becomes Dataset instance
+        super().__init__("CSV Dataset") # becomes Dataset instance
         self.file_location = parent_folder+"/"+folder
         self.location_type = location_type
 
@@ -137,8 +147,11 @@ class CSV(Dataset):
     '''
     def read(self) -> None:
         logging.info("Reading CSV")
-        if self.location_type == "disk":
+        if self.location_type == LogSourceType.DISK.value:
             self.read_from_disk(self, "Reading from disk for CSV")
+        elif self.location_type == LogSourceType.HDFS.value:
+            # read from hdfs
+            pass
         else:
             raise Exception("location_type "+self.location_type+" is not supported in CSV")
 
@@ -149,11 +162,11 @@ class CSV(Dataset):
     def get_size(self) -> Tuple:
         logging.info("get_size()")
         df = super().get_dataframe() # fetch underlying dataframe from parent
-        return df.data.shape
+        return df.data.shape # will have to change the shape call to be general
 
     '''
     @name read_from_disk
-    @description read from disk, and set to objects dataframe
+    @description read from disk, and set to CSVs dataframe
     '''
     @DatasetLogPrior
     def read_from_disk(self) -> None:
@@ -179,6 +192,14 @@ class CSV(Dataset):
         logging.info( df.describe() )
         self.dataframe = CoreDataFrame( df )
 
+    '''
+    @name read_from_hdfs
+    @description read from hdfs, and set to CSVs dataframe
+    '''
+    @DatasetLogPrior
+    def read_from_hdfs(self) -> None:
+        pass
+
 
 '''
 @name DatasetSession
@@ -198,18 +219,17 @@ class DatasetSession():
         self.dataset: CSV = CSV(data_folder, folder, location_type)
         # load into class dataset field, read from parent class, not child
         self.dataset.read()
-        #return self.dataset.dataframe
+
     '''
     @name get_size
     @description get size of dataset_session's dataset object
     '''
     def get_size(self) -> Tuple:
-        logging.warning("Getting Dataset size...")
         return self.dataset.get_size()
 
     '''
     @name get_dataset
-    @description get size of dataset_session's dataset object
+    @description get dataset_session's dataset object
     '''
     def get_dataset(self) -> Dataset:
         return self.dataset

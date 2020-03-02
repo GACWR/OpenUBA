@@ -14,36 +14,15 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from pymongo import MongoClient
+from enum import Enum
 
+DB_CONFIG = {
+    "type": "mongo"
+}
 
-'''
-@name DB
-@description fundamental database parent class
-'''
-class DB():
-    def __init__(self):
-        print("db initiated")
-        #db_connect = Connector()
-        #client = MongoClient()
-
-        # tmp test
-        try:
-            client = MongoClient('localhost', 27017)
-            #client = MongoClient('mongodb://localhost:27017')
-            db = client['pymongo_test']
-            posts = db.posts
-            post_data = {
-                'title': 'Python and MongoDB',
-                'content': 'PyMongo is fun, you guys',
-                'author': 'Scott'
-            }
-            result = posts.insert_one(post_data)
-            print('One post: {0}'.format(result.inserted_id))
-            scott_post = posts.find_one({'author': 'Scott'})
-            print(scott_post)
-        except Exception as e:
-            logging.error(e)
+class DBType(Enum):
+    FS = 1
+    HDFS = 2
 
 '''
 @name connector
@@ -52,9 +31,9 @@ class DB():
 class Connector():
     def __init__(self, type):
         print("connector made")
-        if type == "mongodb":
-            self.type = MongoDBConnectorType()
-        if type == "hdfs":
+        if type == "fs":
+            self.type = FSConnectorType()
+        elif type == "hdfs":
             self.type = HDFSConnector()
         else:
             raise Exception("Unsupported Connector type")
@@ -64,14 +43,15 @@ class Connector():
 
 
 '''
-@name MongoDBConnector
-@description connect to mongo
+@name FSDBConnector
+@description connect to flat files
 '''
-class MongoDBConnector(Connector):
+class FSConnector(Connector):
     def __init__(self):
-        print("Mongo db type initiated")
+        print("FS db type initiated")
+
     def attempt_to_connect(self):
-        print("Connecting to mongo")
+        print("Connecting to FS")
 
 '''
 @name HDFSConnector
@@ -80,5 +60,60 @@ class MongoDBConnector(Connector):
 class HDFSConnector(Connector):
     def __init__(self):
         print("HDFS db type initiated")
+
     def attempt_to_connect(self):
         print("Connecting to HDFS")
+
+
+
+
+'''
+@name DB
+@description fundamental database parent class
+'''
+class DB():
+    def __init__(self):
+        print("db initiated")
+
+        try:
+            pass
+        except Exception as e:
+            logging.error(e)
+
+
+'''
+@name DBRead
+@description read a
+'''
+class DBRead(DB):
+    def read(self):
+        logging.info("DBREAD")
+        pass
+
+'''
+@name DBWrite
+@description
+'''
+class DBWrite(DB):
+    def write(self):
+        logging.info("DBREAD")
+        pass
+
+
+'''
+@name WriteNewActorToDB
+@description
+'''
+class WriteNewActorToDB(DBWrite):
+    def set(self, actor_object):
+        logging.info("write_actor")
+        self.write()
+
+'''
+@name ReadUserFromDB
+@description
+'''
+class ReadActorFromDB(DBRead):
+    def get(self, actor_object):
+        logging.info("read_actor")
+        self.read()

@@ -13,32 +13,26 @@ You should have received a copy of the GNU Lesser General Public License
 along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import unittest
+import pandas as pd
+from process import DataSource, DataSourceFileType
 import logging
-from database import DBRead, DBWrite
 from typing import Dict, Tuple, Sequence, List
+from unittest.mock import MagicMock
 
 '''
-@name User
-@description fundamental description of
+@name DataSourceTestCase
+@description this is the test case for Data Source
 '''
-class User:
-    def __init__(self):
-        logging.info("user initiated")
+class DataSourceTestCase(unittest.TestCase):
+    def setUp(self):
+        self.datasource = DataSource()
+
+    def test_csv_init(self):
+        self.assertEqual(DataSourceFileType.CSV.value, "csv")
+
 
 '''
-@name UserSet
-@description wrapper to hold a set of users
+@name
+@description
 '''
-class UserSet():
-    def __init__(self):
-        pass
-
-'''
-@name GetAllUser
-@description fetch all users from the actual DB
-'''
-class GetAllUsers(DBRead):
-    def get(self) -> dict:
-        logging.info("read_user")
-        users = self.read()
-        return {"user1": {}, "user2": {}}

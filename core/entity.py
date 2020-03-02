@@ -19,19 +19,32 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
+from database import DBRead, DBWrite
+from typing import Dict, Tuple, Sequence, List
 
+
+'''
+@name
+@description
+'''
 class Entity():
     def __init__(self):
         logging.info("Entity is initiated")
 
-
-    '''
-    check for new entities
-    check for dormant entities
-    adjust scores
-    '''
-    def perform_entity_analysis(self):
-        #check for new entities
-
-        #for each new entity, register in entity db
+'''
+@name EntitySet
+@description wrapper to hold a set of entities
+'''
+class EntitySet():
+    def __init__(self):
         pass
+
+'''
+@name GetAllEntities
+@description fetch all entities from the actual DB
+'''
+class GetAllEntities(DBRead):
+    def get(self) -> dict:
+        logging.info("read_user")
+        entities = self.read()
+        return {"entity1": {}, "entity2": {}}
