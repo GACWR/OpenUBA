@@ -14,11 +14,31 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
+from database import DBRead, DBWrite
+from typing import Dict, Tuple, Sequence, List
 
 '''
 @name User
-@description fundamental description of 
+@description fundamental description of
 '''
 class User:
     def __init__(self):
         logging.info("user initiated")
+
+'''
+@name UserSet
+@description wrapper to hold a set of users
+'''
+class UserSet():
+    def __init__(self):
+        pass
+
+'''
+@name GetAllUser
+@description fetch all users from the actual DB
+'''
+class GetAllUsers(DBRead):
+    def get(self) -> dict:
+        logging.info("read_user")
+        users = self.read()
+        return {"user1": {}, "user2": {}}

@@ -14,25 +14,11 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import unittest
-import pandas as pd
-from process import DataSource, DataSourceFileType
-import logging
-from typing import Dict, Tuple, Sequence, List
-from unittest.mock import MagicMock
 
 '''
-@name DataSourceTestCase
-@description this is the test case for Data Source
+@name EntityTestCase
+@description this is the test case for all entity classes
 '''
-class DataSourceTestCase(unittest.TestCase):
+class EntityTestCase(unittest.TestCase):
     def setUp(self):
-        self.datasource = DataSource()
-
-    def test_csv_init(self):
-        self.assertEqual(DataSourceFileType.CSV.value, "csv")
-
-
-'''
-@name
-@description
-'''
+        pass

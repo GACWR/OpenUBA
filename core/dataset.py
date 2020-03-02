@@ -84,8 +84,8 @@ class CoreDataFrame():
 #description enum of log source type
 '''
 class LogSourceType(Enum):
-    DISK = 1
-    HDFS = 2
+    DISK = "disk"
+    HDFS = "hdfs"
 
 
 '''
@@ -128,16 +128,6 @@ class Dataset(Parser):
         logging.info("Inside Dataset.get_dataframe()")
         return self.dataframe;
 
-    '''
-    @name source_type_string
-    @description
-    '''
-    def source_type_string(self, source_type: LogSourceType):
-        if source_type == LogSourceType.DISK:
-            return "disk"
-        elif source_type == LogSourceType.HDFS:
-            return "hdfs"
-
 
 
 '''
@@ -157,9 +147,9 @@ class CSV(Dataset):
     '''
     def read(self) -> None:
         logging.info("Reading CSV")
-        if self.location_type == self.source_type_string(LogSourceType.DISK):
+        if self.location_type == LogSourceType.DISK.value:
             self.read_from_disk(self, "Reading from disk for CSV")
-        elif self.location_type == self.source_type_string(LogSourceType.HDFS):
+        elif self.location_type == LogSourceType.HDFS.value:
             # read from hdfs
             pass
         else:

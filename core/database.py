@@ -14,7 +14,6 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from pymongo import MongoClient
 from enum import Enum
 
 DB_CONFIG = {
@@ -24,21 +23,6 @@ DB_CONFIG = {
 class DBType(Enum):
     FS = 1
     HDFS = 2
-
-'''
-@name DB
-@description fundamental database parent class
-'''
-class DB():
-    def __init__(self):
-        print("db initiated")
-
-        try:
-            pass
-        except Exception as e:
-            logging.error(e)
-
-
 
 '''
 @name connector
@@ -80,38 +64,56 @@ class HDFSConnector(Connector):
     def attempt_to_connect(self):
         print("Connecting to HDFS")
 
+
+
+
 '''
-@name
-@description
+@name DB
+@description fundamental database parent class
 '''
-class DBRead():
+class DB():
+    def __init__(self):
+        print("db initiated")
+
+        try:
+            pass
+        except Exception as e:
+            logging.error(e)
+
+
+'''
+@name DBRead
+@description read a
+'''
+class DBRead(DB):
     def read(self):
         logging.info("DBREAD")
         pass
 
 '''
-@name
+@name DBWrite
 @description
 '''
-class DBWrite():
+class DBWrite(DB):
     def write(self):
         logging.info("DBREAD")
         pass
 
+
 '''
-@name
+@name WriteNewActorToDB
 @description
 '''
-class WriteNewUserToDB(DBWrite):
-    def write_user(self):
-        logging.info("write_user")
+class WriteNewActorToDB(DBWrite):
+    def set(self, actor_object):
+        logging.info("write_actor")
         self.write()
 
 '''
-@name
+@name ReadUserFromDB
 @description
 '''
-class ReadUserFromDB(DBRead):
-    def read_user(self):
-        logging.info("read_user")
+class ReadActorFromDB(DBRead):
+    def get(self, actor_object):
+        logging.info("read_actor")
         self.read()

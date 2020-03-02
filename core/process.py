@@ -24,6 +24,8 @@ import logging
 from dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
 from enum import Enum
+from entity import GetAllEntities
+from user import GetAllUsers
 
 dataset_scheme: dict = {
     "mode": "test",
@@ -35,7 +37,7 @@ dataset_scheme: dict = {
                 "type": "csv",
                 "location_type": "disk",
                 "folder": "proxy",
-                "id_column": "cs-username"
+                "id_feature": "cs-username"
             }
         ]
 }
@@ -45,9 +47,9 @@ dataset_scheme: dict = {
 @description eum for data source file type
 '''
 class DataSourceFileType(Enum):
-    CSV = 1
-    FLAT = 2
-    PARQUET = 3
+    CSV = "csv"
+    FLAT = "flat"
+    PARQUET = "parquet"
 
 
 '''
@@ -58,14 +60,6 @@ class DataSource:
     def __init__(self):
         pass
 
-    @staticmethod
-    def data_source_string(data_source: DataSourceFileType):
-        if data_source == DataSourceFileType.CSV:
-            return "csv"
-        elif data_source == DataSourceFileType.FLAT:
-            return "flat"
-        elif data_source == DataSourceFileType.PARQUET:
-            return "parquet"
 
 class ProcessEngine():
 
@@ -85,7 +79,11 @@ class ProcessEngine():
             log_file_data: CoreDataFrame = self.process_data(data_folder, log_obj)
             logging.warning("dataframe shape: "+str(log_file_data.data.shape))
 
-            # with the CoreDataFrame from process data, perform user/entity analysis/extraction 
+        # with the CoreDataFrame from process data, perform user/entity analysis/extraction
+        # get entities, and users
+        all_entities: dict = GetAllEntities().get()
+        all_users: dict = GetAllUsers().get()
+
 
         # after read the data, perform entity analysis using Entity types
 
@@ -106,12 +104,12 @@ class ProcessEngine():
         log_type = log_data_obj["type"]
         location_type = log_data_obj["location_type"]
         folder = log_data_obj["folder"]
-        id_column = log_data_obj["id_column"]
+        id_feature = log_data_obj["id_feature"]
 
         dataset_session = DatasetSession(log_type)
 
         #read dataset, if any new
-        if log_type == DataSource.data_source_string(DataSourceFileType.CSV):
+        if log_type == DataSourceFileType.CSV.value:
             # invoke datasetsession to read the csv
             dataset_session.read_csv(data_folder, folder, location_type) # load
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )

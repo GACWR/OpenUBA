@@ -15,13 +15,21 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import json
-
 from database import DB, DBRead, DBType
 
+
+'''
+@name Display
+@description a wrapper for a result to be displayed
+'''
 class Display():
+
     def __init__(self):
         logging.info("Display init")
-        pass
+        #self.data: dict = {"message": "display was never set beyond default"}
+
+    def set(self, data: dict) -> None:
+        self.data: dict = data
 
     def get_system_display(self) -> dict:
 
