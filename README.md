@@ -29,10 +29,37 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 - Flexible/open dataset support
 
 ## Components
-- Model Client (optional)
+- Client Dashboard
+  - Node JS
+  - Express JS
+  - D3.js
 - Model Server (Remote or Local)
-- Transport Client
-- User Inferface
+- User Interface
+- API Server
+  - Flask
+- Visualization
+  - Data Shader
+  - kibana
+- Modeling
+  - Tensorflow
+  - Sci-kit Learn
+  - Keras
+  - GP Learn
+  - DEAP
+  - Network X
+  - MLLib
+- Compute Engine
+  - Spark
+  - Elastic Search
+- Log Transport
+  - Logstash
+-Log Collection
+  - Beats
+- Supported Data Formats
+- CSV
+- Parquet
+- Flat File
+
 
 <img src="images/framework.jpg" width="750px" />
 
@@ -48,12 +75,13 @@ The interface is meant to observe system events, and anomalies
 - Cases
 - Data
 - Modeling
+- Settings
 
 ## Installation
 Go to [INSTALL.md](https://github.com/GACWR/OpenUBA/blob/master/docs/INSTALL.md)
 
 # Discord
-Discord channel: https://discord.gg/RVjVmyv
+Discord channel: https://discord.gg/Ps9p9Wy
 
 # Telegram
 Telegram: https://t.me/GACWR
