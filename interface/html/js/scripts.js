@@ -112,13 +112,18 @@ class Sync {
   @description the interval block
   */
   interval(){
-    let renderer = new Renderer()
-    let api = new API()
 
-    // perform sync actions
-    api.get_all_users()
-    api.get_all_entities()
-    api.get_system_log()
+    if (false){
+      // perform sync actions
+      let renderer = new Renderer()
+      let api = new API()
+      api.get_all_users()
+      api.get_all_entities()
+      api.get_system_log()
+    }
+
+    $("SystemLog").html("test system log")
+
   }
 
   /*
