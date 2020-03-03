@@ -52,3 +52,44 @@ http://127.0.0.1:5000/display/teststring
 make run_ui
 ```
 7. Point your browser to http://127.0.0.1:3000/ to view the web app running
+
+
+
+# Installing ELK on mac
+
+https://logz.io/blog/elk-mac/
+
+```
+brew install elasticsearch && brew info elasticsearch
+```
+
+```
+brew services start elasticsearch
+```
+
+```
+brew install logstash
+```
+
+```
+brew services start logstash
+```
+
+
+```
+brew install kibana
+```
+
+```
+brew services start kibana
+```
+
+```
+brew services list
+```
+
+```
+sudo vi /usr/local/etc/kibana/kibana.yml
+```
+
+# Installing ELK on windows
