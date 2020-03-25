@@ -41,6 +41,9 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 - Flexible/open dataset support
 - Alerting/Ticketing system
 
+<img src="images/framework.jpg" width="750px" />
+
+
 ## Components
 - Client Dashboard
   - React
@@ -75,11 +78,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Parquet
   - Flat File
 
-
-<img src="images/framework.jpg" width="750px" />
-
-
-# User Interface (placeholder, UI being updated now)
+# User Interface
 <img src="images/ui.png" width="750px" />
 
 The interface is meant to observe system events, and anomalies
