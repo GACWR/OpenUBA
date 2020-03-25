@@ -74,7 +74,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Flat File
 
 # User Interface (placeholder, UI being updated now)
-<img src="images/ui.jpg" width="750px" />
+<img src="images/ui.png" width="750px" />
 The interface is meant to observe system events, and anomalies
 
 
