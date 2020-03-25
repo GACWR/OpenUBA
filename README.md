@@ -24,13 +24,8 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 | `Chat` | ![Discord](https://img.shields.io/discord/658176365396361265) |
 
 
-
 ## Get the updated code & documentation on XS code [here](https://cp.xscode.com/GACWR/OpenUBA)
 Our main development, and documentation branches are first pushed to our sponsorship repository, and then eventually pushed to our public free repository. To obtain the most updated code, and documentation for OpenUBA, subscribe to our XS Code repository.
-
-```
-https://cp.xscode.com/GACWR/OpenUBA
-```
 
 ## Goals
 To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
@@ -83,7 +78,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 <img src="images/framework.jpg" width="750px" />
 
 
-# User Interface
+# User Interface (placeholder, UI being updated now)
 <img src="images/ui.png" width="750px" />
 
 The interface is meant to observe system events, and anomalies
