@@ -16,9 +16,14 @@ check:
 	riskmanager.py \
 	display.py \
 	user.py \
+	alert.py \
 	--ignore-missing-imports ;
-ui:
-	cd interface/ ; npm start ;
+uis: #ui server
+	cd interface/ ; node server.js
+rd: # react development server
+	cd interface/ ; npm run start
+rb: # react build
+	cd interface/ ; npm run build
 save_dev:
 	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin master:main_dev_branch -v;
 test:
