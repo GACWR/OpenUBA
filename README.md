@@ -5,7 +5,7 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 | Status Type | Status |
 | --- | --- |
 | `Master Build` | [![Build Status](https://travis-ci.org/GACWR/OpenUBA.svg?branch=master)](https://travis-ci.org/GACWR/OpenUBA) |
-| `Development Build` | [![Build Status](https://travis-ci.org/gacwr/OpenUBA.svg?branch=development)](https://travis-ci.org/gacwr/OpenUBA) |
+| `Development Build` | [![Build Status](https://travis-ci.org/gacwr/OpenUBA.svg?branch=main_dev_branch)](https://travis-ci.org/gacwr/OpenUBA) |
 | `Issues` | [![Issues](https://img.shields.io/github/issues/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/issues) |
 | `Last Commit` | [![Last commit](https://img.shields.io/github/last-commit/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/commits/master) |
 | `UI Docker Stars` | [![Docker Stars](https://img.shields.io/docker/stars/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
@@ -22,6 +22,7 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 | `Top Language` | [![Top language](https://img.shields.io/github/languages/top/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |
 | `Code Size` | [![Code size in bytes](https://img.shields.io/github/languages/code-size/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |
 | `Chat` | ![Discord](https://img.shields.io/discord/658176365396361265) |
+
 
 
 ## Get the updated code & documentation on XS code [here](https://cp.xscode.com/GACWR/OpenUBA)
