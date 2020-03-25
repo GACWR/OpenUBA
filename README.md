@@ -21,7 +21,7 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 | `Latest Release` | [![Downloads](https://img.shields.io/github/downloads/GACWR/OpenUBA/total.svg)](https://github.com/GACWR/OpenUBA/releases) |
 | `Top Language` | [![Top language](https://img.shields.io/github/languages/top/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |
 | `Code Size` | [![Code size in bytes](https://img.shields.io/github/languages/code-size/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |
-| `Chat` | ![Discord](https://img.shields.io/discord/658176365396361265) |
+| `Chat` | ![Discord](https://img.shields.io/discord/683561405928177737) |
 
 
 
