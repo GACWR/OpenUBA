@@ -23,8 +23,6 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 | `Code Size` | [![Code size in bytes](https://img.shields.io/github/languages/code-size/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |
 | `Chat` | ![Discord](https://img.shields.io/discord/683561405928177737) |
 
-<img src="images/framework.jpg" width="750px" />
-
 ## Goals
 To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 - Model Management
@@ -38,6 +36,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 - Flexible/open dataset support
 - Alerting/Ticketing system
 
+<img src="images/framework.jpg" width="750px" />
 
 
 ## Components
