@@ -28,6 +28,8 @@ save_dev:
 	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin master:main_dev_branch -v;
 test:
 	python3.7 -m unittest discover -s ./core -p "*_test.py" -v
+docker_build_server:
+	time docker build --file "./DockerfileServer" -t openuba-server .
 start_local_elk_mac:
 	brew services start logstash
 	brew services start elasticsearch
