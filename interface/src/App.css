@@ -46,7 +46,8 @@
   padding: 0;
   margin: 0;
 }
-/*
+
+
 .app {
   width: 960px;
   margin: 0 auto;
@@ -68,7 +69,7 @@ nav ul li a {
   color: white;
   text-decoration: none;
 } */
-/*
+
 .current {
   border-bottom: 4px solid white;
 }
@@ -79,4 +80,13 @@ h1 {
 
 p {
   margin-bottom: 15px;
-} */
+}
+
+.systemLogContainer{
+  margin-top: 10px;
+}
+
+
+.systemlogp{
+  color: #333;
+}
