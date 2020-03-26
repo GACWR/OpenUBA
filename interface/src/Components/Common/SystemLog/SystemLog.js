@@ -56,7 +56,7 @@ class SystemLog extends React.Component {
     try {
       setInterval(async () => {
         // async call to load system status
-        this.loadSystemStatus()
+        //this.loadSystemStatus()
       }, 1000);
     } catch(e) {
       console.log(e);
