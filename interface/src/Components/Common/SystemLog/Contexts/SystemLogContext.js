@@ -5,5 +5,5 @@ import React from 'react';
 @ddescription
 */
 export const SystemLogContext = React.createContext({
-  system_log_status: "yesyfnjnfkj"
+  system_log_status: 0
 });
