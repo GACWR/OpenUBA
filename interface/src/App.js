@@ -38,16 +38,29 @@ class App extends React.Component{
 
           {/*system log*/}
           <SystemLog></SystemLog>
+          <div className="container dashboardBaseText">
+            <div className="row">
+              <div className="col-sm">
+                <hr/>
+              </div>
+            </div>
+          </div>
           {/*end system log*/}
 
           <Content />
-          <p>test paragraph</p>
-          <a
-            className="App-link"
-            target="_blank"
-            rel="noopener noreferrer">
-            test
-          </a>
+          <div className="container dashboardBaseText">
+            <div className="row">
+              <div className="col-sm">
+                <hr/>
+                <a
+                  className="App-link lightGrayText"
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  Footer
+                </a>
+              </div>
+            </div>
+          </div>
         </header>
       </div>
     )

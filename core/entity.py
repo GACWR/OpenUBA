@@ -19,7 +19,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from database import DBRead, DBWrite
+from database import DBReadFile, DBWriteFile
 from typing import Dict, Tuple, Sequence, List
 
 
@@ -43,8 +43,9 @@ class EntitySet():
 @name GetAllEntities
 @description fetch all entities from the actual DB
 '''
-class GetAllEntities(DBRead):
+class GetAllEntities(DBReadFile):
     def get(self) -> dict:
         logging.info("read_user")
-        entities = self.read()
+        #TODO: fetch all entities from storage, should not compute all entities (inefficient)
+        #entities = self.read_file()
         return {"entity1": {}, "entity2": {}}

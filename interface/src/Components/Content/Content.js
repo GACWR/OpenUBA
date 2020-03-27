@@ -9,8 +9,8 @@ import Settings from './views/Settings/';
 
 
 /*
-@name
-@description
+@name Content
+@description content component containing the main navigation router
 This is because a Route will match for any URL that contains its path by default
 */
 const Content = () => (
