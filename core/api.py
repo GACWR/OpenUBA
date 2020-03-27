@@ -21,9 +21,11 @@ from display import Display
 from typing import Dict, Tuple, Sequence, List
 
 
+
 class APIType(Enum):
     GET_ALL_ENTITIES = "get_all_entities"
     GET_ALL_USERS = "get_all_users"
+    GET_HOME_SUMMARY = "get_home_summary"
     GET_SYSTEM_LOG = "get_system_log"
 
 
@@ -57,7 +59,6 @@ class PriorGetDisplay:
             display.set(system_display)
         else:
             raise Exception("Unsupported API Display type")
-
         return str(display.data)
 
 

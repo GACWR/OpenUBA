@@ -78,6 +78,8 @@ class CoreDataFrame():
     def __init__(self, df):
         self.data = df
 
+    def get_unique_id_set(self) -> None:
+        logging.info("CoreDataFrame: get_unique_id_set")
 
 '''
 @name LogSourceType

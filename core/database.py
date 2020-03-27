@@ -82,38 +82,39 @@ class DB():
 
 
 '''
-@name DBRead
-@description read a
+@name DBReadFile
+@description read a raw file
 '''
-class DBRead(DB):
-    def read(self):
-        logging.info("DBREAD")
-        pass
+class DBReadFile(DB):
+    def read_file(self, localtion: str) -> dict:
+        logging.info("DBReadFile")
+        return {}
 
 '''
-@name DBWrite
-@description
+@name DBWriteFile
+@description write a raw file
 '''
-class DBWrite(DB):
-    def write(self):
+class DBWriteFile(DB):
+    def write_file(self, content: str) -> bool:
         logging.info("DBREAD")
-        pass
+        return True
 
 
 '''
 @name WriteNewActorToDB
 @description
 '''
-class WriteNewActorToDB(DBWrite):
-    def set(self, actor_object):
+class WriteNewActorToDB(DBWriteFile):
+    def set(self, actor_object: dict) -> bool:
         logging.info("write_actor")
-        self.write()
+        self.write_file(str(actor_object))
+        return True
 
 '''
 @name ReadUserFromDB
 @description
 '''
-class ReadActorFromDB(DBRead):
-    def get(self, actor_object):
+class ReadActorFromDB(DBReadFile):
+    def get(self, location: str) -> dict:
         logging.info("read_actor")
-        self.read()
+        return self.read_file(location)

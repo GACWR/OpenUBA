@@ -25,11 +25,13 @@ from dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
 from enum import Enum
 from entity import GetAllEntities
-from user import GetAllUsers
+from user import GetAllUsers, ExtractAllUsersCSV, UserSet, User
+from pandas import DataFrame
 
 dataset_scheme: dict = {
     "mode": "test",
     "folder": "../test_datasets/toy_1",
+    "type": "local_folder",
     "data":
         [
             {
@@ -37,7 +39,8 @@ dataset_scheme: dict = {
                 "type": "csv",
                 "location_type": "disk",
                 "folder": "proxy",
-                "id_feature": "cs-username"
+                "id_feature": "cs-username",
+                "filename_scheme": "mm-dd-yyy"
             }
         ]
 }
@@ -70,33 +73,50 @@ class ProcessEngine():
     @name execute
     @description run the process engine, which loads data
     '''
-    def execute(self):
+    def execute(self) -> bool:
         logging.info("executing process engine")
         data_folder = dataset_scheme["folder"]
 
         # load data from scheme above
         for log_obj in dataset_scheme["data"]:
-            log_file_data: CoreDataFrame = self.process_data(data_folder, log_obj)
-            logging.warning("dataframe shape: "+str(log_file_data.data.shape))
 
-        # with the CoreDataFrame from process data, perform user/entity analysis/extraction
-        # get entities, and users
+            # TODO: load dataset index file holding dataset statuses
+
+            #TODO: load "unprocessed" datasets, mostly by scheme set above in dataset_scheme
+
+            # get the new dataframe
+            log_file_dataset_session: DatasetSession = self.process_data(data_folder, log_obj)
+
+            #TODO: with the CoreDataFrame from process data, perform user/entity analysis/extraction
+            extracted_users: UserSet = ExtractAllUsersCSV.get(log_file_dataset_session, log_obj)
+
+            # store the extracted users, or update the storage
+
+            #TODO: mark log_obj as processed afterwards
+
+
+        # get entities
         all_entities: dict = GetAllEntities().get()
-        all_users: dict = GetAllUsers().get()
 
+        # get users
+        all_users: dict = GetAllUsers().get()
 
         # after read the data, perform entity analysis using Entity types
 
         # adjust risk per entity
 
+        # return a report for execution round
+        return True
+
     '''
         @name process_data
         @param data_folder: str - the folder holding the files
         @param log_data_obj: dict - log config from the log set
+        @return DatasetSession
         @description update the current data in the system for each log type.
         This means that we will load a new set of records into the system
     '''
-    def process_data(self, data_folder: str, log_data_obj: dict) -> CoreDataFrame:
+    def process_data(self, data_folder: str, log_data_obj: dict) -> DatasetSession:
 
         logging.warning("Processing Data for : "+str(data_folder))
 
@@ -106,7 +126,7 @@ class ProcessEngine():
         folder = log_data_obj["folder"]
         id_feature = log_data_obj["id_feature"]
 
-        dataset_session = DatasetSession(log_type)
+        dataset_session: DatasetSession = DatasetSession(log_type)
 
         #read dataset, if any new
         if log_type == DataSourceFileType.CSV.value:
@@ -117,6 +137,7 @@ class ProcessEngine():
             logging.info( "Dataset Session size: "+str(dataset_size) )
 
 
-        # fetch actual dataframe
+        # fetch actual dataframe to return
         print("======GET DATAFRAME ======")
-        return dataset_session.get_dataset().get_dataframe()
+        #return dataset_session.get_dataset().get_dataframe()
+        return dataset_session

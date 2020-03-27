@@ -15,6 +15,7 @@
 
 .App-header {
   background-color: #282c34;
+  /* background-color: #ccc; */
   min-height: 100vh;
   /* display: flex; */
   flex-direction: column;
@@ -89,4 +90,16 @@ p {
 
 .systemlogp{
   color: #333;
+}
+
+.dashboardBaseText{
+  color: black;
+}
+
+.lightGrayText {
+  color: #ccc;
+}
+
+hr {
+  background-color: white;
 }

@@ -15,7 +15,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import json
-from database import DB, DBRead, DBType
+from database import DB, DBReadFile, DBType
 
 
 '''

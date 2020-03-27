@@ -1,7 +1,10 @@
 import React from 'react';
 import {SystemLogContext} from './Contexts/SystemLogContext'
 
-
+/*
+@name SystemLogStatus
+@ddescription consumer for system log status
+*/
 class SystemLogStatus extends React.Component {
   render(){
     console.log("rendering system log")
@@ -18,8 +21,8 @@ class SystemLogStatus extends React.Component {
 }
 
 /*
-@name
-@ddescription
+@name SystemLog
+@description component as provider for system log status
 */
 class SystemLog extends React.Component {
 

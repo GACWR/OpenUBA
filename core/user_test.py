@@ -16,6 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 
 import unittest
+from dataset import Dataset, DatasetSession, CoreDataFrame
 
 
 '''
@@ -24,4 +25,5 @@ import unittest
 '''
 class UserTestCase(unittest.TestCase):
     def setUp(self):
+        self.test_core_dataframe: CoreDataFrame =
         pass
