@@ -2,7 +2,7 @@ import React from 'react';
 
 
 /*
-@name
+@name Data
 @ddescription
 */
 const Data = () => (

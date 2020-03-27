@@ -59,11 +59,6 @@ class ExtractAllUsersCSV(DBReadFile):
         extracted_users: List = ExtractAllUsersCSV.extract_users(log_dataset_session, log_metadata_obj)
         return ExtractAllUsersCSV.from_raw_list(extracted_users)
 
-    @staticmethod
-    def from_raw_list(user_set: List) -> UserSet:
-        set_of_users: List = [User(u) for u in user_set]
-        return UserSet(set_of_users)
-
     '''
     @name extract_users
     @description return set of unique elements from a dataset session,
@@ -93,3 +88,14 @@ class ExtractAllUsersCSV(DBReadFile):
         logging.info( "ExtractAllUsersCSV, extract_users, user_set len of column: "+str(len(user_set)) )
 
         return user_set
+
+
+    '''
+    @name from_raw_list
+    @description accept a list of users, and return an actual UserSet
+    '''
+    @staticmethod
+    def from_raw_list(user_set: List) -> UserSet:
+        # iterate over user_set list
+        set_of_users: List = [User(u) for u in user_set]
+        return UserSet(set_of_users)
