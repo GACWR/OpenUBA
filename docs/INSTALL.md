@@ -53,7 +53,21 @@ make run_ui
 ```
 7. Point your browser to http://127.0.0.1:3000/ to view the web app running
 
+# React
+From the root folder, run the following command to initiate the react development server
+```
+make rd
+```
 
+If you run this command, it will build the static html from React
+```
+make rb
+```
+
+From this point, running the following command will server the static HTML
+```
+make uis # UI server
+```
 
 # Installing ELK on mac
 

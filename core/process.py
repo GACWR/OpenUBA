@@ -90,6 +90,8 @@ class ProcessEngine():
             #TODO: with the CoreDataFrame from process data, perform user/entity analysis/extraction
             extracted_users: UserSet = ExtractAllUsersCSV.get(log_file_dataset_session, log_obj)
 
+            logging.info("ProcessEngine, execute, extracted_users: "+str(extracted_users.users[:2]))
+
             # store the extracted users, or update the storage
             # extracted_users.set_of_users
             #TODO: mark log_obj as processed afterwards

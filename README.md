@@ -96,8 +96,8 @@ Go to [INSTALL.md](https://github.com/GACWR/OpenUBA/blob/master/docs/INSTALL.md)
 Our main development, and documentation branches are first pushed to our sponsorship repository, and then eventually pushed to our public free repository. To obtain the most updated code, and documentation for OpenUBA, subscribe to our XS Code repository.
 
 
-# Discord
-Discord channel: https://discord.gg/Ps9p9Wy
+## Discord (Main Server, and Dev Chat)
+Discord Server: https://discord.gg/Ps9p9Wy
 
-# Telegram
+## Telegram (Backup server, other communications)
 Telegram: https://t.me/GACWR

@@ -15,6 +15,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 from enum import Enum
+import json
 
 DB_CONFIG = {
     "type": "mongo"
@@ -74,7 +75,6 @@ class HDFSConnector(Connector):
 class DB():
     def __init__(self):
         print("db initiated")
-
         try:
             pass
         except Exception as e:
@@ -118,3 +118,24 @@ class ReadActorFromDB(DBReadFile):
     def get(self, location: str) -> dict:
         logging.info("read_actor")
         return self.read_file(location)
+
+'''
+@name WriteJSONFileFS
+@description write a json object to a file
+'''
+class WriteJSONFileFS():
+    def __init__(self, data: dict):
+        data_write: dict = data
+        with open('storage/users.json', 'w', encoding='utf-8') as f:
+            json.dump(data_write, f, ensure_ascii=False, indent=4)
+
+'''
+@name ReadJSONFileFS
+@description
+'''
+class ReadJSONFileFS():
+    def __init__(self, location: str) -> dict:
+        # Read JSON file
+        with open(location) as data_file:
+            data_loaded = json.load(data_file)
+            return data_loaded
