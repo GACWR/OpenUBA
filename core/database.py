@@ -16,6 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 import logging
 from enum import Enum
 import json
+import pandas as pd
 
 DB_CONFIG = {
     "type": "mongo"
@@ -124,7 +125,7 @@ class ReadActorFromDB(DBReadFile):
 @description write a json object to a file
 '''
 class WriteJSONFileFS():
-    def __init__(self, data: dict):
+    def __init__(self, data: dict, location: str):
         data_write: dict = data
         with open('storage/users.json', 'w', encoding='utf-8') as f:
             json.dump(data_write, f, ensure_ascii=False, indent=4)
@@ -134,8 +135,27 @@ class WriteJSONFileFS():
 @description
 '''
 class ReadJSONFileFS():
-    def __init__(self, location: str) -> dict:
+    def __init__(self, location: str):
         # Read JSON file
         with open(location) as data_file:
             data_loaded = json.load(data_file)
             return data_loaded
+
+'''
+@name WritePKLFileFS
+@description write a pickle file to a file
+'''
+class WritePKLFileFS():
+    def __init__(self, data: dict):
+        data_write: dict = data
+        with open('storage/users.json', 'w', encoding='utf-8') as f:
+            json.dump(data_write, f, ensure_ascii=False, indent=4)
+
+
+'''
+@name ReadPKLFileFS
+@description read a pickle file to a file
+'''
+class ReadPKLFileFS():
+    def __init__(self, location: str):
+        dataframe = pd.read_csv(location)

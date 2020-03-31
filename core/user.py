@@ -18,6 +18,7 @@ from database import DBReadFile, DBWriteFile, WriteNewActorToDB, ReadActorFromDB
 from dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
 import pandas as pd
+from pandas import DataFrame
 import numpy as np
 
 '''
@@ -50,7 +51,8 @@ class WriteUserSet(DBWriteFile):
     @staticmethod
     def write(user_set: UserSet):
         data: dict = {"user": [u.user_id for u in user_set.users]}
-        WriteJSONFile(data)
+        users_file_location: str = 'storage/users.json'
+        WriteJSONFileFS(data, users_file_location)
 
 '''
 @name GetAllUser
