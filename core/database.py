@@ -120,6 +120,9 @@ class ReadActorFromDB(DBReadFile):
         logging.info("read_actor")
         return self.read_file(location)
 
+
+
+
 '''
 @name WriteJSONFileFS
 @description write a json object to a file
@@ -127,7 +130,7 @@ class ReadActorFromDB(DBReadFile):
 class WriteJSONFileFS():
     def __init__(self, data: dict, location: str):
         data_write: dict = data
-        with open('storage/users.json', 'w', encoding='utf-8') as f:
+        with open(location, 'w', encoding='utf-8') as f:
             json.dump(data_write, f, ensure_ascii=False, indent=4)
 
 '''
@@ -139,16 +142,16 @@ class ReadJSONFileFS():
         # Read JSON file
         with open(location) as data_file:
             data_loaded = json.load(data_file)
-            return data_loaded
+            self.data: dict = data_loaded
 
 '''
 @name WritePKLFileFS
 @description write a pickle file to a file
 '''
 class WritePKLFileFS():
-    def __init__(self, data: dict):
+    def __init__(self, data: dict, location: str):
         data_write: dict = data
-        with open('storage/users.json', 'w', encoding='utf-8') as f:
+        with open(location, 'w', encoding='utf-8') as f:
             json.dump(data_write, f, ensure_ascii=False, indent=4)
 
 

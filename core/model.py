@@ -26,7 +26,9 @@ import sys
 import os
 import shutil
 import io
+from database import WriteJSONFileFS, ReadJSONFileFS
 
+MODELS_LIBRARY_FILE_LOCATION = 'storage/models.json'
 
 
 '''
@@ -34,8 +36,7 @@ import io
 @description manage model library
 '''
 class ModelLibrary():
-    @staticmethod
-    def remove_model() -> bool:
+    def remove_model(self) -> bool:
         path = "model_library/model_test"
         try:
             #os.rmdir(path)
@@ -46,12 +47,10 @@ class ModelLibrary():
             logging.error(e)
             return False
 
-    @staticmethod
-    def store_fetched_model():
+    def store_fetched_model(self):
         logging.info()
 
-    @staticmethod
-    def run_temp_model():
+    def run_temp_model(self):
         ''' temporary files
 
         import tempfile
@@ -63,8 +62,8 @@ class ModelLibrary():
         '''
         pass
 
-    @staticmethod
-    def fetch_model():
+
+    def fetch_model(self):
 
         logging.error("fetching model...")
         url = "http://localhost:5000/display/test/"
@@ -92,24 +91,35 @@ class ModelLibrary():
             text = local_model.read()
             logging.warning(text)
 
+        # write model test code
         f = open('model_library/model_test/model_test.py', 'w')
-        f.write("def func_try():\n\tprint(\"model_test testing...\")\n\treturn \"return from model_Test\"")
+        f.write("def execute():\n\tprint(\"model_test testing...\")\n\treturn \"return from model_Test\"")
         f.close()
 
         f = open('model_library/model_test/__init__.py', 'w')
-        f.write("from .model_test import func_try")
+        f.write("from .model_test import execute")
         f.close()
 
         # insert at 1, 0 is the script path (or '' in REPL)
-        sys.path.insert(1, 'model_library/model_test')
+        sys.path.insert(1, 'model_library/'+str(model_id))
 
         import model_test
-        return model_test.func_try()
+        return model_test.execute()
 
+    def run_model(self):
+        pass
 
+    def load_model(self, model_id: str):
 
+        #TODO verify, model_id is valid
 
+        #TODO verify contents of model contents
 
+        # insert at 1, 0 is the script path (or '' in REPL)
+        sys.path.insert(1, 'model_library/'+str(model_id))
+
+        import model_test
+        return model_test.execute()
 
 
 '''
@@ -117,9 +127,9 @@ class ModelLibrary():
 @description to alter deployed models set
 '''
 class ModelDeployment():
-    def __init__(self):
+    def __init__(self, deployment_id: str):
         logging.info("Model Deployment made")
-
+        self.did = deployment_id
 
 '''
 @Session
@@ -141,11 +151,45 @@ class ModelSession():
         logging.info("Model Session %s: finishing job")
 
 
-'''
-@SimpleAggregation
-@description invoke a simple count model to return results for a set of data
-'''
-class SimpleAggregation(ModelSession):
 
+'''
+@name ModelEngine
+@description model engine runs all deployed models
+'''
+class ModelEngine():
     def __init__(self):
-        logging.info("SimpleAggregation Session init")
+        self.library: ModelLibrary = ModelLibrary()
+
+        # check for model metadata storage
+        try:
+            '''
+            import os.path
+            from os import path
+            path.exists()
+            '''
+            json_reader = ReadJSONFileFS(MODELS_LIBRARY_FILE_LOCATION)
+            self.models: dict = json_reader.data
+            logging.info("Model Engine:"+str(self.models.keys()))
+        except Exception as e:
+            logging.error("ModelEngine: ReadJSONFileFS failed: "+str(e))
+            self.models: dict = {
+                "model_test": {
+                    "model_name": "model_test",
+                    "enabled": True
+                }
+            }
+            WriteJSONFileFS(self.models, MODELS_LIBRARY_FILE_LOCATION)
+            pass
+
+    def execute(self):
+        #iterare over models
+        for model in self.models.keys():
+            logging.info("model engine execute model: "+str(model))
+            model_info: dict = self.models[model]
+
+            #if model is enable, load model, and run it
+            if model_info["enabled"]:
+                logging.info("Model enabled: "+str(model_info["model_name"]))
+                model_session = ModelSession()
+            else:
+                pass

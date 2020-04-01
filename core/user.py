@@ -21,6 +21,7 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 
+USERS_FILE_LOCATION = 'storage/users.json'
 '''
 @name User
 @description fundamental description of
@@ -39,6 +40,7 @@ class UserSet():
     def __init__(self, set_of_users: List):
         self.users: List = set_of_users
 
+
 '''
 @name WriteUserSet
 @description write a json object to a file
@@ -51,8 +53,20 @@ class WriteUserSet(DBWriteFile):
     @staticmethod
     def write(user_set: UserSet):
         data: dict = {"user": [u.user_id for u in user_set.users]}
-        users_file_location: str = 'storage/users.json'
+        users_file_location: str = USERS_FILE_LOCATION
         WriteJSONFileFS(data, users_file_location)
+
+'''
+@name ReadUserSet
+@description Read a json object to a file
+'''
+class ReadUserSet(DBWriteFile):
+    @staticmethod
+    def read(user_set: UserSet) -> UserSet:
+        users_file_location: str = USERS_FILE_LOCATION
+        user_dict: dict = ReadJSONFileFS(users_file_location).data
+        return UserSet(list(user_dict.keys()))
+
 
 '''
 @name GetAllUser
@@ -74,7 +88,10 @@ class ExtractAllUsersCSV(DBReadFile):
     def get(log_dataset_session: DatasetSession, log_metadata_obj: dict) -> UserSet:
         logging.info("extracting all users")
         extracted_users: List = ExtractAllUsersCSV.extract_users(log_dataset_session, log_metadata_obj)
+
+        # convert list to
         user_set: UserSet = ExtractAllUsersCSV.from_raw_list(extracted_users)
+
         # TODO: write extracted users
         WriteUserSet.write(user_set)
         return user_set
