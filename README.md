@@ -5,7 +5,7 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 | Status Type | Status |
 | --- | --- |
 | `Master Build` | [![Build Status](https://travis-ci.org/GACWR/OpenUBA.svg?branch=master)](https://travis-ci.org/GACWR/OpenUBA) |
-| `Development Build` | [![Build Status](https://travis-ci.org/gacwr/OpenUBA.svg?branch=main_dev_branch)](https://travis-ci.org/gacwr/OpenUBA) |
+| `Development Build` | [![Build Status](https://travis-ci.org/GACWR/OpenUBA.svg?branch=main_dev_branch)](https://travis-ci.org/GACWR/OpenUBA) |
 | `Issues` | [![Issues](https://img.shields.io/github/issues/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/issues) |
 | `Last Commit` | [![Last commit](https://img.shields.io/github/last-commit/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/commits/master) |
 | `UI Docker Stars` | [![Docker Stars](https://img.shields.io/docker/stars/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
@@ -96,8 +96,8 @@ Go to [INSTALL.md](https://github.com/GACWR/OpenUBA/blob/master/docs/INSTALL.md)
 Our main development, and documentation branches are first pushed to our sponsorship repository, and then eventually pushed to our public free repository. To obtain the most updated code, and documentation for OpenUBA, subscribe to our XS Code repository.
 
 
-# Discord
-Discord channel: https://discord.gg/Ps9p9Wy
+## Discord (Main Server, and Dev Chat)
+Discord Server: https://discord.gg/Ps9p9Wy
 
-# Telegram
+## Telegram (Backup server, other communications)
 Telegram: https://t.me/GACWR

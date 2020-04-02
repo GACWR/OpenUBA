@@ -28,6 +28,7 @@ from test import Test
 from process import ProcessEngine
 from api import API
 from display import Display
+from model import ModelEngine
 import unittest
 import trace, sys
 import coloredlogs
@@ -61,14 +62,35 @@ def display(display_type):
 @server.route("/disable_model/<string:model_name>/")
 def delete_model(model_name):
     logging.warning("disabling model from api")
-    return str(ModelLibrary.remove_model())
+    return str(ModelLibrary().remove_model())
 
 '''
-@description endpoint to fetch a model
+@description endpoint to install a model
 '''
-@server.route("/fetch_model/<string:model_name>/")
-def fetch_model(model_name):
-    return ModelLibrary.fetch_model()
+@server.route("/install_model/<string:model_name>/")
+def install_model(model_name):
+    return ModelLibrary().install_model()
+
+
+'''
+@name scheduler_run
+@description function to start process engine
+'''
+def scheduler_run(name):
+    logging.info("scheduler_run: "+str(name))
+
+    #process engine, ingests new data
+    process_engine_instance = ProcessEngine()
+    process_engine_instance.execute()
+
+    # model engine, performs each enabled model
+    model_engine_instance = ModelEngine()
+    model_engine_instance.execute()
+
+    # risk engine
+
+    # anomaly engine
+
 
 
 '''
@@ -126,26 +148,6 @@ class Core:
         self.display = Display()
         self.display.get_system_display()
 
-
-
-'''
-@name scheduler_run
-@description function to start process engine
-'''
-def scheduler_run(name):
-    logging.info("scheduler_run: "+str(name))
-
-    #process engine
-    process_engine_instance = ProcessEngine()
-    process_engine_instance.execute()
-
-
-
-    # model engine
-
-    # risk engine
-
-    # anomaly engine
 
 
 

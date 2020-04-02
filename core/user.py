@@ -14,19 +14,21 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from database import DBReadFile, DBWriteFile, WriteNewActorToDB, ReadActorFromDB
+from database import DBReadFile, DBWriteFile, WriteNewActorToDB, ReadActorFromDB, WriteJSONFileFS, ReadJSONFileFS
 from dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
 import pandas as pd
+from pandas import DataFrame
 import numpy as np
 
+USERS_FILE_LOCATION = 'storage/users.json'
 '''
 @name User
 @description fundamental description of
 '''
 class User:
     def __init__(self, user_id):
-        logging.info("user initiated")
+        logging.info("user initiated: "+str(user_id))
         self.user_id = user_id
 
 
@@ -36,7 +38,36 @@ class User:
 '''
 class UserSet():
     def __init__(self, set_of_users: List):
-        self.set_of_users: List = set_of_users
+        self.users: List = set_of_users
+
+
+'''
+@name WriteUserSet
+@description write a json object to a file
+
+import json
+with open('data.json', 'w', encoding='utf-8') as f:
+    json.dump(data, f, ensure_ascii=False, indent=4)
+'''
+class WriteUserSet(DBWriteFile):
+    @staticmethod
+    def write(user_set: UserSet):
+        data: dict = {"user": [u.user_id for u in user_set.users]}
+        users_file_location: str = USERS_FILE_LOCATION
+        WriteJSONFileFS(data, users_file_location)
+
+'''
+@name ReadUserSet
+@description Read a json object to a file
+'''
+class ReadUserSet(DBReadFile):
+    @staticmethod
+    def read(user_set: UserSet) -> UserSet:
+        users_file_location: str = USERS_FILE_LOCATION
+        user_dict: dict = ReadJSONFileFS(users_file_location).data
+        return UserSet(list(user_dict.keys()))
+
+
 '''
 @name GetAllUser
 @description fetch all users from the actual DB
@@ -57,7 +88,13 @@ class ExtractAllUsersCSV(DBReadFile):
     def get(log_dataset_session: DatasetSession, log_metadata_obj: dict) -> UserSet:
         logging.info("extracting all users")
         extracted_users: List = ExtractAllUsersCSV.extract_users(log_dataset_session, log_metadata_obj)
-        return ExtractAllUsersCSV.from_raw_list(extracted_users)
+
+        # convert list to
+        user_set: UserSet = ExtractAllUsersCSV.from_raw_list(extracted_users)
+
+        # TODO: write extracted users
+        WriteUserSet.write(user_set)
+        return user_set
 
     '''
     @name extract_users
@@ -86,7 +123,7 @@ class ExtractAllUsersCSV(DBReadFile):
         logging.info( "ExtractAllUsersCSV, extract_users, id_column, len of column: "+str(len(id_column)) )
         user_set: List = np.unique( log_file_dataframe[ log_metadata_obj["id_feature"] ].fillna("NA") )
         logging.info( "ExtractAllUsersCSV, extract_users, user_set len of column: "+str(len(user_set)) )
-
+        logging.error(user_set)
         return user_set
 
 

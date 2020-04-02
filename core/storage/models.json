@@ -1,0 +1,17 @@
+{
+    "model_test": {
+        "model_name": "model_test",
+        "enabled": true,
+        "root": "ANJKD8aioh8wonsLAS9HWOI",
+        "components": [
+            {
+                "filename": "__init__.py",
+                "hash": "TESTHASH"
+            },
+            {
+                "filename": "model.py",
+                "hash": "TESTHASH"
+            }
+        ]
+    }
+}

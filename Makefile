@@ -10,13 +10,22 @@ check:
 	database.py \
 	dataset.py \
 	entity.py \
+	entity_test.py \
+	encode.py \
+	encode_test.py \
 	model.py \
 	process.py \
+	process_test.py \
 	risk.py \
 	riskmanager.py \
 	display.py \
 	user.py \
+	user_test.py \
+	utility.py \
 	alert.py \
+	api.py \
+	hash.py \
+	hash_test.py \
 	--ignore-missing-imports ;
 uis: #ui server
 	cd interface/ ; node server.js
@@ -25,7 +34,7 @@ rd: # react development server
 rb: # react build
 	cd interface/ ; npm run build
 save_dev:
-	git add * -v ; git commit -am "saved from makefile to main_dev_branch" -v ; git push origin master:main_dev_branch -v;
+	git add * -v ; git commit -am ${M}-v ; git push origin master:main_dev_branch -v;
 test:
 	python3.7 -m unittest discover -s ./core -p "*_test.py" -v
 docker_build_server:
