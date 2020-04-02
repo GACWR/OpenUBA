@@ -67,6 +67,10 @@ TEST_MODEL_LIBRARY_RESPONSE: dict = {
     }
 }
 
+'''
+@name Model
+@description internal representation of a Model
+'''
 class Model():
     def __init__(self, metadata: dict):
         self.data: dict = metadata
