@@ -10,13 +10,22 @@ check:
 	database.py \
 	dataset.py \
 	entity.py \
+	entity_test.py \
+	encode.py \
+	encode_test.py \
 	model.py \
 	process.py \
+	process_test.py \
 	risk.py \
 	riskmanager.py \
 	display.py \
 	user.py \
+	user_test.py \
+	utility.py \
 	alert.py \
+	api.py \
+	hash.py \
+	hash_test.py \
 	--ignore-missing-imports ;
 uis: #ui server
 	cd interface/ ; node server.js

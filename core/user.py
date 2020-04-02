@@ -60,7 +60,7 @@ class WriteUserSet(DBWriteFile):
 @name ReadUserSet
 @description Read a json object to a file
 '''
-class ReadUserSet(DBWriteFile):
+class ReadUserSet(DBReadFile):
     @staticmethod
     def read(user_set: UserSet) -> UserSet:
         users_file_location: str = USERS_FILE_LOCATION

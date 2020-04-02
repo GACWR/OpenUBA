@@ -1,5 +1,5 @@
 {
-    "model_test": {
+    "session": {
         "model_name": "model_test",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
@@ -13,5 +13,6 @@
                 "hash": "TESTHASH"
             }
         ]
-    }
+    },
+    "timestamp": "2020-04-02 00:19:39"
 }

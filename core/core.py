@@ -65,11 +65,11 @@ def delete_model(model_name):
     return str(ModelLibrary().remove_model())
 
 '''
-@description endpoint to fetch a model
+@description endpoint to install a model
 '''
-@server.route("/fetch_model/<string:model_name>/")
-def fetch_model(model_name):
-    return ModelLibrary().fetch_model()
+@server.route("/install_model/<string:model_name>/")
+def install_model(model_name):
+    return ModelLibrary().install_model()
 
 
 '''

@@ -96,10 +96,15 @@ class DBReadFile(DB):
 @description write a raw file
 '''
 class DBWriteFile(DB):
-    def write_file(self, content: str) -> bool:
-        logging.info("DBREAD")
-        return True
-
+    def write_file(self, content: str, location: str, write_type: str = 'a') -> bool:
+        logging.info("DBReadFile")
+        try:
+            with open(location, write_type) as file:
+                file.write(content)
+                return True
+        except Exception as e:
+            logging.error(str(e))
+            return False
 
 '''
 @name WriteNewActorToDB
@@ -108,7 +113,7 @@ class DBWriteFile(DB):
 class WriteNewActorToDB(DBWriteFile):
     def set(self, actor_object: dict) -> bool:
         logging.info("write_actor")
-        self.write_file(str(actor_object))
+        self.write_file(str(actor_object), "storage/TESTDBWRITENEWACTOR")
         return True
 
 '''
