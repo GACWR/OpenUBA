@@ -16,7 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 
 import unittest
-from hash import Hash, DataHasher, FileHasher
+from hash import Hash, HashData, HashFile, HashLargeFile
 
 '''
 @name HashTestCase
@@ -29,5 +29,5 @@ class HashTestCase(unittest.TestCase):
     def test_hash(self):
         starting_string: str = "test"
         expected_result = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-        data_hasher = DataHasher(starting_string.encode())
+        data_hasher = HashData(starting_string.encode())
         self.assertEqual(data_hasher.result, expected_result)

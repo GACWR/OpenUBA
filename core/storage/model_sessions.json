@@ -6,13 +6,17 @@
         "components": [
             {
                 "filename": "__init__.py",
-                "hash": "TESTHASH"
+                "data_hash": "f506fd5ba52314440c0d9ff1564b6d1e2a25ffafaa4e532c248b3fa95e89077e",
+                "file_hash": "08f1ee23338fe0b64c61f9052b6754fbbc14ebb428f5975c91591f1b7a27897b",
+                "file_payload": "ZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
             },
             {
-                "filename": "model.py",
-                "hash": "TESTHASH"
+                "filename": "MODEL.py",
+                "data_hash": "3498bc5390156b8e9d67e1f3f0f1e9b5f609bc19856d1ed506126c3cd643e6dd",
+                "file_hash": "d6a5ad1c381080000409385b347c73321f8e307a08b16298da2d725a33cd7a7d",
+                "file_payload": "ZGVmIGV4ZWN1dGUoKToKCXByaW50KCJtb2RlbF90ZXN0IHRlc3RpbmcuLi4iKQoJcmV0dXJuX29iamVjdDogZGljdCA9IHt9CgoJZm9yIHggaW4gcmFuZ2UoMCwxMDAwMDApOgoJCXJldHVybl9vYmplY3RbeF0gPSB7CgkJCSJ2YWx1ZSI6ICJ0ZXN0IgoJCX0KCglwcmludCgibW9kZWwgZW5kIHJ1bi4uIikKCXJldHVybiByZXR1cm5fb2JqZWN0Cg=="
             }
         ]
     },
-    "timestamp": "2020-04-02 00:19:39"
+    "timestamp": "2020-04-09 01:29:16"
 }

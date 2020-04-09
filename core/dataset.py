@@ -88,7 +88,7 @@ class CoreDataFrame():
 class LogSourceType(Enum):
     DISK = "disk"
     HDFS = "hdfs"
-
+    ES = "es"
 
 '''
 @name DatasetPrior

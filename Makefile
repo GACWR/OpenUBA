@@ -27,6 +27,8 @@ check:
 	hash.py \
 	hash_test.py \
 	--ignore-missing-imports ;
+describe_model:
+	cd core/ ; python3.7 core.py describe_model ${model_name};
 uis: #ui server
 	cd interface/ ; node server.js
 rd: # react development server

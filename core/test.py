@@ -12,11 +12,11 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
-
+# TODO: REMOVE THIS FILE AS EACH MODULE HAS A _test.py file
 
 import unittest
 
-from dataset_test import DatasetCSVLocationTestCase, DatasetSessionDataFrameShapTestCase
+from dataset_test import DatasetCSVLocationTestCase, DatasetSessionDataFrameShapeTestCase
 from process_test import DataSourceTestCase
 
 '''
@@ -25,11 +25,10 @@ from process_test import DataSourceTestCase
 class DatasetTest():
     @staticmethod
     def Run():
-
         # dataset related file
         test_cases = [
                         DatasetCSVLocationTestCase,
-                        DatasetSessionDataFrameShapTestCase,
+                        DatasetSessionDataFrameShapeTestCase,
                         DataSourceTestCase
                      ]
 

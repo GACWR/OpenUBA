@@ -27,23 +27,9 @@ from enum import Enum
 from entity import GetAllEntities
 from user import GetAllUsers, ExtractAllUsersCSV, UserSet, User
 from pandas import DataFrame
+from database import ReadJSONFileFS
 
-dataset_scheme: dict = {
-    "mode": "test",
-    "folder": "../test_datasets/toy_1",
-    "type": "local_folder",
-    "data":
-        [
-            {
-                "log_name": "proxy",
-                "type": "csv",
-                "location_type": "disk",
-                "folder": "proxy",
-                "id_feature": "cs-username",
-                "filename_scheme": "mm-dd-yyy"
-            }
-        ]
-}
+DATASET_SCEME_URL: str = "./storage/scheme.json"
 
 '''
 @name DataSourceFileType
@@ -53,6 +39,7 @@ class DataSourceFileType(Enum):
     CSV = "csv"
     FLAT = "flat"
     PARQUET = "parquet"
+    JSON = "json"
 
 
 '''
@@ -75,10 +62,11 @@ class ProcessEngine():
     '''
     def execute(self) -> bool:
         logging.info("executing process engine")
-        data_folder = dataset_scheme["folder"]
+        loaded_data_scheme: dict = ReadJSONFileFS(DATASET_SCEME_URL).data
+        data_folder = loaded_data_scheme["folder"]
 
         # load data from scheme above
-        for log_obj in dataset_scheme["data"]:
+        for log_obj in loaded_data_scheme["data"]:
 
             # TODO: load dataset index file holding dataset statuses
 
@@ -106,7 +94,6 @@ class ProcessEngine():
 
         # adjust risk per entity
 
-        # return a report for execution round
         return True
 
     '''
@@ -136,9 +123,11 @@ class ProcessEngine():
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
             dataset_size: Tuple = dataset_session.get_size()
             logging.info( "Dataset Session size: "+str(dataset_size) )
+        elif log_type == DataSourceFileType.FLAT.value:
+            pass
+        elif log_type == DataSourceFileType.PARQUET.value:
+            pass
+        elif log_type == DataSourceFileType.JSON.value:
+            pass
 
-
-        # fetch actual dataframe to return
-        print("======GET DATAFRAME ======")
-        #return dataset_session.get_dataset().get_dataframe()
         return dataset_session

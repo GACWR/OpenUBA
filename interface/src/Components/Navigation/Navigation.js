@@ -23,9 +23,6 @@ const Navbar = () => (
       <NavLink to='/home' className="nav-item nav-link active" href="#">
         Home <span className="sr-only">(current)</span>
       </NavLink>
-      <NavLink to='/data' className="nav-item nav-link">
-        Data
-      </NavLink>
       <NavLink to='/models' className="nav-item nav-link">
         Models
       </NavLink>

@@ -23,7 +23,7 @@ from flask_cors import CORS
 import logging
 import threading
 import time
-from model import ModelLibrary
+from model import ModelLibrary, DescribeModel
 from test import Test
 from process import ProcessEngine
 from api import API
@@ -152,7 +152,16 @@ class Core:
 
 
 if __name__ == "__main__":
-    print("Core Start")
-    Test.Run()
-    core: Core = Core()
-    core.initiate()
+    print("[Starting OpenUBA]")
+    print(sys.argv)
+    # TODO: refactor for more robust parameters
+    if len(sys.argv) > 2:
+        if sys.argv[1] == "describe_model":
+            model_name: str = str(sys.argv[2])
+            model_description: dict = DescribeModel( model_name ).describe()
+            for component in model_description.keys():
+                logging.info(str(component) + " : " + str(model_description[component]))
+    else:
+        Test.Run() # TODO: remove suite invocation
+        core: Core = Core()
+        core.initiate()
