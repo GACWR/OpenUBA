@@ -2,3 +2,4 @@ core/__pycache__/*
 core/.mypy_cache/*
 /core/__pycache__/*
 /core/.mypy_cache/*
+*pycache*

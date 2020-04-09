@@ -1,0 +1,16 @@
+{
+    "mode": "test",
+    "folder": "../test_datasets/toy_1",
+    "type": "local_folder",
+    "data":
+        [
+            {
+                "log_name": "proxy",
+                "type": "csv",
+                "location_type": "disk",
+                "folder": "proxy",
+                "id_feature": "cs-username",
+                "filename_scheme": "mm-dd-yyy"
+            }
+        ]
+}

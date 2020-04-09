@@ -19,10 +19,20 @@ import base64
 @description
 '''
 class Base64():
-    def encode(self, content: str):
-        return base64.b64encode(content.encode())
-    def decode(self, content: str):
-        return base64.b64decode(content.encode())
+    def __init__(self, content: str = ""):
+        self.content = content
+
+    def encode(self, content: str = "") -> bytes:
+        if content == "":
+            return base64.b64encode( self.content.encode() )
+        else:
+            return base64.b64encode( content.encode() )
+
+    def decode(self, content: str = "") -> bytes:
+        if content == "":
+            return base64.b64decode( self.content.encode() )
+        else:
+            return base64.b64decode( content.encode() )
 
 '''
 @name B64EncodeFile
@@ -30,9 +40,10 @@ class Base64():
 '''
 class B64EncodeFile(Base64):
     def __init__(self, location: str):
-        super().__init__()
         data = open(location, "r").read()
         self.result = self.encode(data)
+        super().__init__()
+
 
 '''
 @name B64DecodeFile

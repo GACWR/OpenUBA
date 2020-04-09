@@ -35,15 +35,16 @@ class DatasetCSVLocationTestCase(unittest.TestCase):
         self.csv = CSV(self.parent_folder,
                        self.folder,
                        self.location_type)
+                       
     def test_csv_init(self):
         self.assertEqual(self.csv.file_location,
                          self.parent_folder+"/"+self.folder)
 
 '''
-@name DatasetSessionDataFrameShapTestCase
+@name DatasetSessionDataFrameShapeTestCase
 @description all unit tests for DatasetSession dataframe get shape
 '''
-class DatasetSessionDataFrameShapTestCase(unittest.TestCase):
+class DatasetSessionDataFrameShapeTestCase(unittest.TestCase):
     def setUp(self):
          self.dataset_session = DatasetSession("csv")
          self.dataset_session.dataset = CSV("", "", "")
