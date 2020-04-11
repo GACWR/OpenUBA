@@ -19,7 +19,8 @@ from user import GetAllUsers
 from enum import Enum
 from display import Display
 from typing import Dict, Tuple, Sequence, List
-
+import requests
+import json
 
 
 class APIType(Enum):
@@ -72,3 +73,25 @@ class API:
     def get_display_of_type(type: str) -> str:
         logging.info("API get_display type: "+str(type))
         return "test"
+
+    @staticmethod
+    def send_get_request(url: str, payload: dict, headers: dict):
+        return requests.get(url,
+                            data=json.dumps(payload),
+                            headers=headers),
+
+class LibraryAPI():
+    def __init__(self):
+        logging.info("Library API")
+        self.server: str = "http://gacwr.org"
+
+
+    def install(self, model_name: str):
+        url = self.server+"/api/"
+        payload = {
+            "test": "test"
+        }
+        headers = {
+            "content-type": "application/json"
+        }
+        return API.send_get_request(url, payload, headers)[0]

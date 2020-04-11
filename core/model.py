@@ -23,39 +23,18 @@ import os.path
 from os import path
 import shutil
 import io
+import json
 from database import WriteJSONFileFS, ReadJSONFileFS
 from user import GetAllUsers, UserSet, User
 from encode import Base64, B64EncodeFile, B64DecodeFile
 from hash import Hash, HashData, HashFile
 from utility import Timestamp
 from typing import List
-
+from api import LibraryAPI
 
 MODELS_LIBRARY_FILE_LOCATION: str = 'storage/models.json'
 MODELS_SESSION_FILE_LOCATION: str = 'storage/model_sessions.json'
 
-TEST_MODEL_LIBRARY_RESPONSE: dict = {
-    "models": {
-        "model_test": {
-        "model_name": "model_test",
-        "root": "ANJKD8aioh8wonsLAS9HWOI",
-        "components": [
-            {
-                "filename": "__init__.py",
-                "data_hash": "f506fd5ba52314440c0d9ff1564b6d1e2a25ffafaa4e532c248b3fa95e89077e",
-                "file_hash": "08f1ee23338fe0b64c61f9052b6754fbbc14ebb428f5975c91591f1b7a27897b",
-                "file_payload": "ZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
-            },
-            {
-                "filename": "MODEL.py",
-                "data_hash": "3498bc5390156b8e9d67e1f3f0f1e9b5f609bc19856d1ed506126c3cd643e6dd",
-                "file_hash": "d6a5ad1c381080000409385b347c73321f8e307a08b16298da2d725a33cd7a7d",
-                "file_payload": "ZGVmIGV4ZWN1dGUoKToKCXByaW50KCJtb2RlbF90ZXN0IHRlc3RpbmcuLi4iKQoJcmV0dXJuX29iamVjdDogZGljdCA9IHt9CgoJZm9yIHggaW4gcmFuZ2UoMCwxMDAwMDApOgoJCXJldHVybl9vYmplY3RbeF0gPSB7CgkJCSJ2YWx1ZSI6ICJ0ZXN0IgoJCX0KCglwcmludCgibW9kZWwgZW5kIHJ1bi4uIikKCXJldHVybiByZXR1cm5fb2JqZWN0Cg=="
-            }
-        ]
-        }
-    }
-}
 
 '''
 @name Model
@@ -125,7 +104,7 @@ class ModelEngine():
 '''
 class ModelLibrary():
     def __init__(self):
-        self.server: str = "http://localhost::5000"
+        self.api = LibraryAPI()
 
     '''
     @name
@@ -151,8 +130,12 @@ class ModelLibrary():
         logging.error("installing model...")
 
         # TODO: fetch model from API endpoint
-        url = self.server+"/API/fetch_model/"
+        install_response = self.api.install(model.data["model_name"])
 
+        logging.info("install_model() response: "+str(install_response.content.decode()))
+        logging.info("install_model() raw: "+str(install_response.raw.headers))
+
+        # Create folder
         access_rights = 0o755
         path = "model_library/"+str(model.data["model_name"])+"/"
         try:
@@ -160,11 +143,12 @@ class ModelLibrary():
         except Exception as e:
             logging.error(e)
 
-        model_object: dict = TEST_MODEL_LIBRARY_RESPONSE["models"][model.data["model_name"]]
+        # parse model response object
+        model_object: dict = json.loads(install_response.content.decode())["models"][model.data["model_name"]]
 
         logging.warning("install_model(), attempting to store: "+str(model.data["model_name"]))
 
-        # TODO: run the test models
+        # TODO: store model
         self.store_model(model_object)
 
 

@@ -12,7 +12,7 @@ class SystemLogStatus extends React.Component {
       <SystemLogContext.Consumer>
         {({system_log_status}) => (
           <p className="systemlogp">
-            System Status: {system_log_status}
+            System Status From Server: {system_log_status}
           </p>
         )}
       </SystemLogContext.Consumer>

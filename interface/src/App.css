@@ -87,9 +87,18 @@ p {
   margin-top: 10px;
 }
 
+.systemLogContainer .row #system_log .card .card-body {
+  height: 5vh;
+  border: 1px solid black;
+  padding: 5px !important;
+}
+
 
 .systemlogp{
   color: #333;
+  margin: 0px;
+  padding: 0px;
+  font-size: 18px;
 }
 
 .dashboardBaseText{
