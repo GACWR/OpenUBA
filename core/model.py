@@ -77,9 +77,11 @@ class ModelEngine():
 
     '''
     @name execute
-    @description
+    @description execute model job
     '''
     def execute(self):
+
+        # TODO: reference model schedule, right now, this iterates over models sequentially
         #iterare over models in library
         for model in self.models.keys():
             logging.info("model engine execute model: "+str(model))
@@ -261,12 +263,12 @@ class ModelSession():
                     # TODO: handle error
                     logging.error("Model Failed File Verification: "+str(model_instance.data))
                     # TODO: remove model
-                    # self.remove_model()
+                    self.remove_model()
             else:
                 # TODO: handle error
                 logging.error("Model Failed Encoded Verification: "+str(model_instance.data))
                 # TODO: remove model
-                # self.remove_model()
+                self.remove_model()
         else:
             logging.info("Model Session, model [IS] installed: "+str(model_instance.data["model_name"]))
             if VerifyModel(model_instance).verify_model_files():
@@ -276,7 +278,7 @@ class ModelSession():
                 # TODO: handle error
                 logging.error("Model Failed File Verification: "+str(model_instance.data))
                 # TODO: remove model
-                # self.remove_model()
+                self.remove_model()
 
 '''
 @name VerifyModel

@@ -14,6 +14,10 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 */
 import React from 'react';
 import {HomeSummaryContext} from './Contexts/HomeSummaryContext'
+import Badge from 'react-bootstrap/Badge';
+import Spinner from 'react-bootstrap/Spinner';
+import ListGroup from 'react-bootstrap/ListGroup';
+
 
 /*
 @name MonitoredUsers
@@ -21,10 +25,16 @@ import {HomeSummaryContext} from './Contexts/HomeSummaryContext'
 */
 class MonitoredUsersWidget extends React.Component {
   render(){
+    //          {/*<span className="badge badge-info">{monitored_users_count}</span>*/}
+
     return (
       <HomeSummaryContext.Consumer>
         {({monitored_users_count}) => (
-          <span className="badge badge-info">{monitored_users_count}</span>
+          <span>
+            <p>
+              <Badge variant="info">{monitored_users_count}</Badge>
+            </p>
+          </span>
         )}
       </HomeSummaryContext.Consumer>
     )
@@ -71,13 +81,18 @@ class HomeSummary extends React.Component {
       <HomeSummaryContext.Provider value={this.state}>
         <div className="container dashboardBaseText">
 
-          <Separator/>
 
           <div className="row">
             <div className="col-sm">
               <div className="card">
                 <div className="card-body">
-                  <h2><b>Summary</b></h2>
+                  <h2>
+                    <b>Summary</b>
+                    <Spinner animation="border" role="status">
+                      <span className="sr-only">Loading...</span>
+                    </Spinner>
+                  </h2>
+                  <hr/>
                   {/*<hr/>*/}
                   <div className="row">
                     {/* Load monitored user */}
@@ -139,23 +154,24 @@ const Separator = () => (
 */
 const HomeSecondRow = () => (
   <div className="row">
-  {/*********************Monitored users*/}
+
+    {/*********************Monitored users*/}
     <div className="col-sm-4">
         <p className="lightGrayText">Monitored Users</p>
-        <ul className="list-group">
-            <li className="list-group-item d-flex justify-content-between align-items-center">
-              User 1
-              <p>Score: <span className="badge badge-danger badge-pill">14</span></p>
-            </li>
-            <li className="list-group-item d-flex justify-content-between align-items-center">
-              User 2
-              <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
-            </li>
-            <li className="list-group-item d-flex justify-content-between align-items-center">
-              User 3
-              <p>Score: <span className="badge badge-info badge-pill">14</span></p>
-            </li>
-        </ul>
+        <ListGroup>
+          <ListGroup.Item>
+          User 1
+          <p>Score: <span className="badge badge-info badge-pill">14</span></p>
+          </ListGroup.Item>
+          <ListGroup.Item>
+          User 2
+          <p>Score: <span className="badge badge-info badge-pill">14</span></p>
+          </ListGroup.Item>
+          <ListGroup.Item>
+          User 3
+          <p>Score: <span className="badge badge-info badge-pill">14</span></p>
+          </ListGroup.Item>
+        </ListGroup>
     </div>
 
     {/*********************recent offenses*/}
@@ -163,27 +179,31 @@ const HomeSecondRow = () => (
       <div className="card">
         <div className="card-body">
           <div className="row">
-            <div className="col-sm-5">
-                  <p>Recent Offenses</p>
-                  <ul className="list-group">
-                      <li className="list-group-item d-flex justify-content-between align-items-center">
-                        <p>Offense 1</p>
-                        <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
-                      </li>
-                      <li className="list-group-item d-flex justify-content-between align-items-center">
-                        <p>Offense 2</p>
-                        <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
-                      </li>
-                      <li className="list-group-item d-flex justify-content-between align-items-center">
-                        <p>Offense 3</p>
-                        <p>Score: <span className="badge badge-info badge-pill">14</span></p>
-                      </li>
-                  </ul>
+            <div className="col-sm-12">
+                  <p>Recent Anomalies</p>
+                  <ListGroup>
+                    <ListGroup.Item>
+                      <p>Offense 1</p>
+                      <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <p>Offense 1</p>
+                      <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <p>Offense 1</p>
+                      <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
+                    </ListGroup.Item>
+                  </ListGroup>
             </div>
+
+
+
             {/*********************recent offenses graph*/}
             <div className="col-sm-7">
               <div id="d3_main"></div>
             </div>
+
           </div>
         </div>
       </div>
@@ -241,6 +261,7 @@ const Home = () => (
               <small className="text-muted">Donec id elit non mi porta.</small>
             </a>
           </div>
+
         </div>
 
         <div className="col-sm-6">

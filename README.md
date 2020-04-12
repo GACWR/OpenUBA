@@ -54,14 +54,16 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 - Visualization
   - Data Shader
   - Kibana
+  - Matplotlib
+  - NetworkX
 - Modeling
   - Tensorflow
-  - Sci-kit Learn
+  - Scikit Learn
   - Keras
   - GP Learn
   - DEAP
-  - Network X
-  - MLLib
+  - Graphx
+  - MLlib
 - Compute Engine
   - Spark
   - Elastic Search
@@ -84,7 +86,6 @@ The interface is meant to observe system events, and anomalies
 - Dashboard (index)
 - Anomalies
 - Cases
-- Data
 - Modeling
 - Settings
 

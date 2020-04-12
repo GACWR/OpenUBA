@@ -112,3 +112,7 @@ p {
 hr {
   background-color: white;
 }
+
+#system_log .card .card-body {
+  color: #000;
+}

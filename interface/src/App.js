@@ -20,15 +20,21 @@ import Navigation from './Components/Navigation/';
 import Content from './Components/Content/'
 import SystemLog from './Components/Common/SystemLog/'
 
+
 /*
 @name HeaderCSS
 @ddescription
 */
 class HeaderCSS extends React.Component {
   render() {
-    return (<link rel="stylesheet"
-          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossOrigin="anonymous"/>)
+    return (
+            <link
+            rel="stylesheet"
+            href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+            integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh"
+            crossOrigin="anonymous"
+            />
+        )
   }
 }
 
@@ -37,6 +43,7 @@ class HeaderCSS extends React.Component {
 @ddescription
 */
 const GlobalCSS = <HeaderCSS />
+
 
 /*
 @name
@@ -47,7 +54,13 @@ class App extends React.Component{
     return (
       <div className="App">
         <header className="App-header">
+          <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.1/jquery.min.js"></script>
+          <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react.min.js"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.1.0/react-dom.min.js"></script>
+
           {GlobalCSS}
+
           <Navigation />
 
           {/*system log*/}
@@ -75,6 +88,9 @@ class App extends React.Component{
               </div>
             </div>
           </div>
+
+
+
         </header>
       </div>
     )
