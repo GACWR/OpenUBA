@@ -252,6 +252,7 @@ class ModelSession():
         model_id: str = model_instance.data["model_name"] # could be model hash
 
         # pass metadata so we can verify it is installed
+        # TODO: error handling 
         if not self.library.is_installed(model_instance):
             logging.info("Model Session, model is [NOT] installed: "+str(model_instance.data["model_name"]))
             if VerifyModel(model_instance).verify_model_encodings():
