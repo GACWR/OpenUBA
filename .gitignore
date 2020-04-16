@@ -4,3 +4,9 @@ core/.mypy_cache/*
 /core/.mypy_cache/*
 /core/*pycache*/
 *.pyc
+__pycache__/*
+.mypy_cache/*
+/core/__pycache__/*
+/core/.mypy_cache/*
+core/__pycache__/*
+core/.mypy_cache/*

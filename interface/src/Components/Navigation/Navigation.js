@@ -3,7 +3,9 @@ import { NavLink } from 'react-router-dom';
 
 
 const NavbarBrand = () => (
-  <a className="navbar-brand" href="#">OpenUBA</a>
+  <NavLink to='/' className="nav-item nav-link" href="#">
+    <span className="navbar-brand">OpenUBA</span>
+  </NavLink>
 );
 
 const Navbar = () => (
@@ -20,7 +22,7 @@ const Navbar = () => (
   <div className="collapse navbar-collapse" id="navbarNavAltMarkup">
     <div className="navbar-nav">
 
-      <NavLink to='/home' className="nav-item nav-link active" href="#">
+      <NavLink to='/home' className="nav-item nav-link" href="#">
         Home <span className="sr-only">(current)</span>
       </NavLink>
       <NavLink to='/models' className="nav-item nav-link">

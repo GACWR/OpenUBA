@@ -54,7 +54,7 @@ def display(display_type):
         return resp
     except Exception as e:
         logging.error(str(e))
-        return str("ssss")
+        return str("API display error")
 
 '''
 @description endpoint to disable a model
