@@ -1,22 +1,24 @@
 {
     "session": {
-        "model_name": "model_test",
+        "model_name": "model_1",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
         "components": [
             {
+                "type": "external",
                 "filename": "__init__.py",
-                "data_hash": "f506fd5ba52314440c0d9ff1564b6d1e2a25ffafaa4e532c248b3fa95e89077e",
-                "file_hash": "08f1ee23338fe0b64c61f9052b6754fbbc14ebb428f5975c91591f1b7a27897b",
-                "file_payload": "ZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
+                "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
+                "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
+                "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
             },
             {
+                "type": "external",
                 "filename": "MODEL.py",
-                "data_hash": "3498bc5390156b8e9d67e1f3f0f1e9b5f609bc19856d1ed506126c3cd643e6dd",
-                "file_hash": "d6a5ad1c381080000409385b347c73321f8e307a08b16298da2d725a33cd7a7d",
-                "file_payload": "ZGVmIGV4ZWN1dGUoKToKCXByaW50KCJtb2RlbF90ZXN0IHRlc3RpbmcuLi4iKQoJcmV0dXJuX29iamVjdDogZGljdCA9IHt9CgoJZm9yIHggaW4gcmFuZ2UoMCwxMDAwMDApOgoJCXJldHVybl9vYmplY3RbeF0gPSB7CgkJCSJ2YWx1ZSI6ICJ0ZXN0IgoJCX0KCglwcmludCgibW9kZWwgZW5kIHJ1bi4uIikKCXJldHVybiByZXR1cm5fb2JqZWN0Cg=="
+                "data_hash": "06670cef92eec824fab402fbf89a7ba1c18dab8b0454b3035f519fb703d055a1",
+                "file_hash": "0e41b5e8bb281245266a1772a1b3f3a48fe726275d4110835283d5a12f370b47",
+                "file_payload": "ZnJvbSBtb2RlbF9tb2R1bGVzIGltcG9ydCBkaXNrCgojIG5lZWQgdG8gZXhwb3NlIGV4ZWN1dGUKZGVmIGV4ZWN1dGUoKToKICAgIHByaW50KCJtb2RlbF90ZXN0IHRlc3RpbmcuLi4gYmVmb3JlIGRpc2siKQogICAgcmV0dXJuX29iamVjdDogZGljdCA9IGRpY3QoKQogICAgZGlzay5leGVjdXRlKCkKICAgIGZvciB4IGluIHJhbmdlKDAsMTAwMDAwKToKICAgICAgICByZXR1cm5fb2JqZWN0W3hdID0gewogICAgICAgICAgICAidmFsdWUiOiAidGVzdCIKICAgICAgICB9CgogICAgcHJpbnQoIm1vZGVsIGVuZCBydW4uLi4uLi4uLi4uLi4uLi4uLi4iKQogICAgcmV0dXJuIHJldHVybl9vYmplY3QK"
             }
         ]
     },
-    "timestamp": "2020-04-10 11:54:01"
+    "timestamp": "2020-04-17 14:40:02"
 }

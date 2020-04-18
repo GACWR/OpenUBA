@@ -126,7 +126,21 @@ class ReadActorFromDB(DBReadFile):
         return self.read_file(location)
 
 
-
+'''
+@name WriteJSONFileToDirectory
+@description take a dict, and create a directory for each key, given a parent directory
+'''
+class WriteJSONFileToDirectory():
+    def __init__(self, content: dict, parent_directory: str):
+        logging.info("Write JSON file to directory")
+        #TODO iterate over keys
+        for key in content.keys():
+            #check if folder exists
+                # exists, write x
+            # if doesnt exist
+                # create directory
+                # write
+            pass
 
 '''
 @name WriteJSONFileFS

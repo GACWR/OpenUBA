@@ -31,10 +31,14 @@ from hash import Hash, HashData, HashFile
 from utility import Timestamp
 from typing import List
 from api import LibraryAPI
+from enum import Enum
 
 MODELS_LIBRARY_FILE_LOCATION: str = 'storage/models.json'
 MODELS_SESSION_FILE_LOCATION: str = 'storage/model_sessions.json'
 
+class ModelComponentType(Enum):
+    NATIVE = "native"
+    EXTERNAL = "external"
 
 '''
 @name Model
@@ -175,20 +179,36 @@ class ModelLibrary():
 
     '''
     @name run_model
-    @description
+    @description invoke model execution process, and return dict (for now)
     '''
-    def run_model(self, model: Model):
+    def run_model(self, model: Model) -> dict:
         logging.warning("run_model(), attempting to run: "+str(model.data["model_name"]))
 
-        # import the model
-        sys.path.insert(1, 'model_library/'+str( model.data["model_name"] ))
-        import MODEL
-        return MODEL.execute()
+        # TODO: error handling
 
+        # import the model
+        model_path: str = 'model_library/'+str( model.data["model_name"] )
+
+        # insert model scope
+        sys.path.insert(0, model_path)
+        import MODEL
+
+        # execute model
+        model_result: dict = MODEL.execute()
+
+        # remove model scope from path list
+        sys.path.remove(model_path)
+
+        # delete model scope from sys.modules
+        if 'MODEL' in sys.modules:
+            del sys.modules["MODEL"]
+
+        # return standard model result
+        return model_result
 
     '''
     @name store_model
-    @description
+    @description store model on disk
     '''
     def store_model(self, model: dict):
 
@@ -252,34 +272,58 @@ class ModelSession():
         model_id: str = model_instance.data["model_name"] # could be model hash
 
         # pass metadata so we can verify it is installed
-        # TODO: error handling 
+        # TODO: error handling
         if not self.library.is_installed(model_instance):
+
             logging.info("Model Session, model is [NOT] installed: "+str(model_instance.data["model_name"]))
             if VerifyModel(model_instance).verify_model_encodings():
+
                 self.library.install_model(model_instance)
                 if VerifyModel(model_instance).verify_model_files():
+
                     model_result: dict = self.library.run_model(model_instance)
                     logging.info("Model Session: finishing job: "+str(len(model_result)))
+
                 else:
                     # TODO: handle error
                     logging.error("Model Failed File Verification: "+str(model_instance.data))
                     # TODO: remove model
-                    self.remove_model()
+                    #self.remove_model()
+                    self.cleanup_model()
             else:
                 # TODO: handle error
                 logging.error("Model Failed Encoded Verification: "+str(model_instance.data))
                 # TODO: remove model
-                self.remove_model()
+                #self.remove_model()
+                self.cleanup_model()
+
         else:
             logging.info("Model Session, model [IS] installed: "+str(model_instance.data["model_name"]))
+
             if VerifyModel(model_instance).verify_model_files():
+
                 model_result: dict = self.library.run_model(model_instance)
                 logging.info("Model Session: finishing job: "+str(len(model_result)))
             else:
                 # TODO: handle error
                 logging.error("Model Failed File Verification: "+str(model_instance.data))
                 # TODO: remove model
-                self.remove_model()
+                #self.remove_model()
+                self.cleanup_model()
+
+
+    '''
+    @name cleanup_model
+    @description remove model safely, if in production mode
+    @note "unsafe" mode is just to test your own models (temp solution)
+          never push
+    '''
+    def cleanup_model(self):
+        SAFE_MODE: bool = False
+        if SAFE_MODE:
+            self.remove_model()
+        else:
+            pass
 
 '''
 @name VerifyModel
@@ -306,7 +350,7 @@ class VerifyModel():
                 for component in model_data["components"]:
                     model_filename: str = str(component["filename"])
 
-                    # cryptographically describe model
+                    # cryptographically profile model
                     model_description: dict = ModelDescription(self.model, component).data()
 
                     if model_description["data_hash"].result == component["data_hash"]:
@@ -343,10 +387,10 @@ class VerifyModel():
             for component in model_data["components"]:
                 model_filename: str = str(component["filename"])
 
-                # cryptographically describe model
-                model_description: dict = ModelDescription(self.model, component).files()
+                # cryptographically profile model
+                model_profile: dict = ModelProfile(self.model, component).files()
 
-                if model_description["file_hash"].result == component["file_hash"]:
+                if model_profile["file_hash"].result == component["file_hash"]:
                     logging.info("verify_model_files, Model is VALID: " + str( model_data["model_name"] ) )
                     logging.info("Valid Component: " + str(component["filename"]) )
                     pass # check is valid
@@ -361,10 +405,10 @@ class VerifyModel():
         return hash_check
 
 '''
-@name ModelDescription
+@name ModelProfile
 @description
 '''
-class ModelDescription():
+class ModelProfile():
     def __init__(self, model: Model, component: dict):
         self.model = model
         self.component = component
@@ -391,16 +435,17 @@ class ModelDescription():
         }
 
         return description
+
 '''
-@name DescribeModel
+@name ProfileModel
 @description return encodings and hashes for a local model
 '''
-class DescribeModel():
+class ProfileModel():
     def __init__(self, model: str):
-        logging.info("DescribeModel: "+str(model))
+        logging.info("ProfileModel: "+str(model))
         self.model: str = model
 
-    def describe(self):
+    def profile(self):
         json_reader = ReadJSONFileFS(MODELS_LIBRARY_FILE_LOCATION)
         models: dict = json_reader.data
         model: Model = Model(models[self.model])
@@ -408,4 +453,5 @@ class DescribeModel():
         for component in model.data["components"]:
             description[component["filename"]+"_file_hash"] = HashFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result
             description[component["filename"]+"_file_b64"] = B64EncodeFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result
+            description[component["filename"]+"_data_hash_b64"] = HashData(B64EncodeFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result).result
         return description
