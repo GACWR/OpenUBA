@@ -37,36 +37,7 @@ from enum import Enum
 
 MODELS_LIBRARY_FILE_LOCATION: str = 'storage/models.json'
 MODELS_SESSION_FILE_LOCATION: str = 'storage/model_sessions.json'
-
-# just in case model library is blank
-DEFAULT_MODEL_LIBRARY: dict = {
-  "MODEL_GROUP_1": {
-    "models": [
-      {
-        "model_name": "model_test",
-        "enabled": True,
-        "root": "ANJKD8aioh8wonsLAS9HWOI",
-        "return": "user_risks",
-        "components": [
-            {
-                "type": "external",
-                "filename": "__init__.py",
-                "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
-                "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
-                "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
-            },
-            {
-                "type": "external",
-                "filename": "MODEL.py",
-                "data_hash": "c91569ef18120310e433645d54eaddc4fa72bf5a0613a1e13a3e75d2abda665f",
-                "file_hash": "585a2c07d4644acb0da61202490cafb99a58570dc9861b14426576f54350fdc6",
-                "file_payload": "IyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CglwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIikKCXJldHVybl9vYmplY3Q6IGRpY3QgPSB7fQoKCWZvciB4IGluIHJhbmdlKDAsMTAwMDAwKToKCQlyZXR1cm5fb2JqZWN0W3hdID0gewoJCQkidmFsdWUiOiAidGVzdCIKCQl9CgoJcHJpbnQoIm1vZGVsIGVuZCBydW4uLiIpCglyZXR1cm4gcmV0dXJuX29iamVjdAo="
-            }
-        ]
-      }
-    ]
-  }
-}
+DEFAULT_MODEL_LIBRARY: str = 'storage/default_model_library.json'
 
 '''
 @name ModelComponent
@@ -121,7 +92,7 @@ class ModelEngine():
             logging.info("Model Engine:"+str(self.model_configuration.keys()))
         except Exception as e:
             logging.error("ModelEngine: ReadJSONFileFS failed: "+str(e))
-            self.model_configuration: dict = DEFAULT_MODEL_LIBRARY
+            self.model_configuration: dict = ReadJSONFileFS(DEFAULT_MODEL_LIBRARY)
             WriteJSONFileFS(self.model_configuration, MODELS_LIBRARY_FILE_LOCATION)
             pass
 
