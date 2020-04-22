@@ -37,6 +37,7 @@ const Navbar = () => (
       <NavLink to='/settings' className="nav-item nav-link">
         Settings
       </NavLink>
+
     </div>
   </div>
 </nav>

@@ -24,25 +24,46 @@ from os import path
 import shutil
 import io
 import json
+import model_modules
 from database import WriteJSONFileFS, ReadJSONFileFS
+from dataset import CoreDataFrame
 from user import GetAllUsers, UserSet, User
 from encode import Base64, B64EncodeFile, B64DecodeFile
 from hash import Hash, HashData, HashFile
 from utility import Timestamp
 from typing import List
 from api import LibraryAPI
+from enum import Enum
 
 MODELS_LIBRARY_FILE_LOCATION: str = 'storage/models.json'
 MODELS_SESSION_FILE_LOCATION: str = 'storage/model_sessions.json'
+DEFAULT_MODEL_LIBRARY: str = 'storage/default_model_library.json'
 
+'''
+@name ModelComponent
+@description enum type to represent the different component types
+    native -
+    external - for a standalone python script
+'''
+class ModelComponent(Enum):
+    NATIVE = "native"
+    EXTERNAL = "external"
+
+'''
+@name ModelDataLoader
+@description
+'''
+class ModelDataLoader(Enum):
+    LOCAL_PANDAS_CSV = "local_pandas_csv"
 
 '''
 @name Model
 @description internal representation of a Model
 '''
 class Model():
-    def __init__(self, metadata: dict):
+    def __init__(self, metadata: dict, dataframe: CoreDataFrame):
         self.data: dict = metadata
+        self.dataframe = dataframe
         pass
 
     def run(self):
@@ -67,12 +88,12 @@ class ModelEngine():
             path.exists()
             '''
             json_reader = ReadJSONFileFS(MODELS_LIBRARY_FILE_LOCATION)
-            self.models: dict = json_reader.data
-            logging.info("Model Engine:"+str(self.models.keys()))
+            self.model_configuration: dict = json_reader.data
+            logging.info("Model Engine:"+str(self.model_configuration.keys()))
         except Exception as e:
             logging.error("ModelEngine: ReadJSONFileFS failed: "+str(e))
-            self.models: dict = DEFAULT_MODEL_LIBRARY
-            WriteJSONFileFS(self.models, MODELS_LIBRARY_FILE_LOCATION)
+            self.model_configuration: dict = ReadJSONFileFS(DEFAULT_MODEL_LIBRARY)
+            WriteJSONFileFS(self.model_configuration, MODELS_LIBRARY_FILE_LOCATION)
             pass
 
     '''
@@ -83,20 +104,57 @@ class ModelEngine():
 
         # TODO: reference model schedule, right now, this iterates over models sequentially
         #iterare over models in library
-        for model in self.models.keys():
-            logging.info("model engine execute model: "+str(model))
-            model_metadata: dict = self.models[model]
+        for model_group_key in self.model_configuration.keys():
 
-            #if model is enable, load model, and run it
-            if model_metadata["enabled"]:
-                logging.info("Model enabled: "+str(model_metadata["model_name"]))
-                model_session = ModelSession(model_metadata, self.library)
+            # group
+            model_group: dict = self.model_configuration[model_group_key]
 
-                # start model session job
-                model_session.start_job()
+            # load data for model group to share
+            if model_group["data_loader"] == ModelDataLoader.LOCAL_PANDAS_CSV.value:
+
+                args: dict = {
+                    'sep': ' ',
+                    'header': 0,
+                    'error_bad_lines': False,
+                    'warn_bad_lines': False
+                }
+
+                loaded_data: CoreDataFrame = model_modules.LocalPandasCSV(model_group["context"]["file_location"], **args).data
+                print(loaded_data.data)
 
             else:
-                pass
+
+                unsupported_dataloader_error_message: str = "encountered unsupported data loader: "+str(model_group_key)
+                logging.error(unsupported_dataloader_error_message)
+                raise Exception(unsupported_dataloader_error_message)
+
+
+
+            # iterate through model groups
+            for model in model_group["models"]:
+                logging.info("model engine execute model: "+str(model))
+                model_metadata: dict = model
+
+                #if model is enable, load model, and run it
+                if model_metadata["enabled"]:
+
+                    logging.info("Model enabled: "+str(model_metadata["model_name"]))
+                    model_session = ModelSession(model_metadata, self.library)
+
+                    # start model session job
+                    model_result: dict = model_session.start_job(loaded_data)
+
+                    # check if model results are empty
+                    if not bool(model_result):
+                        logging.warning("Model Result is empty: "+str(model_metadata["model_name"]))
+                    else:
+                        # model results are not empty
+                        pass
+
+
+                else:
+                    logging.warning("Model is NOT enabled: "+str(model_metadata["model_name"]))
+                    pass
 
 
 
@@ -175,20 +233,39 @@ class ModelLibrary():
 
     '''
     @name run_model
-    @description
+    @description invoke model execution process, and return dict (for now)
     '''
-    def run_model(self, model: Model):
+    def run_model(self, model: Model) -> dict:
         logging.warning("run_model(), attempting to run: "+str(model.data["model_name"]))
 
-        # import the model
-        sys.path.insert(1, 'model_library/'+str( model.data["model_name"] ))
-        import MODEL
-        return MODEL.execute()
+        # TODO: error handling
 
+        # import the model
+        model_path: str = 'model_library/'+str( model.data["model_name"] )
+
+        # insert model scope
+        sys.path.insert(0, model_path)
+        import MODEL
+
+        # execute model
+        try:
+            model_result: dict = MODEL.execute()
+        except Exception as e:
+            logging.error("Model Execution Failed: "+str(model.data["model_name"])+" Reason: "+str(e))
+
+        # remove model scope from path list
+        sys.path.remove(model_path)
+
+        # delete model scope from sys.modules
+        if 'MODEL' in sys.modules:
+            del sys.modules["MODEL"]
+
+        # return standard model result
+        return model_result
 
     '''
     @name store_model
-    @description
+    @description store model on disk
     '''
     def store_model(self, model: dict):
 
@@ -236,14 +313,15 @@ class ModelSession():
     '''
     @name start_job
     @description start a model session job
+    @return multipurpose dict
     '''
-    def start_job(self):
+    def start_job(self, dataframe: CoreDataFrame) -> dict:
         logging.info("Model Session: starting job")
 
         time.sleep(2) # TODO: remove after debug
 
         # create model instance
-        model_instance: Model = Model(self.metadata)
+        model_instance: Model = Model(self.metadata, dataframe)
 
         # model library load
         logging.info(str(model_instance.data))
@@ -252,34 +330,62 @@ class ModelSession():
         model_id: str = model_instance.data["model_name"] # could be model hash
 
         # pass metadata so we can verify it is installed
-        # TODO: error handling 
+        # TODO: error handling
+        model_result: dict = {}
+
         if not self.library.is_installed(model_instance):
+
             logging.info("Model Session, model is [NOT] installed: "+str(model_instance.data["model_name"]))
             if VerifyModel(model_instance).verify_model_encodings():
+
                 self.library.install_model(model_instance)
                 if VerifyModel(model_instance).verify_model_files():
-                    model_result: dict = self.library.run_model(model_instance)
+
+                    model_result = self.library.run_model(model_instance)
                     logging.info("Model Session: finishing job: "+str(len(model_result)))
+
                 else:
                     # TODO: handle error
                     logging.error("Model Failed File Verification: "+str(model_instance.data))
                     # TODO: remove model
-                    self.remove_model()
+                    #self.remove_model()
+                    self.cleanup_model()
             else:
                 # TODO: handle error
                 logging.error("Model Failed Encoded Verification: "+str(model_instance.data))
                 # TODO: remove model
-                self.remove_model()
+                #self.remove_model()
+                self.cleanup_model()
+
         else:
             logging.info("Model Session, model [IS] installed: "+str(model_instance.data["model_name"]))
+
             if VerifyModel(model_instance).verify_model_files():
-                model_result: dict = self.library.run_model(model_instance)
+
+                model_result = self.library.run_model(model_instance)
                 logging.info("Model Session: finishing job: "+str(len(model_result)))
+
             else:
                 # TODO: handle error
                 logging.error("Model Failed File Verification: "+str(model_instance.data))
                 # TODO: remove model
-                self.remove_model()
+                #self.remove_model()
+                self.cleanup_model()
+
+        return model_result
+
+    '''
+    @name cleanup_model
+    @description remove model safely, if in production mode
+    @note "unsafe" mode is just to test your own models (temp solution)
+          never push
+    '''
+    def cleanup_model(self):
+        SAFE_MODE: bool = False
+        if SAFE_MODE:
+            self.remove_model()
+        else:
+            pass
 
 '''
 @name VerifyModel
@@ -306,7 +412,7 @@ class VerifyModel():
                 for component in model_data["components"]:
                     model_filename: str = str(component["filename"])
 
-                    # cryptographically describe model
+                    # cryptographically profile model
                     model_description: dict = ModelDescription(self.model, component).data()
 
                     if model_description["data_hash"].result == component["data_hash"]:
@@ -343,10 +449,10 @@ class VerifyModel():
             for component in model_data["components"]:
                 model_filename: str = str(component["filename"])
 
-                # cryptographically describe model
-                model_description: dict = ModelDescription(self.model, component).files()
+                # cryptographically profile model
+                model_profile: dict = ModelProfile(self.model, component).files()
 
-                if model_description["file_hash"].result == component["file_hash"]:
+                if model_profile["file_hash"].result == component["file_hash"]:
                     logging.info("verify_model_files, Model is VALID: " + str( model_data["model_name"] ) )
                     logging.info("Valid Component: " + str(component["filename"]) )
                     pass # check is valid
@@ -361,10 +467,10 @@ class VerifyModel():
         return hash_check
 
 '''
-@name ModelDescription
+@name ModelProfile
 @description
 '''
-class ModelDescription():
+class ModelProfile():
     def __init__(self, model: Model, component: dict):
         self.model = model
         self.component = component
@@ -391,21 +497,30 @@ class ModelDescription():
         }
 
         return description
+
 '''
-@name DescribeModel
+@name ProfileModel
 @description return encodings and hashes for a local model
 '''
-class DescribeModel():
-    def __init__(self, model: str):
-        logging.info("DescribeModel: "+str(model))
-        self.model: str = model
+class ProfileModel():
+    def __init__(self, model_name: str):
+        logging.info("ProfileModel: "+str(model_name))
+        self.model_name: str = model_name
 
-    def describe(self):
-        json_reader = ReadJSONFileFS(MODELS_LIBRARY_FILE_LOCATION)
-        models: dict = json_reader.data
-        model: Model = Model(models[self.model])
-        description: dict = {}
-        for component in model.data["components"]:
-            description[component["filename"]+"_file_hash"] = HashFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result
-            description[component["filename"]+"_file_b64"] = B64EncodeFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result
-        return description
+    def profile(self):
+        raw_model_library = ReadJSONFileFS(MODELS_LIBRARY_FILE_LOCATION)
+        model_library: dict = raw_model_library.data
+
+        # iterate over model groups
+        for model_group in model_library.keys():
+            for model_in_group in model_library[model_group]["models"]:
+                if model_in_group["model_name"] == self.model_name:
+                    model: Model = Model(model_in_group)
+                    description: dict = {}
+                    for component in model.data["components"]:
+                        description[component["filename"]+"_file_hash"] = HashFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result
+                        description[component["filename"]+"_file_b64"] = B64EncodeFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result
+                        description[component["filename"]+"_data_hash_b64"] = HashData(B64EncodeFile("model_library/"+model.data["model_name"]+"/"+component["filename"]).result).result
+                    return description
+                else:
+                    pass

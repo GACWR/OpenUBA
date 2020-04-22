@@ -23,7 +23,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Tuple, Sequence, List
 from enum import Enum
-
+#from process import DataSourceFileType
 
 '''
 @name PriorSplitRecord
@@ -72,7 +72,7 @@ class Parser():
 
 '''
 @name CoreDataFrame
-@description
+@description holds abstracted data frame. could hold dataframes from pandas, or pyspark
 '''
 class CoreDataFrame():
     def __init__(self, df):
@@ -119,7 +119,7 @@ class Dataset(Parser):
     file_location: str = "blank_file_location";
     location_type: str = "blank_file_type";
 
-    def __init__(self, type):
+    def __init__(self, type: str):
         super().__init__()
         logging.info("Dataset constructor, type of ["+type+"]")
 
@@ -137,11 +137,12 @@ class Dataset(Parser):
 @description to handle csv files
 '''
 class CSV(Dataset):
-    def __init__(self, parent_folder, folder, location_type):
+    def __init__(self, parent_folder: str, folder: str, location_type: str, delimiter: str):
         #call to Dataset class
         super().__init__("CSV Dataset") # becomes Dataset instance
         self.file_location = parent_folder+"/"+folder
         self.location_type = location_type
+        self.delimiter = delimiter
 
     '''
         - if the data is NOT in hadoop, read with pandas
@@ -176,7 +177,7 @@ class CSV(Dataset):
 
         ## TODO: get columns from config
         df = pd.read_csv(self.file_location+"/bluecoat.log",
-                         sep=r' ',
+                         sep=self.delimiter,
                          engine='python',
                          header=0,
                          error_bad_lines=False,
@@ -208,7 +209,7 @@ class CSV(Dataset):
 @description instance of using a dataset
 '''
 class DatasetSession():
-    def __init__(self, type):
+    def __init__(self, type: str):
         logging.info("dataset session")
         self.dataset_type: str = type
 
@@ -216,9 +217,9 @@ class DatasetSession():
     @name read_csv
     @description load the csv into the dataset sessions's dataset object
     '''
-    def read_csv(self, data_folder: str, folder: str, location_type: str) -> None:
+    def read_csv(self, data_folder: str, folder: str, location_type: str, delimiter: str) -> None:
         logging.info("Dataset_Session: read_csv")
-        self.dataset: CSV = CSV(data_folder, folder, location_type)
+        self.dataset: CSV = CSV(data_folder, folder, location_type, delimiter)
         # load into class dataset field, read from parent class, not child
         self.dataset.read()
 

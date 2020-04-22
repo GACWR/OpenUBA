@@ -7,6 +7,7 @@
             {
                 "log_name": "proxy",
                 "type": "csv",
+                "delimiter": " ",
                 "location_type": "disk",
                 "folder": "proxy",
                 "id_feature": "cs-username",

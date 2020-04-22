@@ -23,7 +23,7 @@ from flask_cors import CORS
 import logging
 import threading
 import time
-from model import ModelLibrary, DescribeModel
+from model import ModelLibrary, ProfileModel
 from test import Test
 from process import ProcessEngine
 from api import API
@@ -156,11 +156,11 @@ if __name__ == "__main__":
     print(sys.argv)
     # TODO: refactor for more robust parameters
     if len(sys.argv) > 2:
-        if sys.argv[1] == "describe_model":
+        if sys.argv[1] == "profile_model":
             model_name: str = str(sys.argv[2])
-            model_description: dict = DescribeModel( model_name ).describe()
-            for component in model_description.keys():
-                logging.info(str(component) + " : " + str(model_description[component]))
+            model_profile: dict = ProfileModel( model_name ).profile()
+            for component in model_profile.keys():
+                logging.info(str(component) + " : " + str(model_profile[component]))
     else:
         Test.Run() # TODO: remove suite invocation
         core: Core = Core()

@@ -88,18 +88,11 @@ class App extends React.Component{
               </div>
             </div>
           </div>
-
-
-
         </header>
       </div>
     )
   }
 }
 
-// // App component
-// const App = () => (
-//
-// );
 
 export default App;

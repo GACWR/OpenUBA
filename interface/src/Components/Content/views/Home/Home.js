@@ -218,20 +218,13 @@ const HomeSecondRow = () => (
 const Home = () => (
   <div className="home">
 
-    {/********************* SUMMARY*/}
     <HomeSummary></HomeSummary>
-    {/*********************END SUMMARY*/}
 
-    {/*********************MONITORED USERS*/}
     <div className="container dashboardBaseText">
       <Separator/>
-      {/*********************Second Row*/}
       <HomeSecondRow />
-      {/*********************END Second Row*/}
     </div>
-    {/*********************END MONITORED USERS*/}
 
-    {/*********************UNDER CONTENT*/}
     <div className="container dashboardBaseText">
 
       <div className="row">

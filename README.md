@@ -1,12 +1,14 @@
-# OpenUBA
-A robust, and flexible open source User & Entity Behavior Analytics (UEBA) framework. Developed with luv by Data Scientists & Security Analysts from the Cyber Security Industry
+# OpenUBA (Open User Behavior Analytics)
+A robust, and flexible open source User & Entity Behavior Analytics (UEBA) framework used for Security Analytics. Developed with luv by Data Scientists & Security Analysts from the Cyber Security Industry.
 
+*This project is a work in progress and in a pre-alpha state; input and contributions are warmly welcome*
 
 | Status Type | Status |
 | --- | --- |
 | `Master Build` | [![Build Status](https://travis-ci.org/GACWR/OpenUBA.svg?branch=master)](https://travis-ci.org/GACWR/OpenUBA) |
 | `Development Build` | [![Build Status](https://travis-ci.org/GACWR/OpenUBA.svg?branch=main_dev_branch)](https://travis-ci.org/GACWR/OpenUBA) |
 | `Issues` | [![Issues](https://img.shields.io/github/issues/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/issues) |
+| `Closed Issues` | [![GitHub issues-closed](https://img.shields.io/github/issues-closed/GACWR/OpenUBA.svg)](https://GitHub.com/GACWR/OpenUBA/issues?q=is%3Aissue+is%3Aclosed) |
 | `Last Commit` | [![Last commit](https://img.shields.io/github/last-commit/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/commits/master) |
 | `UI Docker Stars` | [![Docker Stars](https://img.shields.io/docker/stars/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
 | `UI Docker Pulls` | [![Docker Pulls](https://img.shields.io/docker/pulls/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
@@ -29,18 +31,27 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 
 ## Goals
 To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
-- Model Management
-- Community-driven Model Library
-- Model Versioning
+- Modeling
+  - Model Management
+  - Community-driven Model Library
+  - Model Version Control
+  - Ready-to-use model modules
+  - Feedback Loop for continuous model training
+  - "Shadow Mode" for model and risk score experimentation
+  - Simple model configuration workflow
 - Dashboard
-- Rule Storage/Management
-- Case Management
-- Peer-oriented/community intel
-- Lightweight, SIEM-agnostic infrastructure
-- Flexible/open dataset support
-- Alerting/Ticketing system
+  - Modern stack
+  - Modular components
+  - Live updating
+- Features
+  - Rule Storage/Management
+  - Case Management
+  - Peer-oriented/community intel
+  - Lightweight, SIEM-agnostic architecture
+  - Flexible/open dataset support
+  - Alerting/Ticketing system
 
-## Components
+## Stack
 - Client Dashboard
   - React
   - Bootstrap
@@ -48,7 +59,6 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Express JS
   - D3.js
 - Model Server (Remote or Local)
-- User Interface
 - API Server
   - Flask
 - Visualization
@@ -67,14 +77,11 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 - Compute Engine
   - Spark
   - Elastic Search
-- Log Transport
-  - Logstash
--Log Collection
-  - Beats
 - Supported Data Formats (for now)
   - CSV
   - Parquet
   - Flat File
+
 
 # User Interface (placeholder, UI being updated now)
 <img src="images/ui.png" width="750px" />
