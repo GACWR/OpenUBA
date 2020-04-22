@@ -17,6 +17,8 @@ import logging
 from enum import Enum
 import json
 import pandas as pd
+import os.path
+from typing import List
 
 DB_CONFIG = {
     "type": "mongo"
@@ -127,20 +129,26 @@ class ReadActorFromDB(DBReadFile):
 
 
 '''
-@name WriteJSONFileToDirectory
-@description take a dict, and create a directory for each key, given a parent directory
+@name WriteListToDirectories
+@description take a list, and create a directory for each element, given a parent directory
 '''
-class WriteJSONFileToDirectory():
-    def __init__(self, content: dict, parent_directory: str):
+class WriteListToDirectories():
+    def __init__(self, list: List, parent_directory: str):
         logging.info("Write JSON file to directory")
-        #TODO iterate over keys
-        for key in content.keys():
+        #TODO iterate over elements in list
+        for element in list:
             #check if folder exists
-                # exists, write x
-            # if doesnt exist
+            element_path: str = parent_directory+"/"+str(element)
+            if os.path.exists(element_path):
+            # exists, write x (nothing for now)
+                pass
+            else:
+                # if doesnt exist
                 # create directory
-                # write
+                os.mkdir(element_path)
             pass
+            # stats
+            os.stat(element_path)
 
 '''
 @name WriteJSONFileFS

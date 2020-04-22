@@ -14,7 +14,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from database import DBReadFile, DBWriteFile, WriteNewActorToDB, ReadActorFromDB, WriteJSONFileFS, ReadJSONFileFS, WriteJSONFileToDirectory
+from database import DBReadFile, DBWriteFile, WriteNewActorToDB, ReadActorFromDB, WriteJSONFileFS, ReadJSONFileFS, WriteListToDirectories
 from dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
 import pandas as pd
@@ -59,7 +59,7 @@ class WriteUserSet(DBWriteFile):
         WriteJSONFileFS(data, users_file_location)
 
         #TODO: write users to unique directory
-        WriteJSONFileToDirectory(data, "storage/users")
+        WriteListToDirectories(data["users"], "storage/users")
 
 '''
 @name ReadUserSet

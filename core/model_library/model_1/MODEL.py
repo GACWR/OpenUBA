@@ -1,10 +1,10 @@
-from model_modules import disk
+from model_modules import test_module
 
 # need to expose execute
 def execute():
     print("model_test testing... before disk")
     return_object: dict = dict()
-    disk.execute()
+    test_module.Execute()
     for x in range(0,100000):
         return_object[x] = {
             "value": "test"

@@ -41,13 +41,5 @@ test:
 	python3.7 -m unittest discover -s ./core -p "*_test.py" -v
 docker_build_server:
 	time docker build --file "./DockerfileServer" -t openuba-server .
-start_local_elk_mac:
-	brew services start logstash
-	brew services start elasticsearch
-	brew services start kibana
-stop_local_elk_mac:
-	brew services stop logstash
-	brew services stop elasticsearch
-	brew services stop kibana
-start_elk_windows:
-stop_elk_windows:
+docker_build_ui:
+	time docker build --file "./DockerfileUI" -t openuba-ui .

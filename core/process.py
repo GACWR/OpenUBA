@@ -110,6 +110,7 @@ class ProcessEngine():
 
         log_name = log_data_obj["log_name"]
         log_type = log_data_obj["type"]
+        delimiter = log_data_obj["delimiter"]
         location_type = log_data_obj["location_type"]
         folder = log_data_obj["folder"]
         id_feature = log_data_obj["id_feature"]
@@ -118,11 +119,13 @@ class ProcessEngine():
 
         #read dataset, if any new
         if log_type == DataSourceFileType.CSV.value:
+
             # invoke datasetsession to read the csv
-            dataset_session.read_csv(data_folder, folder, location_type) # load
+            dataset_session.read_csv(data_folder, folder, location_type, delimiter) # load
             print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
             dataset_size: Tuple = dataset_session.get_size()
             logging.info( "Dataset Session size: "+str(dataset_size) )
+
         elif log_type == DataSourceFileType.FLAT.value:
             pass
         elif log_type == DataSourceFileType.PARQUET.value:

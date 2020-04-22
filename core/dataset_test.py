@@ -34,8 +34,9 @@ class DatasetCSVLocationTestCase(unittest.TestCase):
         self.location_type = "location type"
         self.csv = CSV(self.parent_folder,
                        self.folder,
-                       self.location_type)
-                       
+                       self.location_type,
+                       ",")
+
     def test_csv_init(self):
         self.assertEqual(self.csv.file_location,
                          self.parent_folder+"/"+self.folder)
@@ -47,7 +48,7 @@ class DatasetCSVLocationTestCase(unittest.TestCase):
 class DatasetSessionDataFrameShapeTestCase(unittest.TestCase):
     def setUp(self):
          self.dataset_session = DatasetSession("csv")
-         self.dataset_session.dataset = CSV("", "", "")
+         self.dataset_session.dataset = CSV("", "", "", "")
          df = pd.DataFrame([("a"),("1")])
          #get_dataframe = MagicMock(return_value=DataFrame(df))
          self.dataset_session.dataset.dataframe = CoreDataFrame(df)
