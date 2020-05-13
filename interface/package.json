@@ -1,24 +1,47 @@
 {
   "name": "interface",
   "version": "0.1.0",
+  "description": "experimental desktop application for OpenUBA",
   "private": true,
   "proxy": "http://localhost:3001",
+  "main": "server.js",
+  "homepage": "./",
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "bootstrap": "^4.4.1",
     "react": "^16.13.1",
-    "react-bootstrap": "^1.0.0",
+    "react-bootstrap": "^1.0.1",
     "react-dom": "^16.13.1",
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.1"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "export BROWSER=none && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "start-electron": "export ELECTRON_START_URL=http://localhost:3000 && export NODE_OPTIONS=--http-parser=legacy && electron .",
+    "start-electron-static": "export NODE_OPTIONS='--http-parser=legacy' && electron .",
+    "build-electron": "mkdir -f build/src && cp -r . build/ && cp -r src/shared/. build/src/shared",
+    "package": "electron-builder build --mac --win -c.extraMetadata.main=server.js --publish never"
+  },
+  "build": {
+    "files": [
+      "build/**/*",
+      "node_modules/**/*",
+      "public/**/*",
+      "package.json",
+      "dist/**/*",
+      "storage/**/*",
+      "*.js"
+    ],
+    "publish": {
+      "provider": "github",
+      "repo": "OpenUBA",
+      "owner": "GACWR"
+    }
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -34,5 +57,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "electron": "^8.1.0",
+    "electron-builder": "^22.4.1"
   }
 }

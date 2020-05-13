@@ -83,11 +83,13 @@ class API:
 class LibraryAPI():
     def __init__(self):
         logging.info("Library API")
-        self.server: str = "http://gacwr.org"
+
+        # optional: point to a custom repo
+        self.server: str = "http://openuba.gacwr.org"
 
 
     def install(self, model_name: str):
-        url = self.server+"/api/"
+        url = self.server+"/ml/"
         payload = {
             "test": "test"
         }

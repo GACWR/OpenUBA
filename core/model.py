@@ -55,6 +55,14 @@ class ModelComponent(Enum):
 '''
 class ModelDataLoader(Enum):
     LOCAL_PANDAS_CSV = "local_pandas_csv"
+    LOCAL_PANDAS_PARQUET = "local_pandas_parquet"
+
+'''
+@name ModelReturnType
+@description
+'''
+class ModelReturnType(Enum):
+    USER_RISKS = "user_risks"
 
 '''
 @name Model
@@ -98,19 +106,20 @@ class ModelEngine():
 
     '''
     @name execute
-    @description execute model job
+    @description execute overall model job
     '''
     def execute(self):
 
         # TODO: reference model schedule, right now, this iterates over models sequentially
-        #iterare over models in library
+        #iterare over models groups in local model library
         for model_group_key in self.model_configuration.keys():
 
             # group
             model_group: dict = self.model_configuration[model_group_key]
-
+            model_group_dataloader_context: dict = model_group["data_loader"]["data_loader_context"]
+            model_group_dataloader: str = model_group["data_loader"]["data_loader_type"]
             # load data for model group to share
-            if model_group["data_loader"] == ModelDataLoader.LOCAL_PANDAS_CSV.value:
+            if model_group_dataloader == ModelDataLoader.LOCAL_PANDAS_CSV.value:
 
                 args: dict = {
                     'sep': ' ',
@@ -119,9 +128,13 @@ class ModelEngine():
                     'warn_bad_lines': False
                 }
 
-                loaded_data: CoreDataFrame = model_modules.LocalPandasCSV(model_group["context"]["file_location"], **args).data
+                loaded_data: CoreDataFrame = model_modules.LocalPandasCSV(model_group_dataloader_context["file_location"], **args).data
                 print(loaded_data.data)
 
+            elif model_group_dataloader == ModelDataLoader.LOCAL_PANDAS_PARQUET.value:
+                # TODO: parquet logic
+                pass
+                
             else:
 
                 unsupported_dataloader_error_message: str = "encountered unsupported data loader: "+str(model_group_key)
@@ -134,9 +147,10 @@ class ModelEngine():
             for model in model_group["models"]:
                 logging.info("model engine execute model: "+str(model))
                 model_metadata: dict = model
+                model_enabled: bool =  model_metadata["enabled"]
 
                 #if model is enable, load model, and run it
-                if model_metadata["enabled"]:
+                if model_enabled:
 
                     logging.info("Model enabled: "+str(model_metadata["model_name"]))
                     model_session = ModelSession(model_metadata, self.library)
@@ -149,6 +163,15 @@ class ModelEngine():
                         logging.warning("Model Result is empty: "+str(model_metadata["model_name"]))
                     else:
                         # model results are not empty
+                        model_return_logic: dict = model_metadata["return"]
+                        model_return_type: str = model_return_logic["return_type"]
+
+                        if model_return_type == ModelReturnType.USER_RISKS.value:
+                            # TODO: handle user_risks object
+                            # FOR EACH user in USER_RISKS
+                                # write user risk profile to DB
+                            pass
+
                         pass
 
 
@@ -157,6 +180,7 @@ class ModelEngine():
                     pass
 
 
+        # end model group
 
 '''
 @name ModelLibrary
@@ -243,10 +267,10 @@ class ModelLibrary():
         # import the model
         model_path: str = 'model_library/'+str( model.data["model_name"] )
 
+
         # insert model scope
         sys.path.insert(0, model_path)
         import MODEL
-
         # execute model
         try:
             model_result: dict = MODEL.execute()
@@ -341,6 +365,8 @@ class ModelSession():
                 self.library.install_model(model_instance)
                 if VerifyModel(model_instance).verify_model_files():
 
+                    #
+
                     model_result = self.library.run_model(model_instance)
                     logging.info("Model Session: finishing job: "+str(len(model_result)))
 
@@ -360,10 +386,13 @@ class ModelSession():
         else:
             logging.info("Model Session, model [IS] installed: "+str(model_instance.data["model_name"]))
 
+            # only verify components installed
             if VerifyModel(model_instance).verify_model_files():
 
                 model_result = self.library.run_model(model_instance)
                 logging.info("Model Session: finishing job: "+str(len(model_result)))
+
+                # TODO: handle model result conditioned on model_instance.data["return"] object
 
             else:
                 # TODO: handle error

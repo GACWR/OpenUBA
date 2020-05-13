@@ -84,6 +84,12 @@ class GetAllUsers(DBReadFile):
         #users = self.read_file()
         return {"user1": {}, "user2": {}}
 
+
+'''
+@name StoreUserRisks
+@description fetch all users from the actual DB
+'''
+
 class ExtractAllUsersCSV(DBReadFile):
     '''
     @name get

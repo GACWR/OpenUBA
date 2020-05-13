@@ -39,10 +39,13 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Feedback Loop for continuous model training
   - "Shadow Mode" for model and risk score experimentation
   - Simple model configuration workflow
+  - Model groups
+  - Single-fire & Sequential models
 - Dashboard
   - Modern stack
   - Modular components
   - Live updating
+  - Global state, and component state
 - Features
   - Rule Storage/Management
   - Case Management
@@ -50,6 +53,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Lightweight, SIEM-agnostic architecture
   - Flexible/open dataset support
   - Alerting/Ticketing system
+  - Browser & desktop applications
 
 ## Stack
 - Client Dashboard
@@ -95,6 +99,13 @@ The interface is meant to observe system events, and anomalies
 - Cases
 - Modeling
 - Settings
+
+# Model Library
+OpenUBA implements a model library purposed with hosting ready-to-use models, both developed by us, and the community. For starters, we host the default model repository, similar to any popular package manager (npm, cargo, etc). However, developers can host their own model repository for use in their own instance of OpenUBA.
+
+Model installation currently works as follows:
+<img src="images/model_library_workflow.png" width="750px" />
+
 
 ## Installation/Usage
 Go to [INSTALL.md](https://github.com/GACWR/OpenUBA/blob/master/docs/INSTALL.md)

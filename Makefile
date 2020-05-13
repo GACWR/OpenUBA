@@ -29,12 +29,16 @@ check:
 	--ignore-missing-imports ;
 profile_model:
 	cd core/ ; python3.7 core.py profile_model ${model_name};
-uis: #ui server
-	cd interface/ ; node server.js
 rd: # react development server
 	cd interface/ ; npm run start
 rb: # react build
 	cd interface/ ; npm run build
+electron: # launch electron
+	cd interface/ ; npm run start-electron
+electron_static: # launch electron static react
+	cd interface/ ; npm run start-electron-static
+package: #package react
+	cd interface/ ; npm run package;
 save_dev:
 	git add * -v ; git commit -am ${M}-v ; git push origin master:main_dev_branch -v;
 test:

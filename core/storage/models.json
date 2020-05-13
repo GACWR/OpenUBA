@@ -1,16 +1,31 @@
 {
   "MODEL_TEST_GROUP_1": {
     "group_name": "MODEL_TEST_GROUP_1",
-    "data_loader": "local_pandas_csv",
-    "context": {
-      "file_location": "../test_datasets/toy_1/proxy/bluecoat.log"
+    "data_loader": {
+      "data_loader_type": "local_pandas_csv",
+      "data_loader_context": {
+        "file_location": "../test_datasets/toy_1/proxy/bluecoat.log"
+      }
     },
+    "conditions": [
+      {
+        "condition_name": "sample_condition_one",
+        "features": "cs-username|cs-username",
+        "condition": "parameter1 == 'alice' and parameter2 != 'bob'",
+        "score": 10
+      }
+    ],
     "models": [
       {
         "model_name": "model_test",
+        "description": "blank",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
-        "return": "user_risks",
+        "return": {
+          "return_type": "user_risks",
+          "artifacts": []
+        },
+        "score": 10,
         "components": [
             {
                 "type": "external",
@@ -30,8 +45,13 @@
       },
       {
         "model_name": "model_1",
+        "description": "blank",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
+        "return": {
+          "return_type": "user_risks",
+          "artifacts": []
+        },
         "components": [
             {
                 "type": "external",

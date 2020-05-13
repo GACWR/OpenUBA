@@ -1,8 +1,13 @@
 {
     "session": {
         "model_name": "model_1",
+        "description": "blank",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
+        "return": {
+            "return_type": "user_risks",
+            "artifacts": []
+        },
         "components": [
             {
                 "type": "external",
@@ -20,5 +25,5 @@
             }
         ]
     },
-    "timestamp": "2020-04-22 01:11:05"
+    "timestamp": "2020-05-12 23:47:49"
 }
