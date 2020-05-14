@@ -15,4 +15,8 @@ core/.mypy_cache/*
 interface/dist/
 /interface/dist/
 *.DS_Store
-
+/**/.DS_Store
+/**/__pycache__
+/**/.mypy_cache
+/**/.pyc
+/**/*.mypy_cache

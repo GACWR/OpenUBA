@@ -69,13 +69,13 @@ class ModelReturnType(Enum):
 @description internal representation of a Model
 '''
 class Model():
-    def __init__(self, metadata: dict, dataframe: CoreDataFrame):
+    def __init__(self, metadata: dict, dataframe: CoreDataFrame = None):
         self.data: dict = metadata
         self.dataframe = dataframe
         pass
 
     def run(self):
-        store_model
+        #
         pass
 
 
@@ -134,7 +134,7 @@ class ModelEngine():
             elif model_group_dataloader == ModelDataLoader.LOCAL_PANDAS_PARQUET.value:
                 # TODO: parquet logic
                 pass
-                
+
             else:
 
                 unsupported_dataloader_error_message: str = "encountered unsupported data loader: "+str(model_group_key)
@@ -442,9 +442,11 @@ class VerifyModel():
                     model_filename: str = str(component["filename"])
 
                     # cryptographically profile model
-                    model_description: dict = ModelDescription(self.model, component).data()
+                    #model_description: dict = ProfileModel(self.model, component).data()
+                    #model_profile: dict = ProfileModel(model_data["model_name"]).profile()
+                    model_profile: dict = ModelProfile(self.model, component).data()
 
-                    if model_description["data_hash"].result == component["data_hash"]:
+                    if model_profile["data_hash"].result == component["data_hash"]:
                         logging.info("verify_model_encodings, Model is VALID: " + str( model_data["model_name"] ) )
                         logging.info("Valid Component: " + str(component["filename"]) )
 
