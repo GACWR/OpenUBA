@@ -33,4 +33,4 @@ class LocalPandasParquet():
         dataset_session.read_parquet("../test_datasets/toy_1", "proxy", "disk", sep)
 
         #assign data
-        #self.data: DataFrame = CoreDataFrame(dataset_session.parquet_dataset.dataframe)
+        self.data: DataFrame = CoreDataFrame(dataset_session.parquet_dataset.dataframe)

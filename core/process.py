@@ -80,10 +80,12 @@ class ProcessEngine():
                 # get the new dataframe
                 log_file_dataset_session: DatasetSession = self.process_data(data_folder, log_obj)
 
-                #TODO: with the CoreDataFrame from process data, perform user/entity analysis/extraction
+                # TODO: condition on log_type, and location_type
+                # TODO: with the CoreDataFrame from process data, perform user/entity analysis/extraction
                 extracted_users: UserSet = ExtractAllUsersCSV.get(log_file_dataset_session, log_obj)
                 test_user: str = str(list(extracted_users.users.keys())[:2])
                 logging.info("ProcessEngine, execute, extracted_users, test user: "+test_user)
+
 
                 # store the extracted users, or update the storage
                 # extracted_users.set_of_users

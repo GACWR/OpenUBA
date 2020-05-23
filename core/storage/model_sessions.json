@@ -1,6 +1,6 @@
 {
     "session": {
-        "model_name": "model_1",
+        "model_name": "model_test",
         "description": "blank",
         "mitre_tactic": "",
         "mitre_technique_name": "",
@@ -24,11 +24,11 @@
             {
                 "type": "external",
                 "filename": "MODEL.py",
-                "data_hash": "7abf09221bf1a1991a0044a2b8a649a440176bbfb0f95be4ab4d54d87a605413",
-                "file_hash": "b017478eb77b119515217bb2535ef1727ddac6a3298e86a9f1eb1dbe3e1d80e4",
-                "file_payload": "ZnJvbSBtb2RlbF9tb2R1bGVzIGltcG9ydCB0ZXN0X21vZHVsZQoKIyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CiAgICBwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIGJlZm9yZSBkaXNrIikKICAgIHJldHVybl9vYmplY3Q6IGRpY3QgPSBkaWN0KCkKICAgIHRlc3RfbW9kdWxlLkV4ZWN1dGUoKQogICAgZm9yIHggaW4gcmFuZ2UoMCwxMDAwMDApOgogICAgICAgIHJldHVybl9vYmplY3RbeF0gPSB7CiAgICAgICAgICAgICJ2YWx1ZSI6ICJ0ZXN0IgogICAgICAgIH0KCiAgICBwcmludCgibW9kZWwgZW5kIHJ1bi4uLi4uLi4uLi4uLi4uLi4uLiIpCiAgICByZXR1cm4gcmV0dXJuX29iamVjdAo="
+                "data_hash": "c91569ef18120310e433645d54eaddc4fa72bf5a0613a1e13a3e75d2abda665f",
+                "file_hash": "585a2c07d4644acb0da61202490cafb99a58570dc9861b14426576f54350fdc6",
+                "file_payload": "IyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CglwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIikKCXJldHVybl9vYmplY3Q6IGRpY3QgPSB7fQoKCWZvciB4IGluIHJhbmdlKDAsMTAwMDAwKToKCQlyZXR1cm5fb2JqZWN0W3hdID0gewoJCQkidmFsdWUiOiAidGVzdCIKCQl9CgoJcHJpbnQoIm1vZGVsIGVuZCBydW4uLiIpCglyZXR1cm4gcmV0dXJuX29iamVjdAo="
             }
         ]
     },
-    "timestamp": "2020-05-23 03:46:17"
+    "timestamp": "2020-05-23 04:28:24"
 }

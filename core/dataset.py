@@ -214,7 +214,7 @@ class CSV(Dataset):
 @description to handle parquet files
 '''
 class Parquet(Dataset):
-    def __init__(self):
+    def __init__(self, parent_folder: str, folder: str, location_type: str, delimiter: str):
         pass
 
     '''
@@ -236,13 +236,17 @@ class Parquet(Dataset):
     @name read_from_disk
     @description read from disk, and set to Parquets dataframe
     '''
+    @DatasetReadFromDiskPrior
     def read_from_disk(self) -> None:
+        # temp
+        self.dataframe = CoreDataFrame( {} )
         pass
 
     '''
     @name read_from_hdfs
     @description read from HDFS, and set to Parquets dataframe
     '''
+    @DatasetReadFromDiskPrior # TODO: make DatasetReadFromHDFSPrior
     def read_from_hdfs(self) -> None:
         pass
 
@@ -263,10 +267,14 @@ class ES(Dataset):
     '''
     def read(self) -> None:
         logging.info("Reading ES index")
-        x = requests.get(self.host, data = json.dumps( self.payload ), headers = self.header_set)
-        logging.info("ES: status code: "+str( x.status_code ))
-        logging.info( x.raw.headers )
-        self.dataframe = CoreDataFrame( x.content.decode() )
+        try:
+            x = requests.get(self.host, data = json.dumps( self.payload ), headers = self.header_set)
+            logging.info("ES: status code: "+str( x.status_code ))
+            logging.info( x.raw.headers )
+            self.dataframe = CoreDataFrame( x.content.decode() )
+        except Exception as e:
+            logging.error("Error inside ES.read(): "+str(e))
+            self.dataframe = CoreDataFrame( {} )
 
 
 
@@ -313,14 +321,14 @@ class DatasetSession():
 
 
     '''
-    @name get_size
+    @name get_csv_size
     @description get size of dataset_session's dataset object
     '''
     def get_csv_size(self) -> Tuple:
         return self.csv_dataset.get_size()
 
     '''
-    @name get_dataset
+    @name get_csv_dataset
     @description get dataset_session's dataset object
     '''
     def get_csv_dataset(self) -> Dataset:
