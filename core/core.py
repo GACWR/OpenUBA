@@ -71,6 +71,23 @@ def delete_model(model_name):
 def install_model(model_name):
     return ModelLibrary().install_model()
 
+'''
+@description retrieve system local model library
+'''
+@server.route("/models/")
+def fetch_models():
+    # return all local models
+    return "TEST"
+
+
+'''
+@description retrieve a specific model from local model library
+'''
+@server.route("/model/<string:model_name>")
+def fetch_specific_model(model_name):
+    # return all local models
+    return ''.join(["TEST",model_name])
+
 
 '''
 @name scheduler_run

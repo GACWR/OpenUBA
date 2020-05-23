@@ -12,21 +12,3 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
-
-'''
-@name risk
-@description to adjust risk scores as an entire job on schedule
-'''
-import logging
-
-class RiskJob():
-    def __init__(self):
-        logging.info("RiskJob is initiated")
-
-class RiskScore():
-    def __init__(self):
-        pass
-
-    def calculate(self):
-        # TODO: simple summation with weighting 
-        pass

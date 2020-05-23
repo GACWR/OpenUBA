@@ -56,6 +56,11 @@ class ModelComponent(Enum):
 class ModelDataLoader(Enum):
     LOCAL_PANDAS_CSV = "local_pandas_csv"
     LOCAL_PANDAS_PARQUET = "local_pandas_parquet"
+    HDFS_PANDAS_CSV = "HDFS_pandas_csv"
+    HDFS_PANDAS_PARQUET = "HDFS_pandas_parquet"
+    HDFS_SPARK_CSV = "HDFS_spark_csv"
+    HDFS_SPARK_PARQUET = "HDFS_spark_parquet"
+    ES_GENERIC = "ES_generic"
 
 '''
 @name ModelReturnType
@@ -72,6 +77,8 @@ class Model():
     def __init__(self, metadata: dict, dataframe: CoreDataFrame = None):
         self.data: dict = metadata
         self.dataframe = dataframe
+        # TODO dataframe should be dataframes
+        # also, it should be a dict to hold many dataframes
         pass
 
     def run(self):
@@ -128,11 +135,72 @@ class ModelEngine():
                     'warn_bad_lines': False
                 }
 
-                loaded_data: CoreDataFrame = model_modules.LocalPandasCSV(model_group_dataloader_context["file_location"], **args).data
+                loaded_data: CoreDataFrame = model_modules.LocalPandasCSV(model_group_dataloader_context["file_location"], model_group_dataloader_context["file"], **args).data
                 print(loaded_data.data)
 
             elif model_group_dataloader == ModelDataLoader.LOCAL_PANDAS_PARQUET.value:
-                # TODO: parquet logic
+                # TODO: parquet logic\
+
+                args: dict = {
+                    'sep': ' ',
+                    'header': 0,
+                    'error_bad_lines': False,
+                    'warn_bad_lines': False
+                }
+
+                loaded_data: CoreDataFrame = model_modules.LocalPandasParquet(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+
+                pass
+
+            elif model_group_dataloader == ModelDataLoader.HDFS_PANDAS_CSV.value:
+                #https://creativedata.atlassian.net/wiki/spaces/SAP/pages/61177860/Python+-+Read+Write+files+from+HDFS
+                # TODO: HDFS CSV logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSPandasCSV(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+            elif model_group_dataloader == ModelDataLoader.HDFS_PANDAS_PARQUET.value:
+                # TODO: HDFS pandas parquet logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSPandasParquet(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+
+            elif model_group_dataloader == ModelDataLoader.HDFS_SPARK_CSV.value:
+                # TODO: HDFS spark csv logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSSparkCSV(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+            elif model_group_dataloader == ModelDataLoader.HDFS_SPARK_PARQUET.value:
+                # TODO:  HDFS spark parquet logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSSparkParquet(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+
+            elif model_group_dataloader == ModelDataLoader.ES_GENERIC.value:
+
+                # TODO: elastic search query logic
+                args: dict = {
+                    'query': 'QUERY'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.ESGeneric(model_group_dataloader_context["host"], **args).data
+                print(loaded_data.data)
                 pass
 
             else:
@@ -155,6 +223,7 @@ class ModelEngine():
                     logging.info("Model enabled: "+str(model_metadata["model_name"]))
                     model_session = ModelSession(model_metadata, self.library)
 
+                    # TODO: new thread
                     # start model session job
                     model_result: dict = model_session.start_job(loaded_data)
 
@@ -169,6 +238,7 @@ class ModelEngine():
                         if model_return_type == ModelReturnType.USER_RISKS.value:
                             # TODO: handle user_risks object
                             # FOR EACH user in USER_RISKS
+                            # for user_from_model in model_result["users"]
                                 # write user risk profile to DB
                             pass
 
@@ -179,6 +249,7 @@ class ModelEngine():
                     logging.warning("Model is NOT enabled: "+str(model_metadata["model_name"]))
                     pass
 
+            # TODO: Iterate over rules?
 
         # end model group
 
@@ -273,6 +344,8 @@ class ModelLibrary():
         import MODEL
         # execute model
         try:
+            # TODO pass model to execution process
+            # model_result: dict = MODEL.execute(model)
             model_result: dict = MODEL.execute()
         except Exception as e:
             logging.error("Model Execution Failed: "+str(model.data["model_name"])+" Reason: "+str(e))

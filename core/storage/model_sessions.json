@@ -2,12 +2,17 @@
     "session": {
         "model_name": "model_1",
         "description": "blank",
+        "mitre_tactic": "",
+        "mitre_technique_name": "",
+        "mitre_technique_id": "T1010",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
         "return": {
             "return_type": "user_risks",
             "artifacts": []
         },
+        "score": 10,
+        "model_context": {},
         "components": [
             {
                 "type": "external",
@@ -25,5 +30,5 @@
             }
         ]
     },
-    "timestamp": "2020-05-13 16:31:01"
+    "timestamp": "2020-05-23 03:46:17"
 }

@@ -87,15 +87,21 @@ app.on('activate', () => {
   }
 })
 
-/////////////////
 ipcMain.on('global_call_message', (event, arg) => {
-  console.log("")
+  console.log("global_call_message")
+  event.sender.send('global_call_reply', { "Result":  result });
 })
 
-///// END ELECTRON
+ipcMain.on('model_library_search_call_message', (event, arg) => {
+  console.log("model_library_search_call_message")
+  console.log(arg)
+  event.sender.send('model_library_search_call_reply', { "Result":  "RESULT" });
+})
 
-//add the router
-//app.use('/', router);
-//app.listen(process.env.port || 3001);
+ipcMain.on('local_search_call_message', (event, arg) => {
+  console.log("local_search_call_message")
+  console.log(arg)
+  event.sender.send('local_search_call_reply', { "Result":  "RESULT" });
+})
 
 console.log('Running UI server at 3001');

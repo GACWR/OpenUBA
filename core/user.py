@@ -37,8 +37,8 @@ class User:
 @description wrapper to hold a set of users
 '''
 class UserSet():
-    def __init__(self, set_of_users: List):
-        self.users: List = set_of_users
+    def __init__(self, users_dict: dict):
+        self.users: dict = users_dict
 
 
 '''
@@ -51,15 +51,36 @@ with open('data.json', 'w', encoding='utf-8') as f:
 '''
 class WriteUserSet(DBWriteFile):
     @staticmethod
-    def write(user_set: UserSet):
-        data: dict = {"users": [u.user_id for u in user_set.users]}
+    def write(new_user_set: UserSet):
+        # TODO: don't overwrite user set each time, just insert new keys
+        current_user_set: UserSet = ReadUserSet.read()
+
+        # iteratively add user to UserSet
+        for user in new_user_set.users.keys():
+            # TODO: check if user exists
+            logging.error(user)
+            current_user_set.users[user] = {}
+
+        #data: dict = {"users": [u.user_id for u in new_user_set.users]}
+        # no list compresension since its a dict
+        data: dict = {"users": current_user_set.users}
         users_file_location: str = USERS_FILE_LOCATION
 
         # write JSON object for user set
         WriteJSONFileFS(data, users_file_location)
 
         #TODO: write users to unique directory
-        WriteListToDirectories(data["users"], "storage/users")
+        try:
+            user_list: List = list( data["users"].keys() )
+            try:
+                WriteListToDirectories(user_list, "storage/users")
+            except Exception as e:
+                logging.error(''.join( [str(e), str(" -- ")] ))
+                raise e
+        except Exception as e:
+            logging.error(''.join( [str(e), str(" -- could not convert data['users'].keys() ")] ))
+
+
 
 '''
 @name ReadUserSet
@@ -67,10 +88,11 @@ class WriteUserSet(DBWriteFile):
 '''
 class ReadUserSet(DBReadFile):
     @staticmethod
-    def read(user_set: UserSet) -> UserSet:
+    def read() -> UserSet:
         users_file_location: str = USERS_FILE_LOCATION
         user_dict: dict = ReadJSONFileFS(users_file_location).data
-        return UserSet(list(user_dict.keys()))
+        #return UserSet( list(user_dict.keys()) )
+        return UserSet( user_dict["users"] )
 
 
 '''
@@ -116,7 +138,7 @@ class ExtractAllUsersCSV(DBReadFile):
     def extract_users(dataset_session: DatasetSession, log_metadata_obj: dict) -> List:
         ############## TESTS
         # get dataset
-        log_file_dataset: Dataset = dataset_session.get_dataset()
+        log_file_dataset: Dataset = dataset_session.get_csv_dataset()
         # get core dataframe
         log_file_core_dataframe: CoreDataFrame = log_file_dataset.get_dataframe()
         # get data frame (.data)
@@ -145,5 +167,9 @@ class ExtractAllUsersCSV(DBReadFile):
     @staticmethod
     def from_raw_list(user_set: List) -> UserSet:
         # iterate over user_set list
-        set_of_users: List = [User(u) for u in user_set]
-        return UserSet(set_of_users)
+        #set_of_users: List = [User(u) for u in user_set]
+        user_dict: dict = {}
+        for u in user_set:
+            user_dict[u] = {}
+        #return UserSet(set_of_users)
+        return UserSet(user_dict)

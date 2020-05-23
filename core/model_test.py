@@ -13,20 +13,17 @@ You should have received a copy of the GNU Lesser General Public License
 along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
-'''
-@name risk
-@description to adjust risk scores as an entire job on schedule
-'''
-import logging
 
-class RiskJob():
-    def __init__(self):
-        logging.info("RiskJob is initiated")
 
-class RiskScore():
-    def __init__(self):
+import unittest
+
+'''
+@name ModelTestCase
+@description this is the test case for all Model classes
+'''
+class ModelTestCase(unittest.TestCase):
+    def setUp(self):
         pass
 
-    def calculate(self):
-        # TODO: simple summation with weighting 
+    def test_model(self):
         pass

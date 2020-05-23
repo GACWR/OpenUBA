@@ -69,6 +69,12 @@ From this point, running the following command will server the static HTML
 make uis # UI server
 ```
 
+# Electron app
+To start the electron app, run
+```bash
+make electron
+```
+
 # Installing ELK on mac
 
 https://logz.io/blog/elk-mac/

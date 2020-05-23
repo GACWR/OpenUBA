@@ -1,9 +1,10 @@
 {
-    "users": [
-        "DEFAULT_PARENT",
-        "DIRECT",
-        "NA",
-        "NONE",
-        "cs-username"
-    ]
+    "users": {
+        "NA": {},
+        "c": {},
+        "DEFAULT_PARENT": {},
+        "DIRECT": {},
+        "NONE": {},
+        "cs-username": {}
+    }
 }
