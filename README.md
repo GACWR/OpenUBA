@@ -18,10 +18,6 @@ To take it a step further, OUBA also makes use of a community driven marketplace
 | `Issues` | [![Issues](https://img.shields.io/github/issues/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/issues) |
 | `Closed Issues` | [![GitHub issues-closed](https://img.shields.io/github/issues-closed/GACWR/OpenUBA.svg)](https://GitHub.com/GACWR/OpenUBA/issues?q=is%3Aissue+is%3Aclosed) |
 | `Last Commit` | [![Last commit](https://img.shields.io/github/last-commit/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/commits/master) |
-| `UI Docker Stars` | [![Docker Stars](https://img.shields.io/docker/stars/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
-| `UI Docker Pulls` | [![Docker Pulls](https://img.shields.io/docker/pulls/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
-| `UI Docker Automated` | [![Docker Automated](https://img.shields.io/docker/cloud/automated/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
-| `UI Docker Build` | [![Docker Build](https://img.shields.io/docker/cloud/build/gacwr/openuba-ui.svg)](https://hub.docker.com/r/gacwr/openuba-ui) |
 | `Server Docker Stars` | [![Docker Stars](https://img.shields.io/docker/stars/gacwr/openuba-server.svg)](https://hub.docker.com/r/gacwr/openuba-server) |
 | `Server Docker Pulls` | [![Docker Pulls](https://img.shields.io/docker/pulls/gacwr/openuba-server.svg)](https://hub.docker.com/r/gacwr/openuba-server) |
 | `Server Docker Automated` | [![Docker Automated](https://img.shields.io/docker/cloud/automated/gacwr/openuba-server.svg)](https://hub.docker.com/r/gacwr/openuba-server) |
