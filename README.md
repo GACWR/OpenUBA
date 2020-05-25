@@ -100,7 +100,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 
 
 # User Interface (under active development)
-<img src="images/ui.png" width="700px" />
+<img src="images/ui.png" width="600px" />
 
 The interface is meant to observe system events, and anomalies
 
@@ -114,7 +114,7 @@ The interface is meant to observe system events, and anomalies
 # Model Library
 OpenUBA implements a model library purposed with hosting "ready-to-use" models, both developed by us, and the community. For starters, we host the default model repository, similar to any popular package manager (npm, cargo, etc). However, developers can host their own model repository for use in their own instance of OpenUBA.
 
-Model installation currently works as follows:
+## Model workflow:
 <img src="images/ouba-model-library.jpg" width="600px" />
 
 ## Installation/Usage
