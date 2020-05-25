@@ -5,7 +5,6 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 
 ### White Paper
 [source](https://github.com/GACWR/ouba-paper)
-[preprint](https://github.com/GACWR/ouba-paper)
 
 *This project is a work in progress and in a pre-alpha state; input and contributions are warmly welcome*
 
