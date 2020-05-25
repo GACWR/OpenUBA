@@ -1,6 +1,6 @@
 <img src="images/logo.png" width="35%" style="float-left" />
 
-# OpenUBA (Open User Behavior Analytics)
+# Open User Behavior Analytics
 A robust, and flexible open source User & Entity Behavior Analytics (UEBA) framework used for Security Analytics. Developed with luv by Data Scientists & Security Analysts from the Cyber Security Industry.
 
 ### White Paper
