@@ -1,5 +1,10 @@
+<img src="images/logo.png" width="35%" style="float-left" />
+
 # OpenUBA (Open User Behavior Analytics)
 A robust, and flexible open source User & Entity Behavior Analytics (UEBA) framework used for Security Analytics. Developed with luv by Data Scientists & Security Analysts from the Cyber Security Industry.
+
+### White Paper
+[source](https://github.com/GACWR/ouba-paper)
 
 ## Problem
 Many UBA platforms typically use a "black box" approach to data science practices, which may work best for security analysts who are not interested in the nuts and bolts of the underlying models being used to generate anomalies, baselines, and cases. These platforms view their models as IP.
@@ -59,7 +64,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Peer-oriented/community intel
   - Lightweight, SIEM-agnostic architecture
   - Flexible/open dataset support
-  - Alerting/Ticketing system
+  - Alerting
   - Browser & desktop applications
 
 ## Stack
