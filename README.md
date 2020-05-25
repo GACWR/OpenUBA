@@ -35,7 +35,7 @@ OUBA takes an "open-model" approach, and is designed for the small subset of sec
 To take it a step further, OUBA also makes use of a community driven marketplace for models, similar to a plugin-store, where plugins are security models. This marketplace is where users of OUBA can install security models for their own use cases. Model developers can also upload their models, enabling other OUBA users to reuse them, whether for free, or compensation -- the choice is up to the model developer to make.
 
 ## Architecture
-<img src="images/framework.jpg" width="750px" />
+<img src="images/framework.jpg" width="600px" />
 
 
 ## Goals
@@ -99,7 +99,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Flat File
 
 
-# User Interface (under active development)
+# Interface (under active development)
 <img src="images/ui.png" width="600px" />
 
 The interface is meant to observe system events, and anomalies
@@ -114,7 +114,7 @@ The interface is meant to observe system events, and anomalies
 # Model Library
 OpenUBA implements a model library purposed with hosting "ready-to-use" models, both developed by us, and the community. For starters, we host the default model repository, similar to any popular package manager (npm, cargo, etc). However, developers can host their own model repository for use in their own instance of OpenUBA.
 
-## Model workflow:
+## Model Library Workflow:
 <img src="images/ouba-model-library.jpg" width="600px" />
 
 ## Installation/Usage
