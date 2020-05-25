@@ -5,14 +5,7 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 
 ### White Paper
 [source](https://github.com/GACWR/ouba-paper)
-
-## Problem
-Many UBA platforms typically use a "black box" approach to data science practices, which may work best for security analysts who are not interested in the nuts and bolts of the underlying models being used to generate anomalies, baselines, and cases. These platforms view their models as IP.
-
-# solution
-OUBA takes an "open-model" approach, and is designed for the small subset of security analysts who have authentic curiosity about what models are doing, and how they work under the hood. We believe in the scientific computing community, and its contributions over the years (libraries, toolkits, etc). In security, rule/model transparency is key, for compliance, response/investigation, and decision making.
-
-To take it a step further, OUBA also makes use of a community driven marketplace for models, similar to a plugin-store, where plugins are security models. This marketplace is where users of OUBA can install security models for their own use cases. Model developers can also upload their models, enabling other OUBA users to reuse them, whether for free, or compensation -- the choice is up to the model developer to make.
+[preprint](https://github.com/GACWR/ouba-paper)
 
 *This project is a work in progress and in a pre-alpha state; input and contributions are warmly welcome*
 
@@ -33,6 +26,14 @@ To take it a step further, OUBA also makes use of a community driven marketplace
 | `Top Language` | [![Top language](https://img.shields.io/github/languages/top/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |
 | `Code Size` | [![Code size in bytes](https://img.shields.io/github/languages/code-size/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |
 | `Chat` | ![Discord](https://img.shields.io/discord/683561405928177737) |
+
+## Problem
+Many UBA platforms typically use a "black box" approach to data science practices, which may work best for security analysts who are not interested in the nuts and bolts of the underlying models being used to generate anomalies, baselines, and cases. These platforms view their models as IP.
+
+# solution
+OUBA takes an "open-model" approach, and is designed for the small subset of security analysts who have authentic curiosity about what models are doing, and how they work under the hood. We believe in the scientific computing community, and its contributions over the years (libraries, toolkits, etc). In security, rule/model transparency is key, for compliance, response/investigation, and decision making.
+
+To take it a step further, OUBA also makes use of a community driven marketplace for models, similar to a plugin-store, where plugins are security models. This marketplace is where users of OUBA can install security models for their own use cases. Model developers can also upload their models, enabling other OUBA users to reuse them, whether for free, or compensation -- the choice is up to the model developer to make.
 
 ## Architecture
 <img src="images/framework.jpg" width="750px" />
@@ -99,8 +100,8 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
   - Flat File
 
 
-# User Interface (placeholder, UI being updated now)
-<img src="images/ui.png" width="750px" />
+# User Interface (under active development)
+<img src="images/ui.png" width="700px" />
 
 The interface is meant to observe system events, and anomalies
 
@@ -115,7 +116,7 @@ The interface is meant to observe system events, and anomalies
 OpenUBA implements a model library purposed with hosting "ready-to-use" models, both developed by us, and the community. For starters, we host the default model repository, similar to any popular package manager (npm, cargo, etc). However, developers can host their own model repository for use in their own instance of OpenUBA.
 
 Model installation currently works as follows:
-<img src="images/model_library_workflow.png" width="750px" />
+<img src="images/ouba-model-library.jpg" width="600px" />
 
 ## Installation/Usage
 Go to [INSTALL.md](https://github.com/GACWR/OpenUBA/blob/master/docs/INSTALL.md)

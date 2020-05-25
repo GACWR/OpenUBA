@@ -4,7 +4,9 @@ import { NavLink } from 'react-router-dom';
 
 const NavbarBrand = () => (
   <NavLink to='/' className="nav-item nav-link" href="#">
-    <span className="navbar-brand">OpenUBA</span>
+    <span className="navbar-brand">
+      <img src="img/logo_white.png" width="175px" />
+    </span>
   </NavLink>
 );
 
