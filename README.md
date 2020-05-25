@@ -103,7 +103,7 @@ To Build a lightweight, SIEM Agnostic, UEBA Framework focused on providing:
 <img src="images/ui.png" width="600px" />
 
 ## Views
-- Dashboard (index)
+- Home
 - Models
 - Anomalies
 - Cases
