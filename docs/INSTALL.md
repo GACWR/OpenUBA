@@ -64,9 +64,12 @@ If you run this command, it will build the static html from React
 make rb
 ```
 
-From this point, running the following command will server the static HTML
-```
-make uis # UI server
+Now, you can either see the interface from the browser on port 3000 (default react port), or launch the desktop application
+
+# Electron app
+To start the electron app, run
+```bash
+make electron
 ```
 
 # Installing ELK on mac

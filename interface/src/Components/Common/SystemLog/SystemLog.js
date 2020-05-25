@@ -1,24 +1,32 @@
 import React from 'react';
 import {SystemLogContext} from './Contexts/SystemLogContext'
+import {Toast, Container, Row, Col, Button, Card} from 'react-bootstrap'
+
 
 /*
 @name SystemLogStatus
 @ddescription consumer for system log status
 */
-class SystemLogStatus extends React.Component {
-  render(){
-    console.log("rendering system log")
-    return (
-      <SystemLogContext.Consumer>
-        {({system_log_status}) => (
+
+
+//class SystemLogStatus extends React.Component {
+const SystemLogStatus = (props) => {
+
+  const [show, setShow] = React.useState(false);
+
+  return (
+    <SystemLogContext.Consumer>
+      {({system_log_status}) => (
+        <>
           <p className="systemlogp">
             System Status From Server: {system_log_status}
           </p>
-        )}
-      </SystemLogContext.Consumer>
-    )
-  }
+        </>
+      )}
+    </SystemLogContext.Consumer>
+  )
 }
+
 
 /*
 @name SystemLog
@@ -70,17 +78,25 @@ class SystemLog extends React.Component {
     console.log("rendering system log")
     return (
       <SystemLogContext.Provider value={this.state}>
-          <div className="container systemLogContainer">
-            <div className="row">
-              <div className="col-sm" id="system_log">
-                <div className="card">
-                  <div className="card-body">
-                  <SystemLogStatus/>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <Container className="systemLogContainer">
+          <Row>
+            <Col lg={{span: 12, offset: 0}} className="system_log">
+              <Card lg={{span: 12, offset: 1}}>
+                <Card.Body>
+                  <Card.Text>
+                    <Container>
+                      <Row>
+                        <Col lg={{span: 12, offset: 0}}>
+                          <SystemLogStatus/>
+                        </Col>
+                      </Row>
+                    </Container>
+                  </Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
       </SystemLogContext.Provider>
     )
   }

@@ -23,6 +23,8 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Tuple, Sequence, List
 from enum import Enum
+import requests
+import json
 #from process import DataSourceFileType
 
 '''
@@ -91,21 +93,21 @@ class LogSourceType(Enum):
     ES = "es"
 
 '''
-@name DatasetPrior
+@name DatasetReadFromDiskPrior
 @description take beh
 '''
-class DatasetLogPrior:
+class DatasetReadFromDiskPrior:
     def __init__(self, function):
         self.function = function
 
     '''
-    @name DatasetLogPrior.__call__
+    @name DatasetReadFromDiskPrior.__call__
     @description call before read_from_disk, after dataframe is
     assigned to class's public memory
     '''
     def __call__(self, *args) -> None:
         log_message = args[1] # last param
-        logging.info("[DatasetLogPrior Log Message] "+log_message)
+        logging.info("[DatasetReadFromDiskPrior Log Message] "+log_message)
         logging.warning("args[0]: "+str(args[0]))
         self.function(args[0])
 
@@ -154,6 +156,7 @@ class CSV(Dataset):
             self.read_from_disk(self, "Reading from disk for CSV")
         elif self.location_type == LogSourceType.HDFS.value:
             # read from hdfs
+            self.read_from_hdfs(self, "Reading from hdfs for CSV")
             pass
         else:
             raise Exception("location_type "+self.location_type+" is not supported in CSV")
@@ -171,7 +174,7 @@ class CSV(Dataset):
     @name read_from_disk
     @description read from disk, and set to CSVs dataframe
     '''
-    @DatasetLogPrior
+    @DatasetReadFromDiskPrior
     def read_from_disk(self) -> None:
         logging.info("Trying: "+str(self.file_location))
 
@@ -199,9 +202,80 @@ class CSV(Dataset):
     @name read_from_hdfs
     @description read from hdfs, and set to CSVs dataframe
     '''
-    @DatasetLogPrior
+    @DatasetReadFromDiskPrior # TODO: make DatasetReadFromHDFSPrior
+    def read_from_hdfs(self) -> None:
+        # load csv from hdfs
+        df = pd.DataFrame([["a, b"],["b","c"]], columns=["index", "cs-username"])
+        self.dataframe = CoreDataFrame( df )
+        pass
+
+'''
+@name Parquet - child of Dataset
+@description to handle parquet files
+'''
+class Parquet(Dataset):
+    def __init__(self, parent_folder: str, folder: str, location_type: str, delimiter: str):
+        pass
+
+    '''
+        - if the data is NOT in hadoop, read with pandas
+        - if the data is in hadoop, read with sparkcsv
+    '''
+    def read(self) -> None:
+        logging.info("Reading Parquet")
+        if self.location_type == LogSourceType.DISK.value:
+            self.read_from_disk(self, "Reading from disk for Parquet")
+        elif self.location_type == LogSourceType.HDFS.value:
+            # read from hdfs
+            self.read_from_hdfs(self, "Reading from hdfs for Parquet")
+        else:
+            raise Exception("location_type "+self.location_type+" is not supported in Parquet")
+
+
+    '''
+    @name read_from_disk
+    @description read from disk, and set to Parquets dataframe
+    '''
+    @DatasetReadFromDiskPrior
+    def read_from_disk(self) -> None:
+        # temp
+        self.dataframe = CoreDataFrame( {} )
+        pass
+
+    '''
+    @name read_from_hdfs
+    @description read from HDFS, and set to Parquets dataframe
+    '''
+    @DatasetReadFromDiskPrior # TODO: make DatasetReadFromHDFSPrior
     def read_from_hdfs(self) -> None:
         pass
+
+'''
+@name ES - child of Dataset
+@description to handle elastic datasets
+'''
+class ES(Dataset):
+    def __init__(self, host: str):
+
+        self.host: str = host
+        self.payload: dict = { "query": { "match-all": {} }}
+        self.header_set: dict = {"content-type": "application/json"}
+
+    '''
+    @name read
+    @description read data from the ES index
+    '''
+    def read(self) -> None:
+        logging.info("Reading ES index")
+        try:
+            x = requests.get(self.host, data = json.dumps( self.payload ), headers = self.header_set)
+            logging.info("ES: status code: "+str( x.status_code ))
+            logging.info( x.raw.headers )
+            self.dataframe = CoreDataFrame( x.content.decode() )
+        except Exception as e:
+            logging.error("Error inside ES.read(): "+str(e))
+            self.dataframe = CoreDataFrame( {} )
+
 
 
 '''
@@ -219,20 +293,43 @@ class DatasetSession():
     '''
     def read_csv(self, data_folder: str, folder: str, location_type: str, delimiter: str) -> None:
         logging.info("Dataset_Session: read_csv")
-        self.dataset: CSV = CSV(data_folder, folder, location_type, delimiter)
+        self.csv_dataset: CSV = CSV(data_folder, folder, location_type, delimiter)
+        #new_dataset: CSV = CSV(data_folder, folder, location_type, delimiter)
         # load into class dataset field, read from parent class, not child
-        self.dataset.read()
+        self.csv_dataset.read()
+        #new_dataset.read()
 
     '''
-    @name get_size
+    @name read_parquet
+    @description load the csv into the dataset sessions's dataset object
+    '''
+    def read_parquet(self, data_folder: str, folder: str, location_type: str, delimiter: str) -> None:
+        logging.info("Dataset_Session: read_parquet")
+        self.parquet_dataset: Parquet = Parquet(data_folder, folder, location_type, delimiter)
+        # load into class dataset field, read from parent class, not child
+        self.parquet_dataset.read()
+
+
+    '''
+    @name read_es_index
+    @description fetch documents from an es index
+    '''
+    def read_es_index(self, host: str, query: str):
+        logging.info("Dataset_Session: read_es_index")
+        self.es_dataset: ES = ES(host)
+        self.es_dataset.read()
+
+
+    '''
+    @name get_csv_size
     @description get size of dataset_session's dataset object
     '''
-    def get_size(self) -> Tuple:
-        return self.dataset.get_size()
+    def get_csv_size(self) -> Tuple:
+        return self.csv_dataset.get_size()
 
     '''
-    @name get_dataset
+    @name get_csv_dataset
     @description get dataset_session's dataset object
     '''
-    def get_dataset(self) -> Dataset:
-        return self.dataset
+    def get_csv_dataset(self) -> Dataset:
+        return self.csv_dataset

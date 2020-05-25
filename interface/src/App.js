@@ -75,6 +75,7 @@ class App extends React.Component{
           {/*end system log*/}
 
           <Content />
+
           <div className="container dashboardBaseText">
             <div className="row">
               <div className="col-sm">

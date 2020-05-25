@@ -63,25 +63,33 @@ class ProcessEngine():
     def execute(self) -> bool:
         logging.info("executing process engine")
         loaded_data_scheme: dict = ReadJSONFileFS(DATASET_SCEME_URL).data
-        data_folder = loaded_data_scheme["folder"]
 
-        # load data from scheme above
-        for log_obj in loaded_data_scheme["data"]:
+        # for each data source_group
+        for source_group in loaded_data_scheme["source_groups"]:
 
-            # TODO: load dataset index file holding dataset statuses
+            data_folder = source_group["folder"]
 
-            #TODO: load "unprocessed" datasets, mostly by scheme set above in dataset_scheme
+            # load data from scheme above
+            for log_obj in source_group["data"]:
 
-            # get the new dataframe
-            log_file_dataset_session: DatasetSession = self.process_data(data_folder, log_obj)
+                logging.info("Process: model Log_obj: "+str(log_obj["log_name"]))
+                # TODO: load dataset index file holding dataset statuses
 
-            #TODO: with the CoreDataFrame from process data, perform user/entity analysis/extraction
-            extracted_users: UserSet = ExtractAllUsersCSV.get(log_file_dataset_session, log_obj)
-            logging.info("ProcessEngine, execute, extracted_users: "+str(extracted_users.users[:2]))
+                #TODO: load "unprocessed" datasets, mostly by scheme set above in dataset_scheme
 
-            # store the extracted users, or update the storage
-            # extracted_users.set_of_users
-            #TODO: mark log_obj as processed afterwards
+                # get the new dataframe
+                log_file_dataset_session: DatasetSession = self.process_data(data_folder, log_obj)
+
+                # TODO: condition on log_type, and location_type
+                # TODO: with the CoreDataFrame from process data, perform user/entity analysis/extraction
+                extracted_users: UserSet = ExtractAllUsersCSV.get(log_file_dataset_session, log_obj)
+                test_user: str = str(list(extracted_users.users.keys())[:2])
+                logging.info("ProcessEngine, execute, extracted_users, test user: "+test_user)
+
+
+                # store the extracted users, or update the storage
+                # extracted_users.set_of_users
+                #TODO: mark log_obj as processed afterwards
 
 
         # get entities
@@ -122,8 +130,8 @@ class ProcessEngine():
 
             # invoke datasetsession to read the csv
             dataset_session.read_csv(data_folder, folder, location_type, delimiter) # load
-            print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.dataset, Dataset)) )
-            dataset_size: Tuple = dataset_session.get_size()
+            print( "isinstance(dataset_session.dataset, Dataset): "+str(isinstance(dataset_session.csv_dataset, Dataset)) )
+            dataset_size: Tuple = dataset_session.get_csv_size()
             logging.info( "Dataset Session size: "+str(dataset_size) )
 
         elif log_type == DataSourceFileType.FLAT.value:

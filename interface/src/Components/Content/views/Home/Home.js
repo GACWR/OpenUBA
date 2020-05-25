@@ -14,9 +14,8 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 */
 import React from 'react';
 import {HomeSummaryContext} from './Contexts/HomeSummaryContext'
-import Badge from 'react-bootstrap/Badge';
-import Spinner from 'react-bootstrap/Spinner';
-import ListGroup from 'react-bootstrap/ListGroup';
+import {Badge, Spinner, ListGroup, Row, Col, Container, Card} from 'react-bootstrap';
+
 
 
 /*
@@ -55,15 +54,7 @@ class HomeSummary extends React.Component {
 
   async loadMonitoredUsers() {
     try{
-      // TODO: call API for monitored users count
 
-      //let complete_endpoint = this.API_SERVER+"/display/get_all_entities"
-      //const res = await fetch(complete_endpoint)
-      //const json_response = await res.json()
-
-      //this.setState({
-      //  monitored_users_count: this.state.system_log_status + 1
-      //});
 
     }catch(e){
 
@@ -79,56 +70,50 @@ class HomeSummary extends React.Component {
     console.log("Rendering HomeSummary")
     return (
       <HomeSummaryContext.Provider value={this.state}>
-        <div className="container dashboardBaseText">
-
-
-          <div className="row">
-            <div className="col-sm">
-              <div className="card">
-                <div className="card-body">
-                  <h2>
-                    <b>Summary</b>
-                    <Spinner animation="border" role="status">
-                      <span className="sr-only">Loading...</span>
-                    </Spinner>
-                  </h2>
-                  <hr/>
-                  {/*<hr/>*/}
-                  <div className="row">
-                    {/* Load monitored user */}
-                    <div className="col-sm">
-                      <h5>
-                        Monitored Users: <MonitoredUsersWidget/>
-                      </h5>
-                    </div>
-                    {/*load highest risk*/}
-                    <div className="col-sm">
-                      <h5>
-                        High Risk:
-                        <span className="badge badge-info">100</span>
-                      </h5>
-                    </div>
-                    {/*load users discovere*/}
-                    <div className="col-sm">
-                      <h5>
-                        Users Discovered from events:
-                        <span className="badge badge-info">100</span>
-                      </h5>
-                    </div>
-                    {/*load users imported*/}
-                    <div className="col-sm">
-                      <h5>
-                        Users imported from directory:
-                        <span className="badge badge-info">100</span>
-                      </h5>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
+        <Container className="dashboardBaseText">
+          <Row>
+            <Col lg={{span: 12, offset: 0}}>
+              <Card lg={{span: 12, offset: 1}}>
+                <Card.Header>
+                  <h4 className="address_status float-left">
+                    Summary
+                  </h4>
+                </Card.Header>
+                <Card.Body>
+                  <Card.Text>
+                    <Container>
+                      <Row>
+                        <Col lg={{span: 3, offset: 0}}>
+                          <h5>
+                            Monitored Users: <MonitoredUsersWidget/>
+                          </h5>
+                        </Col>
+                        <Col lg={{span: 3, offset: 0}}>
+                          <h5>
+                            High Risk:
+                            <span className="badge badge-info">100</span>
+                          </h5>
+                        </Col>
+                        <Col lg={{span: 3, offset: 0}}>
+                          <h5>
+                            Users Discovered from events:
+                            <span className="badge badge-info">100</span>
+                          </h5>
+                        </Col>
+                        <Col lg={{span: 3, offset: 0}}>
+                          <h5>
+                            Users imported from directory:
+                            <span className="badge badge-info">100</span>
+                          </h5>
+                        </Col>
+                      </Row>
+                    </Container>
+                  </Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
       </HomeSummaryContext.Provider>
     )
   }
@@ -147,70 +132,6 @@ const Separator = () => (
   </div>
 )
 
-
-/*
-@name HomeSecondRow
-@ddescription component to hold the second row on home
-*/
-const HomeSecondRow = () => (
-  <div className="row">
-
-    {/*********************Monitored users*/}
-    <div className="col-sm-4">
-        <p className="lightGrayText">Monitored Users</p>
-        <ListGroup>
-          <ListGroup.Item>
-          User 1
-          <p>Score: <span className="badge badge-info badge-pill">14</span></p>
-          </ListGroup.Item>
-          <ListGroup.Item>
-          User 2
-          <p>Score: <span className="badge badge-info badge-pill">14</span></p>
-          </ListGroup.Item>
-          <ListGroup.Item>
-          User 3
-          <p>Score: <span className="badge badge-info badge-pill">14</span></p>
-          </ListGroup.Item>
-        </ListGroup>
-    </div>
-
-    {/*********************recent offenses*/}
-    <div className="col-sm-8">
-      <div className="card">
-        <div className="card-body">
-          <div className="row">
-            <div className="col-sm-12">
-                  <p>Recent Anomalies</p>
-                  <ListGroup>
-                    <ListGroup.Item>
-                      <p>Offense 1</p>
-                      <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
-                    </ListGroup.Item>
-                    <ListGroup.Item>
-                      <p>Offense 1</p>
-                      <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
-                    </ListGroup.Item>
-                    <ListGroup.Item>
-                      <p>Offense 1</p>
-                      <p>Score: <span className="badge badge-warning badge-pill">14</span></p>
-                    </ListGroup.Item>
-                  </ListGroup>
-            </div>
-
-
-
-            {/*********************recent offenses graph*/}
-            <div className="col-sm-7">
-              <div id="d3_main"></div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)
-
 /*
 @name Home
 @ddescription component to render the home partial
@@ -220,56 +141,6 @@ const Home = () => (
 
     <HomeSummary></HomeSummary>
 
-    <div className="container dashboardBaseText">
-      <Separator/>
-      <HomeSecondRow />
-    </div>
-
-    <div className="container dashboardBaseText">
-
-      <div className="row">
-        <div className="col-sm">
-          <hr/>
-        </div>
-      </div>
-
-      <div className="row">
-
-        <div className="col-sm-6">
-          <div className="list-group">
-            <a href="#" className="list-group-item list-group-item-action flex-column align-items-start">
-              <div className="d-flex w-100 justify-content-between">
-                <h5 className="mb-1">List group item heading</h5>
-                <small>3 days ago</small>
-              </div>
-              <p className="mb-1">Donec id elit non mi porta gravida at eget metus. Maecenas sed diam eget risus varius blandit.</p>
-              <small>Donec id elit non mi porta.</small>
-            </a>
-            <a href="#" className="list-group-item list-group-item-action flex-column align-items-start">
-              <div className="d-flex w-100 justify-content-between">
-                <h5 className="mb-1">List group item heading</h5>
-                <small className="text-muted">3 days ago</small>
-              </div>
-              <p className="mb-1">Donec id elit non mi porta gravida at eget metus. Maecenas sed diam eget risus varius blandit.</p>
-              <small className="text-muted">Donec id elit non mi porta.</small>
-            </a>
-          </div>
-
-        </div>
-
-        <div className="col-sm-6">
-          <div className="card">
-            <div className="card-body">
-              This is some text within a card body.
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-
-    {/*END UNDER CONTENT*/}
 
 
   </div>

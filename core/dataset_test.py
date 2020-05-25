@@ -48,17 +48,17 @@ class DatasetCSVLocationTestCase(unittest.TestCase):
 class DatasetSessionDataFrameShapeTestCase(unittest.TestCase):
     def setUp(self):
          self.dataset_session = DatasetSession("csv")
-         self.dataset_session.dataset = CSV("", "", "", "")
+         self.dataset_session.csv_dataset = CSV("", "", "", "")
          df = pd.DataFrame([("a"),("1")])
          #get_dataframe = MagicMock(return_value=DataFrame(df))
-         self.dataset_session.dataset.dataframe = CoreDataFrame(df)
+         self.dataset_session.csv_dataset.dataframe = CoreDataFrame(df)
 
     def test_read_csv(self):
-        self.assertTrue(isinstance(self.dataset_session.get_dataset().get_dataframe().data,
+        self.assertTrue(isinstance(self.dataset_session.get_csv_dataset().get_dataframe().data,
                                    pd.core.frame.DataFrame))
 
     def test_get_size(self):
-        self.assertEqual(self.dataset_session.get_size(), (2,1))
+        self.assertEqual(self.dataset_session.get_csv_size(), (2,1))
 
 
 '''

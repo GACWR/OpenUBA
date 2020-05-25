@@ -71,6 +71,23 @@ def delete_model(model_name):
 def install_model(model_name):
     return ModelLibrary().install_model()
 
+'''
+@description retrieve system local model library
+'''
+@server.route("/models/")
+def fetch_models():
+    # return all local models
+    return "TEST"
+
+
+'''
+@description retrieve a specific model from local model library
+'''
+@server.route("/model/<string:model_name>")
+def fetch_specific_model(model_name):
+    # return all local models
+    return ''.join(["TEST",model_name])
+
 
 '''
 @name scheduler_run
@@ -161,6 +178,17 @@ if __name__ == "__main__":
             model_profile: dict = ProfileModel( model_name ).profile()
             for component in model_profile.keys():
                 logging.info(str(component) + " : " + str(model_profile[component]))
+        elif sys.argv[1] == "update_local_model":
+            # model_name: str = str(sys.argv[2])
+
+            # TODO: profile model,
+            model_to_update: str = str(sys.argv[2])
+            profile_for_model_to_update: dict = ProfileModel( model_to_update ).profile()
+
+            # TODO: Update the local model library with the profile
+            for component in profile_for_model_to_update.keys():
+                logging.info(str(component) + " : " + str(profile_for_model_to_update[component]))
+            pass
     else:
         Test.Run() # TODO: remove suite invocation
         core: Core = Core()

@@ -6,7 +6,17 @@ core/.mypy_cache/*
 *.pyc
 __pycache__/*
 .mypy_cache/*
+.mypy_cache
+*.mypy_cache
 /core/__pycache__/*
 /core/.mypy_cache/*
 core/__pycache__/*
 core/.mypy_cache/*
+interface/dist/
+/interface/dist/
+*.DS_Store
+/**/.DS_Store
+/**/__pycache__
+/**/.mypy_cache
+/**/.pyc
+/**/*.mypy_cache

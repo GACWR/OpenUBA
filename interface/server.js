@@ -12,55 +12,96 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 */
-const express = require('express');
-const app = express();
+
+const { app, BrowserWindow } = require('electron')
+const { ipcMain } = require('electron')
 const path = require('path');
-const router = express.Router();
+const url = require('url');
+var fs = require('fs');
+
+let win
+
+//const express = require('express');
+// const app = express();
+//const path = require('path');
+//const router = express.Router();
 
 
+// ELECTRON
 
-//app.use(express.static('html'))
-app.use(express.static(path.join(__dirname, 'build')));
+const DEFAULT_GLOBAL_STATE = {
+  main: ''
+}
+
+let GLOBAL_STATE = {}
+
+function createWindow () {
+  win = new BrowserWindow({
+              width: 1400,
+              height: 700,
+              resizable: false,
+              webPreferences: {
+                  webSecurity: false,
+                  nodeIntegration: false,
+                  preload: __dirname + '/preload.js'
+                }
+            })
+
+  const startUrl = process.env.ELECTRON_START_URL || url.format({
+    pathname: path.join(__dirname, 'build/index.html'),
+    protocol: 'file:',
+    slashes: true,
+  });
+
+  win.loadURL(startUrl);
+
+  // Open the DevTools.
+  win.webContents.openDevTools()
+  win.on('closed', () => {
+    win = null
+  })
+}
+
+app.on('ready', (function(){
+  // win.webContents.on('did-finish-load', function() {
+  //   win.webContents.executeJavaScript("alert('Hello There!');");
+  // });
+  console.log(win)
+  createWindow()
+}))
 
 
-router.get('/', function (req, res) {
-  console.log(__dirname)
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  //__dirname : It will resolve to your project folder.
-});
+app.on('window-all-closed', () => {
+  // On macOS it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
 
-router.get('/dev', function (req, res) {
-  console.log(__dirname)
-  res.sendFile(path.join(__dirname+'/html/index.html'));
-});
+app.on('activate', () => {
+  // On macOS it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (win === null) {
+    createWindow()
+  }
+})
 
-router.get('/data',function(req,res){
-  console.log(__dirname)
-  res.sendFile(path.join(__dirname+'/html/data.html'));
-});
+ipcMain.on('global_call_message', (event, arg) => {
+  console.log("global_call_message")
+  event.sender.send('global_call_reply', { "Result":  result });
+})
 
-router.get('/modeling',function(req,res){
-  console.log(__dirname)
-  res.sendFile(path.join(__dirname+'/html/modeling.html'));
-});
+ipcMain.on('model_library_search_call_message', (event, arg) => {
+  console.log("model_library_search_call_message")
+  console.log(arg)
+  event.sender.send('model_library_search_call_reply', { "Result":  "RESULT" });
+})
 
-router.get('/anomalies',function(req,res){
-  console.log(__dirname)
-  res.sendFile(path.join(__dirname+'/html/anomalies.html'));
-});
-
-router.get('/cases',function(req,res){
-  console.log(__dirname)
-  res.sendFile(path.join(__dirname+'/html/cases.html'));
-});
-
-router.get('/settings',function(req,res){
-  console.log(__dirname)
-  res.sendFile(path.join(__dirname+'/html/settings.html'));
-});
-
-//add the router
-app.use('/', router);
-app.listen(process.env.port || 3001);
+ipcMain.on('local_search_call_message', (event, arg) => {
+  console.log("local_search_call_message")
+  console.log(arg)
+  event.sender.send('local_search_call_reply', { "Result":  "RESULT" });
+})
 
 console.log('Running UI server at 3001');

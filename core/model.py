@@ -55,19 +55,34 @@ class ModelComponent(Enum):
 '''
 class ModelDataLoader(Enum):
     LOCAL_PANDAS_CSV = "local_pandas_csv"
+    LOCAL_PANDAS_PARQUET = "local_pandas_parquet"
+    HDFS_PANDAS_CSV = "HDFS_pandas_csv"
+    HDFS_PANDAS_PARQUET = "HDFS_pandas_parquet"
+    HDFS_SPARK_CSV = "HDFS_spark_csv"
+    HDFS_SPARK_PARQUET = "HDFS_spark_parquet"
+    ES_GENERIC = "ES_generic"
+
+'''
+@name ModelReturnType
+@description
+'''
+class ModelReturnType(Enum):
+    USER_RISKS = "user_risks"
 
 '''
 @name Model
 @description internal representation of a Model
 '''
 class Model():
-    def __init__(self, metadata: dict, dataframe: CoreDataFrame):
+    def __init__(self, metadata: dict, dataframe: CoreDataFrame = None):
         self.data: dict = metadata
         self.dataframe = dataframe
+        # TODO dataframe should be dataframes
+        # also, it should be a dict to hold many dataframes
         pass
 
     def run(self):
-        store_model
+        #
         pass
 
 
@@ -98,19 +113,20 @@ class ModelEngine():
 
     '''
     @name execute
-    @description execute model job
+    @description execute overall model job
     '''
     def execute(self):
 
         # TODO: reference model schedule, right now, this iterates over models sequentially
-        #iterare over models in library
+        #iterare over models groups in local model library
         for model_group_key in self.model_configuration.keys():
 
             # group
             model_group: dict = self.model_configuration[model_group_key]
-
+            model_group_dataloader_context: dict = model_group["data_loader"]["data_loader_context"]
+            model_group_dataloader: str = model_group["data_loader"]["data_loader_type"]
             # load data for model group to share
-            if model_group["data_loader"] == ModelDataLoader.LOCAL_PANDAS_CSV.value:
+            if model_group_dataloader == ModelDataLoader.LOCAL_PANDAS_CSV.value:
 
                 args: dict = {
                     'sep': ' ',
@@ -119,8 +135,73 @@ class ModelEngine():
                     'warn_bad_lines': False
                 }
 
-                loaded_data: CoreDataFrame = model_modules.LocalPandasCSV(model_group["context"]["file_location"], **args).data
+                loaded_data: CoreDataFrame = model_modules.LocalPandasCSV(model_group_dataloader_context["file_location"], model_group_dataloader_context["file"], **args).data
                 print(loaded_data.data)
+
+            elif model_group_dataloader == ModelDataLoader.LOCAL_PANDAS_PARQUET.value:
+                # TODO: parquet logic\
+
+                args: dict = {
+                    'sep': ' ',
+                    'header': 0,
+                    'error_bad_lines': False,
+                    'warn_bad_lines': False
+                }
+
+                loaded_data: CoreDataFrame = model_modules.LocalPandasParquet(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+
+                pass
+
+            elif model_group_dataloader == ModelDataLoader.HDFS_PANDAS_CSV.value:
+                #https://creativedata.atlassian.net/wiki/spaces/SAP/pages/61177860/Python+-+Read+Write+files+from+HDFS
+                # TODO: HDFS CSV logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSPandasCSV(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+            elif model_group_dataloader == ModelDataLoader.HDFS_PANDAS_PARQUET.value:
+                # TODO: HDFS pandas parquet logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSPandasParquet(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+
+            elif model_group_dataloader == ModelDataLoader.HDFS_SPARK_CSV.value:
+                # TODO: HDFS spark csv logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSSparkCSV(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+            elif model_group_dataloader == ModelDataLoader.HDFS_SPARK_PARQUET.value:
+                # TODO:  HDFS spark parquet logic
+                args: dict = {
+                    'host': 'http://localhost:6200'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.HDFSSparkParquet(model_group_dataloader_context["file_location"], **args).data
+                print(loaded_data.data)
+                pass
+
+            elif model_group_dataloader == ModelDataLoader.ES_GENERIC.value:
+
+                # TODO: elastic search query logic
+                args: dict = {
+                    'query': 'QUERY'
+                }
+
+                loaded_data: CoreDataFrame = model_modules.ESGeneric(model_group_dataloader_context["host"], **args).data
+                print(loaded_data.data)
+                pass
 
             else:
 
@@ -134,13 +215,15 @@ class ModelEngine():
             for model in model_group["models"]:
                 logging.info("model engine execute model: "+str(model))
                 model_metadata: dict = model
+                model_enabled: bool =  model_metadata["enabled"]
 
                 #if model is enable, load model, and run it
-                if model_metadata["enabled"]:
+                if model_enabled:
 
                     logging.info("Model enabled: "+str(model_metadata["model_name"]))
                     model_session = ModelSession(model_metadata, self.library)
 
+                    # TODO: new thread
                     # start model session job
                     model_result: dict = model_session.start_job(loaded_data)
 
@@ -149,6 +232,16 @@ class ModelEngine():
                         logging.warning("Model Result is empty: "+str(model_metadata["model_name"]))
                     else:
                         # model results are not empty
+                        model_return_logic: dict = model_metadata["return"]
+                        model_return_type: str = model_return_logic["return_type"]
+
+                        if model_return_type == ModelReturnType.USER_RISKS.value:
+                            # TODO: handle user_risks object
+                            # FOR EACH user in USER_RISKS
+                            # for user_from_model in model_result["users"]
+                                # write user risk profile to DB
+                            pass
+
                         pass
 
 
@@ -156,7 +249,9 @@ class ModelEngine():
                     logging.warning("Model is NOT enabled: "+str(model_metadata["model_name"]))
                     pass
 
+            # TODO: Iterate over rules?
 
+        # end model group
 
 '''
 @name ModelLibrary
@@ -243,12 +338,14 @@ class ModelLibrary():
         # import the model
         model_path: str = 'model_library/'+str( model.data["model_name"] )
 
+
         # insert model scope
         sys.path.insert(0, model_path)
         import MODEL
-
         # execute model
         try:
+            # TODO pass model to execution process
+            # model_result: dict = MODEL.execute(model)
             model_result: dict = MODEL.execute()
         except Exception as e:
             logging.error("Model Execution Failed: "+str(model.data["model_name"])+" Reason: "+str(e))
@@ -341,6 +438,8 @@ class ModelSession():
                 self.library.install_model(model_instance)
                 if VerifyModel(model_instance).verify_model_files():
 
+                    #
+
                     model_result = self.library.run_model(model_instance)
                     logging.info("Model Session: finishing job: "+str(len(model_result)))
 
@@ -360,10 +459,13 @@ class ModelSession():
         else:
             logging.info("Model Session, model [IS] installed: "+str(model_instance.data["model_name"]))
 
+            # only verify components installed
             if VerifyModel(model_instance).verify_model_files():
 
                 model_result = self.library.run_model(model_instance)
                 logging.info("Model Session: finishing job: "+str(len(model_result)))
+
+                # TODO: handle model result conditioned on model_instance.data["return"] object
 
             else:
                 # TODO: handle error
@@ -413,9 +515,11 @@ class VerifyModel():
                     model_filename: str = str(component["filename"])
 
                     # cryptographically profile model
-                    model_description: dict = ModelDescription(self.model, component).data()
+                    #model_description: dict = ProfileModel(self.model, component).data()
+                    #model_profile: dict = ProfileModel(model_data["model_name"]).profile()
+                    model_profile: dict = ModelProfile(self.model, component).data()
 
-                    if model_description["data_hash"].result == component["data_hash"]:
+                    if model_profile["data_hash"].result == component["data_hash"]:
                         logging.info("verify_model_encodings, Model is VALID: " + str( model_data["model_name"] ) )
                         logging.info("Valid Component: " + str(component["filename"]) )
 

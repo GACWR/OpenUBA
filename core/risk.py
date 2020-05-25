@@ -22,3 +22,11 @@ import logging
 class RiskJob():
     def __init__(self):
         logging.info("RiskJob is initiated")
+
+class RiskScore():
+    def __init__(self):
+        pass
+
+    def calculate(self):
+        # TODO: simple summation with weighting 
+        pass

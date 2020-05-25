@@ -1,16 +1,50 @@
 {
   "MODEL_TEST_GROUP_1": {
     "group_name": "MODEL_TEST_GROUP_1",
-    "data_loader": "local_pandas_csv",
-    "context": {
-      "file_location": "../test_datasets/toy_1/proxy/bluecoat.log"
+    "data_loader": {
+      "data_loader_type": "local_pandas_csv",
+      "data_loader_context": {
+        "file_location": "../test_datasets/toy_1/proxy/",
+        "file": "bluecoat.log"
+      }
+    },
+    "model_group_context": {
+      "rules": [
+        {
+          "condition_name": "sample_condition_one",
+          "condition_description": "simple OR pattern match",
+          "features": "cs-username|cs-username",
+          "condition": "parameter1 == 'alice' and parameter2 != 'bob'",
+          "condition_type": "single-fire",
+          "score": 10
+        },
+        {
+          "condition_name": "sample_condition_two",
+          "condition_description": "simple +/- std",
+          "features": "cs-username|cs-username",
+          "condition": "(param_mean > (param_metric + param_range)) or (param_mean < (param_metric - param_range)) ",
+          "condition_type": "deviation",
+          "score": 20
+        }
+      ]
     },
     "models": [
       {
         "model_name": "model_test",
+        "description": "blank",
+        "mitre_tactic": "",
+        "mitre_technique_name": "",
+        "mitre_technique_id": "T1010",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
-        "return": "user_risks",
+        "return": {
+          "return_type": "user_risks",
+          "artifacts": []
+        },
+        "score": 10,
+        "model_context": {
+
+        },
         "components": [
             {
                 "type": "external",
@@ -30,8 +64,20 @@
       },
       {
         "model_name": "model_1",
+        "description": "blank",
+        "mitre_tactic": "",
+        "mitre_technique_name": "",
+        "mitre_technique_id": "T1010",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
+        "return": {
+          "return_type": "user_risks",
+          "artifacts": []
+        },
+        "score": 10,
+        "model_context": {
+
+        },
         "components": [
             {
                 "type": "external",
@@ -46,6 +92,70 @@
                 "data_hash": "7abf09221bf1a1991a0044a2b8a649a440176bbfb0f95be4ab4d54d87a605413",
                 "file_hash": "b017478eb77b119515217bb2535ef1727ddac6a3298e86a9f1eb1dbe3e1d80e4",
                 "file_payload": "ZnJvbSBtb2RlbF9tb2R1bGVzIGltcG9ydCB0ZXN0X21vZHVsZQoKIyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CiAgICBwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIGJlZm9yZSBkaXNrIikKICAgIHJldHVybl9vYmplY3Q6IGRpY3QgPSBkaWN0KCkKICAgIHRlc3RfbW9kdWxlLkV4ZWN1dGUoKQogICAgZm9yIHggaW4gcmFuZ2UoMCwxMDAwMDApOgogICAgICAgIHJldHVybl9vYmplY3RbeF0gPSB7CiAgICAgICAgICAgICJ2YWx1ZSI6ICJ0ZXN0IgogICAgICAgIH0KCiAgICBwcmludCgibW9kZWwgZW5kIHJ1bi4uLi4uLi4uLi4uLi4uLi4uLiIpCiAgICByZXR1cm4gcmV0dXJuX29iamVjdAo="
+            }
+        ]
+      }
+    ]
+  },
+  "MODEL_TEST_GROUP_2": {
+    "group_name": "MODEL_TEST_GROUP_2",
+    "data_loader": {
+      "data_loader_type": "ES_generic",
+      "data_loader_context": {
+        "host": "http://localhost:62000"
+      }
+    },
+    "model_group_context": {
+      "rules": [
+        {
+          "condition_name": "sample_condition_one",
+          "condition_description": "simple OR pattern match",
+          "features": "cs-username|cs-username",
+          "condition": "parameter1 == 'alice' and parameter2 != 'bob'",
+          "condition_type": "single-fire",
+          "score": 10
+        },
+        {
+          "condition_name": "sample_condition_two",
+          "condition_description": "simple +/- std",
+          "features": "cs-username|cs-username",
+          "condition": "(param_mean > (param_metric + param_range)) or (param_mean < (param_metric - param_range)) ",
+          "condition_type": "deviation",
+          "score": 20
+        }
+      ]
+    },
+    "models": [
+      {
+        "model_name": "model_test",
+        "description": "blank",
+        "mitre_tactic": "",
+        "mitre_technique_name": "",
+        "mitre_technique_id": "T1010",
+        "enabled": true,
+        "root": "ANJKD8aioh8wonsLAS9HWOI",
+        "return": {
+          "return_type": "user_risks",
+          "artifacts": []
+        },
+        "score": 10,
+        "model_context": {
+
+        },
+        "components": [
+            {
+                "type": "external",
+                "filename": "__init__.py",
+                "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
+                "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
+                "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
+            },
+            {
+                "type": "external",
+                "filename": "MODEL.py",
+                "data_hash": "c91569ef18120310e433645d54eaddc4fa72bf5a0613a1e13a3e75d2abda665f",
+                "file_hash": "585a2c07d4644acb0da61202490cafb99a58570dc9861b14426576f54350fdc6",
+                "file_payload": "IyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CglwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIikKCXJldHVybl9vYmplY3Q6IGRpY3QgPSB7fQoKCWZvciB4IGluIHJhbmdlKDAsMTAwMDAwKToKCQlyZXR1cm5fb2JqZWN0W3hdID0gewoJCQkidmFsdWUiOiAidGVzdCIKCQl9CgoJcHJpbnQoIm1vZGVsIGVuZCBydW4uLiIpCglyZXR1cm4gcmV0dXJuX29iamVjdAo="
             }
         ]
       }
