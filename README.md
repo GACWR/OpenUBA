@@ -29,7 +29,7 @@ A robust, and flexible open source User & Entity Behavior Analytics (UEBA) frame
 ## Problem
 Many UBA platforms typically use a "black box" approach to data science practices, which may work best for security analysts who are not interested in the nuts and bolts of the underlying models being used to generate anomalies, baselines, and cases. These platforms view their models as IP.
 
-# solution
+# Solution
 OUBA takes an "open-model" approach, and is designed for the small subset of security analysts who have authentic curiosity about what models are doing, and how they work under the hood. We believe in the scientific computing community, and its contributions over the years (libraries, toolkits, etc). In security, rule/model transparency is key, for compliance, response/investigation, and decision making.
 
 To take it a step further, OUBA also makes use of a community driven marketplace for models, similar to a plugin-store, where plugins are security models. This marketplace is where users of OUBA can install security models for their own use cases. Model developers can also upload their models, enabling other OUBA users to reuse them, whether for free, or compensation -- the choice is up to the model developer to make.
