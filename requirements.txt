@@ -2,7 +2,7 @@ flask==1.0.2
 keras==2.3.1 
 pandas==0.25.3
 numpy==1.18.1
-tensorflow==2.1.0 
+tensorflow==2.1.2 
 coloredlogs==10.0 
 pymongo==3.10.1 
 mypy==0.761
