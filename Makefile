@@ -2,30 +2,29 @@ dev: check run
 run:
 	cd core/ ; python3.7 core.py ;
 check:
-	cd core/ ; \
 	mypy \
-	anomaly.py \
-	case.py \
-	core.py \
-	database.py \
-	dataset.py \
-	entity.py \
-	entity_test.py \
-	encode.py \
-	encode_test.py \
-	model.py \
-	process.py \
-	process_test.py \
-	risk.py \
-	riskmanager.py \
-	display.py \
-	user.py \
-	user_test.py \
-	utility.py \
-	alert.py \
-	api.py \
-	hash.py \
-	hash_test.py \
+	core/anomaly.py \
+	core/case.py \
+	core/core.py \
+	core/database.py \
+	core/dataset.py \
+	core/entity.py \
+	core/entity_test.py \
+	core/encode.py \
+	core/encode_test.py \
+	core/model.py \
+	core/process.py \
+	core/process_test.py \
+	core/risk.py \
+	core/riskmanager.py \
+	core/display.py \
+	core/user.py \
+	core/user_test.py \
+	core/utility.py \
+	core/alert.py \
+	core/api.py \
+	core/hash.py \
+	core/hash_test.py \
 	--ignore-missing-imports ;
 profile_model:
 	cd core/ ; python3.7 core.py profile_model ${model_name};
