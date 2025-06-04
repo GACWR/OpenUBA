@@ -32,5 +32,19 @@
         }
       ]
     }
-  ]
+  ],
+  "datasets": {
+    "proxy_disk": {
+      "log_name": "proxy_disk",
+      "type": "csv",
+      "delimiter": " ",
+      "location_type": "disk",
+      "folder": "proxy",
+      "id_feature": "cs-username",
+      "filename_scheme": {
+        "type": "date",
+        "scheme": "mm-dd-yyy"
+      }
+    }
+  }
 }
