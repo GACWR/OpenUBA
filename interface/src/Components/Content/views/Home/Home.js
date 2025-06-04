@@ -14,7 +14,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 */
 import React from 'react';
 import {HomeSummaryContext} from './Contexts/HomeSummaryContext'
-import {Badge, Spinner, ListGroup, Row, Col, Container, Card} from 'react-bootstrap';
+import {Badge, Spinner, Row, Col, Container, Card} from 'react-bootstrap';
 
 
 
@@ -29,11 +29,7 @@ class MonitoredUsersWidget extends React.Component {
     return (
       <HomeSummaryContext.Consumer>
         {({monitored_users_count}) => (
-          <span>
-            <p>
-              <Badge variant="info">{monitored_users_count}</Badge>
-            </p>
-          </span>
+          <Badge variant="info">{monitored_users_count}</Badge>
         )}
       </HomeSummaryContext.Consumer>
     )
@@ -48,39 +44,77 @@ class HomeSummary extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      monitored_users_count: 1
-    }
-  }
-
-  async loadMonitoredUsers() {
-    try{
-
-
-    }catch(e){
-
+      monitored_users_count: 0,
+      high_risk_count: 0,
+      users_discovered: 0,
+      users_imported: 0,
+      loading: true,
+      error: null
     }
   }
 
   async componentDidMount() {
-    // TODO: perhaps set interval and call this.loadMonitoredUsers, and others?
+    try {
+      console.log('Fetching dashboard data...');
+      const response = await fetch('http://localhost:5001/api/dashboard/summary');
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Dashboard data received:', data);
+      
+      this.setState({
+        monitored_users_count: data.monitored_users,
+        high_risk_count: data.high_risk,
+        users_discovered: data.users_discovered,
+        users_imported: data.users_imported,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      this.setState({
+        error: `Failed to load dashboard data: ${error.message}`,
+        loading: false
+      });
+    }
   }
 
   render(){
-    //TODO: create home summary context provider/consumer
-    console.log("Rendering HomeSummary")
+    const { loading, error } = this.state;
+
+    if (loading) {
+      return (
+        <Container className="text-center mt-5">
+          <Spinner animation="border" />
+          <div>Loading dashboard data...</div>
+        </Container>
+      );
+    }
+
+    if (error) {
+      return (
+        <Container className="text-center mt-5">
+          <div className="text-danger">{error}</div>
+        </Container>
+      );
+    }
+
     return (
       <HomeSummaryContext.Provider value={this.state}>
         <Container className="dashboardBaseText">
           <Row>
             <Col lg={{span: 12, offset: 0}}>
-              <Card lg={{span: 12, offset: 1}}>
+              <Card>
                 <Card.Header>
                   <h4 className="address_status float-left">
                     Summary
                   </h4>
                 </Card.Header>
                 <Card.Body>
-                  <Card.Text>
+                  <div className="dashboard-content">
                     <Container>
                       <Row>
                         <Col lg={{span: 3, offset: 0}}>
@@ -91,24 +125,24 @@ class HomeSummary extends React.Component {
                         <Col lg={{span: 3, offset: 0}}>
                           <h5>
                             High Risk:
-                            <span className="badge badge-info">100</span>
+                            <Badge variant="danger" className="ml-2">{this.state.high_risk_count}</Badge>
                           </h5>
                         </Col>
                         <Col lg={{span: 3, offset: 0}}>
                           <h5>
-                            Users Discovered from events:
-                            <span className="badge badge-info">100</span>
+                            Users Discovered:
+                            <Badge variant="info" className="ml-2">{this.state.users_discovered}</Badge>
                           </h5>
                         </Col>
                         <Col lg={{span: 3, offset: 0}}>
                           <h5>
-                            Users imported from directory:
-                            <span className="badge badge-info">100</span>
+                            Users Imported:
+                            <Badge variant="info" className="ml-2">{this.state.users_imported}</Badge>
                           </h5>
                         </Col>
                       </Row>
                     </Container>
-                  </Card.Text>
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
@@ -138,11 +172,7 @@ const Separator = () => (
 */
 const Home = () => (
   <div className="home">
-
-    <HomeSummary></HomeSummary>
-
-
-
+    <HomeSummary/>
   </div>
 );
 

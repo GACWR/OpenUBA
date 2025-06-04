@@ -32,6 +32,19 @@ from model import ModelEngine
 import unittest
 import trace, sys
 import coloredlogs
+from database import ReadJSONFileFS
+import os
+
+STORAGE_DIR = 'storage'
+RISK_RESULTS_FILE = os.path.join(STORAGE_DIR, 'risk_results.json')
+
+# Create storage directory if it doesn't exist
+os.makedirs(STORAGE_DIR, exist_ok=True)
+
+# Initialize risk results file if it doesn't exist
+if not os.path.exists(RISK_RESULTS_FILE):
+    with open(RISK_RESULTS_FILE, 'w') as f:
+        f.write('{}')
 
 coloredlogs.install()
 
@@ -40,7 +53,15 @@ single server instance
 @note dont use in prod, use a prodution ready WSGI server
 '''
 server = Flask(__name__)
-CORS(server)
+
+# Configure CORS to allow requests from React development server
+CORS(server, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 '''
 @description endpoint to get varied display information
@@ -139,7 +160,7 @@ class Core:
         self.run_display_information_job()
 
         #begin flask server, after initiation tasks
-        server.run()
+        server.run(port=5001)
 
     '''
     @name run_scheduler_job
@@ -165,8 +186,42 @@ class Core:
         self.display = Display()
         self.display.get_system_display()
 
+'''
+@description endpoint to get user risk information
+'''
+@server.route("/api/users/risks", methods=['GET'])
+def get_user_risks():
+    try:
+        risk_data = ReadJSONFileFS(RISK_RESULTS_FILE).data
+        return jsonify(risk_data)
+    except Exception as e:
+        logging.error(f"Error reading risk data: {str(e)}")
+        return jsonify({"error": "Failed to read risk data"})
 
-
+'''
+@description endpoint to get dashboard summary
+'''
+@server.route("/api/dashboard/summary", methods=['GET'])
+def get_dashboard_summary():
+    try:
+        risk_data = ReadJSONFileFS(RISK_RESULTS_FILE).data
+        high_risk_users = sum(1 for user, data in risk_data.items() if data.get('risk_score', 0) > 50)
+        total_users = len(risk_data)
+        
+        return jsonify({
+            "monitored_users": total_users,
+            "high_risk": high_risk_users,
+            "users_discovered": total_users,
+            "users_imported": 0  # This would come from directory import
+        })
+    except Exception as e:
+        logging.error(f"Error getting dashboard summary: {str(e)}")
+        return jsonify({
+            "monitored_users": 0,
+            "high_risk": 0,
+            "users_discovered": 0,
+            "users_imported": 0
+        })
 
 if __name__ == "__main__":
     print("[Starting OpenUBA]")

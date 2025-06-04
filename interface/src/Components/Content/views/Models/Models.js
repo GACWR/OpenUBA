@@ -169,12 +169,11 @@ class Models extends React.Component {
     this.handle_ml_search_term_submit = this.handle_ml_search_term_submit.bind(this);
     this.handle_local_search_term_submit = this.handle_local_search_term_submit.bind(this);
 
-
     this.state = {
       model_library_search_term: "blank model library search term",
-      model_local_search_term: "blank model local search term"
+      model_local_search_term: "blank model local search term",
+      isElectron: window.ipcRenderer !== undefined
     }
-
   }
 
   handle_ml_search_term_change(event){
@@ -196,29 +195,41 @@ class Models extends React.Component {
   handle_ml_search_term_submit(event){
     console.log("handle_ml_search_term_submit")
     // send ml search submit
-    window.ipcRenderer.send('model_library_search_call_message', this.state["model_library_search_term"])
+    if (this.state.isElectron) {
+      window.ipcRenderer.send('model_library_search_call_message', this.state["model_library_search_term"])
+    } else {
+      // TODO: Add API call for web version
+      console.log("Web version: would search for", this.state["model_library_search_term"])
+    }
     event.preventDefault();
   }
 
   handle_local_search_term_submit(event){
     console.log("handle_local_search_term_submit")
     // send local search submit
-    window.ipcRenderer.send('local_search_call_message', this.state["model_local_search_term"])
+    if (this.state.isElectron) {
+      window.ipcRenderer.send('local_search_call_message', this.state["model_local_search_term"])
+    } else {
+      // TODO: Add API call for web version
+      console.log("Web version: would search locally for", this.state["model_local_search_term"])
+    }
     event.preventDefault();
   }
 
   async componentDidMount(props){
-    //callback for model_library_search_call_reply
-    window.ipcRenderer.on('model_library_search_call_reply', (event, result) => {
-      console.log("model_library_search_call_reply returned result")
-      console.log(result)
-    })
+    if (this.state.isElectron) {
+      //callback for model_library_search_call_reply
+      window.ipcRenderer.on('model_library_search_call_reply', (event, result) => {
+        console.log("model_library_search_call_reply returned result")
+        console.log(result)
+      })
 
-    //callback for local_search_call_reply
-    window.ipcRenderer.on('local_search_call_reply', (event, result) => {
-      console.log("local_search_call_reply returned result")
-      console.log(result)
-    })
+      //callback for local_search_call_reply
+      window.ipcRenderer.on('local_search_call_reply', (event, result) => {
+        console.log("local_search_call_reply returned result")
+        console.log(result)
+      })
+    }
   }
 
   render(props){

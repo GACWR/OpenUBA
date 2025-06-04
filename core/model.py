@@ -236,10 +236,12 @@ class ModelEngine():
                         model_return_type: str = model_return_logic["return_type"]
 
                         if model_return_type == ModelReturnType.USER_RISKS.value:
-                            # TODO: handle user_risks object
-                            # FOR EACH user in USER_RISKS
-                            # for user_from_model in model_result["users"]
-                                # write user risk profile to DB
+                            # Save the risk results
+                            try:
+                                WriteJSONFileFS(model_result, 'storage/risk_results.json')
+                                logging.info(f"Saved risk results for {len(model_result)} users")
+                            except Exception as e:
+                                logging.error(f"Failed to save risk results: {str(e)}")
                             pass
 
                         pass
@@ -338,17 +340,20 @@ class ModelLibrary():
         # import the model
         model_path: str = 'model_library/'+str( model.data["model_name"] )
 
-
         # insert model scope
         sys.path.insert(0, model_path)
         import MODEL
+        
+        # Set the data in the model
+        if hasattr(MODEL, 'set_data'):
+            MODEL.set_data(model.dataframe)
+            
         # execute model
         try:
-            # TODO pass model to execution process
-            # model_result: dict = MODEL.execute(model)
             model_result: dict = MODEL.execute()
         except Exception as e:
             logging.error("Model Execution Failed: "+str(model.data["model_name"])+" Reason: "+str(e))
+            model_result = {"error": str(e)}
 
         # remove model scope from path list
         sys.path.remove(model_path)

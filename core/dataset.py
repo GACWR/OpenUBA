@@ -178,22 +178,28 @@ class CSV(Dataset):
     def read_from_disk(self) -> None:
         logging.info("Trying: "+str(self.file_location))
 
-        ## TODO: get columns from config
-        df = pd.read_csv(self.file_location+"/bluecoat.log",
-                         sep=self.delimiter,
-                         engine='python',
-                         header=0,
-                         error_bad_lines=False,
-                         warn_bad_lines=False)
+        ## Try different encodings
+        encodings = ['utf-8', 'latin1', 'cp1252', 'ascii']
+        for encoding in encodings:
+            try:
+                df = pd.read_csv(self.file_location+"/bluecoat.log",
+                             sep=self.delimiter,
+                             engine='python',
+                             header=0,
+                             encoding=encoding,
+                             on_bad_lines='skip'  # Skip problematic lines
+                             )
+                logging.info(f"Successfully read file with {encoding} encoding")
+                break
+            except UnicodeDecodeError:
+                logging.warning(f"Failed to read with {encoding} encoding, trying next...")
+                continue
+            except Exception as e:
+                logging.error(f"Error reading CSV: {str(e)}")
+                raise
 
         # TODO: Parse class, will parse each row
         logging.info("columns: "+str(df.columns)+":"+str(df.shape))
-
-        '''
-        foo = lambda x: pd.Series([ i for i inself.split_record(x, ' ') ])
-        # apply the parser to each record
-        rev = df["date"].head(10).apply(foo)
-        '''
         logging.info( "Dataframe shape: ["+str(df.shape)+"]" )
         logging.info( df.describe() )
         self.dataframe = CoreDataFrame( df )

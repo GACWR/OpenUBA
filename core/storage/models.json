@@ -31,10 +31,10 @@
     "models": [
       {
         "model_name": "model_test",
-        "description": "blank",
-        "mitre_tactic": "",
-        "mitre_technique_name": "",
-        "mitre_technique_id": "T1010",
+        "description": "Risk calculation model based on proxy logs",
+        "mitre_tactic": "Discovery",
+        "mitre_technique_name": "Network Share Discovery",
+        "mitre_technique_id": "T1135",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
         "return": {
@@ -42,57 +42,22 @@
           "artifacts": []
         },
         "score": 10,
-        "model_context": {
-
-        },
+        "model_context": {},
         "components": [
-            {
-                "type": "external",
-                "filename": "__init__.py",
-                "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
-                "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
-                "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
-            },
-            {
-                "type": "external",
-                "filename": "MODEL.py",
-                "data_hash": "c91569ef18120310e433645d54eaddc4fa72bf5a0613a1e13a3e75d2abda665f",
-                "file_hash": "585a2c07d4644acb0da61202490cafb99a58570dc9861b14426576f54350fdc6",
-                "file_payload": "IyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CglwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIikKCXJldHVybl9vYmplY3Q6IGRpY3QgPSB7fQoKCWZvciB4IGluIHJhbmdlKDAsMTAwMDAwKToKCQlyZXR1cm5fb2JqZWN0W3hdID0gewoJCQkidmFsdWUiOiAidGVzdCIKCQl9CgoJcHJpbnQoIm1vZGVsIGVuZCBydW4uLiIpCglyZXR1cm4gcmV0dXJuX29iamVjdAo="
-            }
-        ]
-      },
-      {
-        "model_name": "model_1",
-        "description": "blank",
-        "mitre_tactic": "",
-        "mitre_technique_name": "",
-        "mitre_technique_id": "T1010",
-        "enabled": true,
-        "root": "ANJKD8aioh8wonsLAS9HWOI",
-        "return": {
-          "return_type": "user_risks",
-          "artifacts": []
-        },
-        "score": 10,
-        "model_context": {
-
-        },
-        "components": [
-            {
-                "type": "external",
-                "filename": "__init__.py",
-                "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
-                "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
-                "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
-            },
-            {
-                "type": "external",
-                "filename": "MODEL.py",
-                "data_hash": "7abf09221bf1a1991a0044a2b8a649a440176bbfb0f95be4ab4d54d87a605413",
-                "file_hash": "b017478eb77b119515217bb2535ef1727ddac6a3298e86a9f1eb1dbe3e1d80e4",
-                "file_payload": "ZnJvbSBtb2RlbF9tb2R1bGVzIGltcG9ydCB0ZXN0X21vZHVsZQoKIyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CiAgICBwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIGJlZm9yZSBkaXNrIikKICAgIHJldHVybl9vYmplY3Q6IGRpY3QgPSBkaWN0KCkKICAgIHRlc3RfbW9kdWxlLkV4ZWN1dGUoKQogICAgZm9yIHggaW4gcmFuZ2UoMCwxMDAwMDApOgogICAgICAgIHJldHVybl9vYmplY3RbeF0gPSB7CiAgICAgICAgICAgICJ2YWx1ZSI6ICJ0ZXN0IgogICAgICAgIH0KCiAgICBwcmludCgibW9kZWwgZW5kIHJ1bi4uLi4uLi4uLi4uLi4uLi4uLiIpCiAgICByZXR1cm4gcmV0dXJuX29iamVjdAo="
-            }
+          {
+            "type": "external",
+            "filename": "__init__.py",
+            "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
+            "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
+            "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
+          },
+          {
+            "type": "external",
+            "filename": "MODEL.py",
+            "data_hash": "7abf09221bf1a1991a0044a2b8a649a440176bbfb0f95be4ab4d54d87a605413",
+            "file_hash": "585a2c07d4644acb0da61202490cafb99a58570dc9861b14426576f54350fdc6",
+            "file_payload": "aW1wb3J0IHBhbmRhcyBhcyBwZApkZWYgZXhlY3V0ZSgpOgogICAgcHJpbnQoIm1vZGVsX3Rlc3QgdGVzdGluZy4uLiIpCiAgICByZXR1cm5fb2JqZWN0ID0ge30KICAgIAogICAgdHJ5OgogICAgICAgICMgR2V0IHRoZSBkYXRhZnJhbWUgZnJvbSB0aGUgbW9kZWwgY29udGV4dAogICAgICAgIGRmID0gbG9hZGVkX2RhdGEuZGF0YQogICAgICAgIHByaW50KGYiTG9hZGVkIGRhdGEgY29sdW1uczoge2RmLmNvbHVtbnMudG9saXN0KCl9IikKICAgICAgICBwcmludChmIlNhbXBsZSBkYXRhOlxue2RmLmhlYWQoKX0iKQogICAgICAgIAogICAgICAgICMgR3JvdXAgYnkgSVAgYWRkcmVzcyBzaW5jZSB3ZSBkb24ndCBoYXZlIHVzZXJuYW1lcyBpbiB0aGUgc2FtcGxlIGxvZwogICAgICAgIHVuaXF1ZV9pcHMgPSBkZlsnYy1pcCddLnVuaXF1ZSgpCiAgICAgICAgCiAgICAgICAgZm9yIGlwIGluIHVuaXF1ZV9pcHM6CiAgICAgICAgICAgIGlmIHBkLmlzbmEoaXApIG9yIGlwID09ICcnOgogICAgICAgICAgICAgICAgY29udGludWUKICAgICAgICAgICAgICAgIAogICAgICAgICAgICB1c2VyX2RhdGEgPSBkZltkZlsnYy1pcCddID09IGlwXQogICAgICAgICAgICByaXNrX3Njb3JlLCByaXNrX2ZhY3RvcnMgPSBjYWxjdWxhdGVfdXNlcl9yaXNrKHVzZXJfZGF0YSkKICAgICAgICAgICAgCiAgICAgICAgICAgIHJldHVybl9vYmplY3Rbc3RyKGlwKV0gPSB7CiAgICAgICAgICAgICAgICAicmlza19zY29yZSI6IHJpc2tfc2NvcmUsCiAgICAgICAgICAgICAgICAicmlza19mYWN0b3JzIjogcmlza19mYWN0b3JzLAogICAgICAgICAgICAgICAgImxhc3Rfc2VlbiI6IHN0cih1c2VyX2RhdGFbJ3RpbWUnXS5pbG9jWy0xXSkgaWYgbGVuKHVzZXJfZGF0YSkgPiAwIGVsc2UgInVua25vd24iLAogICAgICAgICAgICAgICAgInRvdGFsX3JlcXVlc3RzIjogbGVuKHVzZXJfZGF0YSkKICAgICAgICAgICAgfQogICAgICAgIAogICAgICAgIHByaW50KGYiUHJvY2Vzc2VkIHtsZW4ocmV0dXJuX29iamVjdCl9IElQcyIpCiAgICAgICAgcHJpbnQoZiJTYW1wbGUgcmVzdWx0czoge2xpc3QocmV0dXJuX29iamVjdC5pdGVtcygpKVs6Ml19IikKICAgIAogICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgIHByaW50KGYiRXJyb3IgaW4gbW9kZWwgZXhlY3V0aW9uOiB7c3RyKGUpfSIpCiAgICAgICAgcmV0dXJuX29iamVjdFsiZXJyb3IiXSA = IHN0cihlKQogICAgCiAgICBwcmludCgibW9kZWwgZW5kIHJ1bi4uIikKICAgIHJldHVybiByZXR1cm5fb2JqZWN0"
+          }
         ]
       }
     ]
@@ -128,10 +93,10 @@
     "models": [
       {
         "model_name": "model_test",
-        "description": "blank",
-        "mitre_tactic": "",
-        "mitre_technique_name": "",
-        "mitre_technique_id": "T1010",
+        "description": "Risk calculation model based on proxy logs",
+        "mitre_tactic": "Discovery",
+        "mitre_technique_name": "Network Share Discovery",
+        "mitre_technique_id": "T1135",
         "enabled": true,
         "root": "ANJKD8aioh8wonsLAS9HWOI",
         "return": {
@@ -139,24 +104,15 @@
           "artifacts": []
         },
         "score": 10,
-        "model_context": {
-
-        },
+        "model_context": {},
         "components": [
-            {
-                "type": "external",
-                "filename": "__init__.py",
-                "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
-                "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
-                "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
-            },
-            {
-                "type": "external",
-                "filename": "MODEL.py",
-                "data_hash": "c91569ef18120310e433645d54eaddc4fa72bf5a0613a1e13a3e75d2abda665f",
-                "file_hash": "585a2c07d4644acb0da61202490cafb99a58570dc9861b14426576f54350fdc6",
-                "file_payload": "IyBuZWVkIHRvIGV4cG9zZSBleGVjdXRlCmRlZiBleGVjdXRlKCk6CglwcmludCgibW9kZWxfdGVzdCB0ZXN0aW5nLi4uIikKCXJldHVybl9vYmplY3Q6IGRpY3QgPSB7fQoKCWZvciB4IGluIHJhbmdlKDAsMTAwMDAwKToKCQlyZXR1cm5fb2JqZWN0W3hdID0gewoJCQkidmFsdWUiOiAidGVzdCIKCQl9CgoJcHJpbnQoIm1vZGVsIGVuZCBydW4uLiIpCglyZXR1cm4gcmV0dXJuX29iamVjdAo="
-            }
+          {
+            "type": "external",
+            "filename": "__init__.py",
+            "data_hash": "bb359488ff009930fdb409b2e37d2770fa302e249aae9fb277ed56a04f1ce750",
+            "file_hash": "8856500188054fcfc51011fbc57bd667b8f9a70d58b5ce40d4ca3ade9b5caac6",
+            "file_payload": "IyBuZWVkIHRvIGltcG9ydCAuTU9ERUwKZnJvbSAuTU9ERUwgaW1wb3J0IGV4ZWN1dGUK"
+          }
         ]
       }
     ]

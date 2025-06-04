@@ -1,32 +1,23 @@
 import React from 'react';
 import {SystemLogContext} from './Contexts/SystemLogContext'
-import {Toast, Container, Row, Col, Button, Card} from 'react-bootstrap'
-
+import {Container, Row, Col, Card} from 'react-bootstrap'
 
 /*
 @name SystemLogStatus
 @ddescription consumer for system log status
 */
 
-
-//class SystemLogStatus extends React.Component {
-const SystemLogStatus = (props) => {
-
-  const [show, setShow] = React.useState(false);
-
+const SystemLogStatus = () => {
   return (
     <SystemLogContext.Consumer>
       {({system_log_status}) => (
-        <>
-          <p className="systemlogp">
-            System Status From Server: {system_log_status}
-          </p>
-        </>
+        <div className="systemlogp">
+          System Status From Server: {system_log_status}
+        </div>
       )}
     </SystemLogContext.Consumer>
   )
 }
-
 
 /*
 @name SystemLog
@@ -36,38 +27,32 @@ class SystemLog extends React.Component {
 
   constructor(props) {
     super(props);
-    this.API_SERVER = "http://localhost:5000"
+    this.API_SERVER = "http://localhost:5001"
     this.state = {
       system_log_status: 1
     }
   }
 
   async loadSystemStatus() {
-    try{
-      let complete_endpoint = this.API_SERVER+"/display/get_all_entities"
-      const res = await fetch(complete_endpoint)
-      const json_response = await res.json()
-      this.setState({
-        system_log_status: this.state.system_log_status + 1
-      });
-    }catch(e){
+    try {
+      const res = await fetch(`${this.API_SERVER}/display/get_all_entities`)
+      await res.json()
+      this.setState(prevState => ({
+        system_log_status: prevState.system_log_status + 1
+      }));
+    } catch(e) {
       console.log(e);
-      this.setState({
-        system_log_status: this.state.system_log_status + 1
-      });
+      this.setState(prevState => ({
+        system_log_status: prevState.system_log_status + 1
+      }));
     }
   }
 
   async componentDidMount() {
-    /*
-    let complete_endpoint = this.API_SERVER+"/display/get_all_entities"
-    let complete_endpoint = this.API_SERVER+"/display/get_all_users"
-    let complete_endpoint = this.API_SERVER+"/display/get_system_log"
-    */
     try {
       setInterval(async () => {
-        // async call to load system status
-        //this.loadSystemStatus()
+        // Uncomment to enable status polling
+        // await this.loadSystemStatus()
       }, 1000);
     } catch(e) {
       console.log(e);
@@ -81,9 +66,9 @@ class SystemLog extends React.Component {
         <Container className="systemLogContainer">
           <Row>
             <Col lg={{span: 12, offset: 0}} className="system_log">
-              <Card lg={{span: 12, offset: 1}}>
+              <Card>
                 <Card.Body>
-                  <Card.Text>
+                  <div className="system-log-content">
                     <Container>
                       <Row>
                         <Col lg={{span: 12, offset: 0}}>
@@ -91,7 +76,7 @@ class SystemLog extends React.Component {
                         </Col>
                       </Row>
                     </Container>
-                  </Card.Text>
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
