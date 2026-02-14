@@ -1,0 +1,9 @@
+name: model_1
+version: 0.1.0
+runtime: python-base
+description: Mock model for testing V2 interface
+parameters:
+  sensitivity:
+    type: float
+    default: 0.85
+    description: Base risk score sensitivity

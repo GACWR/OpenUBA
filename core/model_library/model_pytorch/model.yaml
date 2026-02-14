@@ -1,0 +1,13 @@
+name: model_pytorch
+version: 1.0.0
+runtime: pytorch
+description: PyTorch Autoencoder
+parameters:
+  learning_rate:
+    type: float
+    default: 0.001
+    description: Learning rate
+  epochs:
+    type: integer
+    default: 10
+    description: Number of training epochs

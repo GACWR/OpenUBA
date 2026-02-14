@@ -15,7 +15,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
 import pandas as pd
-from process import DataSource, DataSourceFileType
+from core.process import DataSource, DataSourceFileType
 import logging
 from typing import Dict, Tuple, Sequence, List
 from unittest.mock import MagicMock

@@ -1,0 +1,13 @@
+pandas>=1.3.0
+numpy>=1.21.0
+# spark support for models
+pyspark>=3.5.0
+# elasticsearch support for models
+elasticsearch>=8.11.0
+
+
+# Real Model Dependencies
+scikit-learn
+torch
+tensorflow
+networkx

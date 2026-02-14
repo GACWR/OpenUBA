@@ -19,7 +19,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from database import DBReadFile, DBWriteFile
+from core.database import DBReadFile, DBWriteFile
 from typing import Dict, Tuple, Sequence, List
 
 

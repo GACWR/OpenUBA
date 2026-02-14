@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=openuba-model-runner:base
+FROM ${BASE_IMAGE}
+
+USER root
+# Install PyTorch CPU version
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+USER modelrunner

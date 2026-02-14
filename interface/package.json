@@ -7,59 +7,55 @@
   "main": "server.js",
   "homepage": "./",
   "dependencies": {
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.5.0",
-    "@testing-library/user-event": "^7.2.1",
-    "bootstrap": "^4.4.1",
-    "react": "^16.13.1",
-    "react-bootstrap": "^1.0.1",
-    "react-dom": "^16.13.1",
-    "react-router-dom": "^5.1.2",
-    "react-scripts": "3.4.1"
+    "@apollo/client": "^3.8.8",
+    "@radix-ui/react-avatar": "^1.0.4",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-popover": "^1.1.15",
+    "@radix-ui/react-scroll-area": "^1.0.5",
+    "@radix-ui/react-select": "^2.0.0",
+    "@radix-ui/react-separator": "^1.0.3",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@xyflow/react": "^12.10.0",
+    "axios": "^1.6.2",
+    "cmdk": "^0.2.0",
+    "graphql": "^16.8.1",
+    "graphql-ws": "^5.14.2",
+    "next": "14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.0",
+    "recharts": "^3.5.0",
+    "zustand": "^4.5.0"
   },
   "scripts": {
-    "start": "export BROWSER=none && react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "start-electron": "export ELECTRON_START_URL=http://localhost:3000 && export NODE_OPTIONS=--http-parser=legacy && electron .",
-    "start-electron-static": "export NODE_OPTIONS='--http-parser=legacy' && electron .",
-    "build-electron": "mkdir -f build/src && cp -r . build/ && cp -r src/shared/. build/src/shared",
-    "package": "electron-builder build --mac --win -c.extraMetadata.main=server.js --publish never"
-  },
-  "build": {
-    "files": [
-      "build/**/*",
-      "node_modules/**/*",
-      "public/**/*",
-      "package.json",
-      "dist/**/*",
-      "storage/**/*",
-      "*.js"
-    ],
-    "publish": {
-      "provider": "github",
-      "repo": "OpenUBA",
-      "owner": "GACWR"
-    }
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "eslintConfig": {
-    "extends": "react-app"
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "extends": "next/core-web-vitals"
   },
   "devDependencies": {
-    "electron": "^13.6.6",
-    "electron-builder": "^22.4.1"
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "autoprefixer": "^10.4.17",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.0.4",
+    "lucide-react": "^0.309.0",
+    "postcss": "^8.4.35",
+    "tailwind-merge": "^2.2.1",
+    "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.3.3"
   }
 }

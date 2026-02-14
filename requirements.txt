@@ -1,8 +1,52 @@
 flask==1.0.2
-keras==2.3.1 
-pandas==0.25.3
-numpy==1.22.0
-tensorflow==2.5.3 
+# keras and tensorflow are optional - models may use different frameworks
+# keras==2.3.1 
+pandas>=1.3.0
+numpy>=1.22.0
+# tensorflow==2.5.3  # optional - not available for all platforms/architectures
 coloredlogs==10.0 
 pymongo==3.10.1 
-mypy==0.761
+# use a modern mypy that does not depend on typed-ast (works on python 3.10+/arm)
+mypy==1.10.0
+# fastapi and dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+email-validator==2.1.0.post1
+# database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.12.1
+# docker and kubernetes
+docker==6.1.3
+kubernetes==28.1.0
+# http requests
+requests==2.31.0
+# yaml
+pyyaml==6.0.1
+# authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-multipart==0.0.6
+# scheduling
+apscheduler==3.10.4
+# optional: huggingface
+# huggingface-hub==0.19.4
+# optional: spark
+# pyspark==3.5.0
+# optional: elasticsearch
+# elasticsearch==8.11.0
+# testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.25.2
+testcontainers==3.7.0
+# e2e testing
+playwright==1.40.0
+pytest-playwright==0.4.3
+python-slugify
+elasticsearch==8.11.0
+pyspark==3.5.0

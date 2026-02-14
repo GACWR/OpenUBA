@@ -1,0 +1,27 @@
+FROM python:3.9-slim
+
+# install system dependencies (including JRE for PySpark)
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    default-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+# set working directory
+WORKDIR /app
+
+# install base dependencies
+COPY docker/model-runner/requirements-base.txt /tmp/requirements-base.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-base.txt
+
+# copy runner script
+COPY docker/model-runner/runner.py ./runner.py
+
+# create non-root user
+RUN groupadd -r modelrunner && useradd -r -g modelrunner -u 1000 modelrunner
+
+# create model directory
+RUN mkdir -p /model && chown -R modelrunner:modelrunner /model /app
+
+USER modelrunner
+ENTRYPOINT ["python", "runner.py"]

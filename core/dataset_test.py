@@ -16,7 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 import unittest
 import pandas as pd
-from dataset import *
+from core.dataset import *
 import logging
 from typing import Dict, Tuple, Sequence, List
 

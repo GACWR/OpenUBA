@@ -16,9 +16,9 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 import { NavLink, Switch, Route } from 'react-router-dom';
-import Navigation from './Components/Navigation/';
-import Content from './Components/Content/'
-import SystemLog from './Components/Common/SystemLog/'
+import Navigation from './components/Navigation/';
+import Content from './components/Content/'
+import SystemLog from './components/Common/SystemLog/'
 
 
 /*

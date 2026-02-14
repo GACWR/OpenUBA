@@ -1,0 +1,14 @@
+ARG BASE_IMAGE=openuba-model-runner:base
+FROM ${BASE_IMAGE}
+
+USER root
+# Install system dependencies for TF
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libhdf5-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install TensorFlow CPU
+RUN pip install --no-cache-dir tensorflow keras
+
+USER modelrunner

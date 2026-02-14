@@ -16,7 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 
 import unittest
-from dataset import Dataset, DatasetSession, CoreDataFrame
+from core.dataset import Dataset, DatasetSession, CoreDataFrame
 
 
 '''

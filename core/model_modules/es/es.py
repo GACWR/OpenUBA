@@ -1,5 +1,5 @@
 from pandas import DataFrame
-from dataset import DatasetSession, CoreDataFrame, ES
+from core.dataset import DatasetSession, CoreDataFrame, ES
 
 
 class ESGeneric():

@@ -21,13 +21,13 @@ logs into the system
 
 '''
 import logging
-from dataset import Dataset, DatasetSession, CoreDataFrame
+from core.dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
 from enum import Enum
-from entity import GetAllEntities
-from user import GetAllUsers, ExtractAllUsersCSV, UserSet, User
+from core.entity import GetAllEntities
+from core.user import GetAllUsers, ExtractAllUsersCSV, UserSet, User
 from pandas import DataFrame
-from database import ReadJSONFileFS
+from core.database import ReadJSONFileFS
 
 DATASET_SCEME_URL: str = "./storage/scheme.json"
 

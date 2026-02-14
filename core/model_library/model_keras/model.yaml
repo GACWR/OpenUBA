@@ -1,0 +1,13 @@
+name: model_keras
+version: 1.0.0
+runtime: tensorflow
+description: LSTM Autoencoder for sequential anomaly detection
+parameters:
+  epochs:
+    type: integer
+    default: 5
+    description: Number of training epochs
+  batch_size:
+    type: integer
+    default: 32
+    description: Training batch size

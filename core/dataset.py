@@ -83,6 +83,16 @@ class CoreDataFrame():
     def get_unique_id_set(self) -> None:
         logging.info("CoreDataFrame: get_unique_id_set")
 
+    def __len__(self):
+        if hasattr(self.data, "__len__"):
+            return len(self.data)
+        if hasattr(self.data, "count"):
+            return self.data.count()
+        return 0
+
+    def __getattr__(self, name):
+        return getattr(self.data, name)
+
 '''
 @name LogSourceType
 #description enum of log source type
@@ -179,7 +189,7 @@ class CSV(Dataset):
         logging.info("Trying: "+str(self.file_location))
 
         ## TODO: get columns from config
-        df = pd.read_csv(self.file_location+"/bluecoat.log",
+        df = pd.read_csv(self.file_location,
                          sep=self.delimiter,
                          engine='python',
                          header=0,
@@ -258,7 +268,7 @@ class ES(Dataset):
     def __init__(self, host: str):
 
         self.host: str = host
-        self.payload: dict = { "query": { "match-all": {} }}
+        self.payload: dict = { "query": { "match_all": {} }}
         self.header_set: dict = {"content-type": "application/json"}
 
     '''
@@ -271,7 +281,19 @@ class ES(Dataset):
             x = requests.get(self.host, data = json.dumps( self.payload ), headers = self.header_set)
             logging.info("ES: status code: "+str( x.status_code ))
             logging.info( x.raw.headers )
-            self.dataframe = CoreDataFrame( x.content.decode() )
+            
+            if x.status_code == 200:
+                resp = x.json()
+                hits = resp.get("hits", {}).get("hits", [])
+                docs = [h["_source"] for h in hits]
+                df = pd.DataFrame(docs)
+                # ES returns all values as strings; coerce numeric-looking columns
+                for col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='ignore')
+                self.dataframe = CoreDataFrame(df)
+            else:
+                logging.error(f"ES query failed: {x.text}")
+                self.dataframe = CoreDataFrame(pd.DataFrame())
         except Exception as e:
             logging.error("Error inside ES.read(): "+str(e))
             self.dataframe = CoreDataFrame( {} )

@@ -16,7 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 
 import unittest
-from hash import Hash, HashData, HashFile, HashLargeFile
+from core.hash import Hash, HashData, HashFile, HashLargeFile
 
 '''
 @name HashTestCase

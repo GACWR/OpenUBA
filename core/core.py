@@ -23,12 +23,12 @@ from flask_cors import CORS
 import logging
 import threading
 import time
-from model import ModelLibrary, ProfileModel
-from test import Test
-from process import ProcessEngine
-from api import API
-from display import Display
-from model import ModelEngine
+from core.model import ModelLibrary, ProfileModel
+from core.test import Test
+from core.process import ProcessEngine
+from core.api import API
+from core.display import Display
+from core.model import ModelEngine
 import unittest
 import trace, sys
 import coloredlogs
@@ -139,7 +139,10 @@ class Core:
         self.run_display_information_job()
 
         #begin flask server, after initiation tasks
-        server.run()
+        # note: for v0.0.2, fastapi is the primary api server
+        # flask is kept for legacy compatibility and scheduler
+        # to run fastapi, use: uvicorn core.fastapi_app:app --host 0.0.0.0 --port 8000
+        server.run(port=5001)  # run on different port to avoid conflict with fastapi
 
     '''
     @name run_scheduler_job

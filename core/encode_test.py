@@ -16,7 +16,7 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 
 
 import unittest
-from encode import Base64, B64EncodeFile, B64DecodeFile
+from core.encode import Base64, B64EncodeFile, B64DecodeFile
 
 '''
 @name EncodeTestCase
