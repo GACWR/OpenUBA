@@ -14,10 +14,10 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from entity import GetAllEntities
-from user import GetAllUsers
+from core.entity import GetAllEntities
+from core.user import GetAllUsers
 from enum import Enum
-from display import Display
+from core.display import Display
 from typing import Dict, Tuple, Sequence, List
 import requests
 import json

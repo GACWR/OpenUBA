@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: openuba
+      POSTGRES_PASSWORD: openuba
+      POSTGRES_DB: openuba
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openuba"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.dockerfile
+    ports:
+      - "8000:8000"
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgresql://openuba:openuba@postgres:5432/openuba
+      ENABLE_GRAPHQL: "true"
+      POSTGRAPHILE_HOST: "0.0.0.0"
+      POSTGRAPHILE_PORT: "5000"
+      MODEL_STORAGE_PATH: "/app/core/model_library"
+      EXECUTION_MODE: "docker"
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3001"
+    volumes:
+      - ./core:/app/core
+      - model-storage:/app/core/model_library
+      - ./test_datasets:/app/test_datasets
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        sleep 5 &&
+        python -c 'from core.db import init_db; init_db()' &&
+        uvicorn core.fastapi_app:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_GRAPHQL_URL: http://localhost:5000/graphql
+    depends_on:
+      - backend
+    volumes:
+      - ./interface:/app
+      - /app/node_modules
+      - /app/.next
+
+  # optional: spark master
+  spark-master:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    profiles:
+      - spark
+
+  # optional: spark worker
+  spark-worker:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    depends_on:
+      - spark-master
+    profiles:
+      - spark
+
+  # optional: elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    profiles:
+      - elastic
+
+  # optional: kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    profiles:
+      - elastic
+
+volumes:
+  postgres-data:
+  model-storage:
+

@@ -1,0 +1,13 @@
+name: model_networkx
+version: 1.0.0
+runtime: networkx
+description: Graph Anomaly Detection
+parameters:
+  max_degree:
+    type: integer
+    default: 50
+    description: Threshold for node degree anomaly definition
+  community_detection:
+    type: boolean
+    default: true
+    description: Whether to run community detection

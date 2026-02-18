@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: openuba
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      serviceAccountName: backend-sa
+      containers:
+            - name: backend
+              image: openuba-backend:latest
+              imagePullPolicy: IfNotPresent
+              command: ["uvicorn", "core.fastapi_app:app", "--host", "0.0.0.0", "--port", "8000"]
+              ports:
+                - containerPort: 8000
+              readinessProbe:
+                httpGet:
+                  path: /health
+                  port: 8000
+                initialDelaySeconds: 10
+                periodSeconds: 5
+                timeoutSeconds: 3
+                failureThreshold: 3
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 8000
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                timeoutSeconds: 5
+                failureThreshold: 3
+              startupProbe:
+                httpGet:
+                  path: /health
+                  port: 8000
+                initialDelaySeconds: 0
+                periodSeconds: 5
+                timeoutSeconds: 3
+                failureThreshold: 30
+              env:
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: backend-secret
+                      key: database-url
+                - name: GRAPHQL_URL
+                  value: "http://postgraphile:5000/graphql"
+                - name: MODEL_STORAGE_PATH
+                  value: "/app/core/model_library"
+                - name: EXECUTION_MODE
+                  value: "kubernetes"
+                - name: SPARK_MASTER_URL
+                  value: "spark://spark-master:7077"
+                - name: ELASTICSEARCH_HOST
+                  value: "http://elasticsearch:9200"
+                - name: TEST_DATASETS_PATH
+                  value: "/app/test_datasets"
+                - name: OLLAMA_HOST
+                  value: "http://192.168.1.109:11435"
+                - name: OLLAMA_MODEL
+                  value: "lfm2.5-thinking"
+                - name: OPENUBA_HUB_URL
+                  value: "https://openuba.org/registry/models.json"
+              volumeMounts:
+                - name: source-code
+                  mountPath: /app/core
+                - name: test-datasets
+                  mountPath: /app/test_datasets
+                - name: metastore
+                  mountPath: /app/metastore
+                - name: saved-models
+                  mountPath: /app/core/storage/saved_models
+                - name: system-storage
+                  mountPath: /app/.openuba
+              resources:
+                limits:
+                  memory: "6Gi"
+                  cpu: "1"
+                requests:
+                  memory: "1Gi"
+                  cpu: "500m"
+      volumes:
+        - name: source-code
+          persistentVolumeClaim:
+            claimName: source-code-pvc
+        - name: test-datasets
+          persistentVolumeClaim:
+            claimName: datasets-pvc
+        - name: metastore
+          persistentVolumeClaim:
+            claimName: metastore-pvc
+        - name: saved-models
+          persistentVolumeClaim:
+            claimName: saved-models-pvc
+        - name: system-storage
+          persistentVolumeClaim:
+            claimName: system-storage-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage-pvc
+  namespace: openuba
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 5Gi
+  selector:
+    matchLabels:
+      volume: model-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: openuba
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: backend
+

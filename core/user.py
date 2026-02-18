@@ -14,8 +14,8 @@ along with the OpenUBA Platform. If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import logging
-from database import DBReadFile, DBWriteFile, WriteNewActorToDB, ReadActorFromDB, WriteJSONFileFS, ReadJSONFileFS, WriteListToDirectories
-from dataset import Dataset, DatasetSession, CoreDataFrame
+from core.database import DBReadFile, DBWriteFile, WriteNewActorToDB, ReadActorFromDB, WriteJSONFileFS, ReadJSONFileFS, WriteListToDirectories
+from core.dataset import Dataset, DatasetSession, CoreDataFrame
 from typing import Dict, Tuple, Sequence, List
 import pandas as pd
 from pandas import DataFrame

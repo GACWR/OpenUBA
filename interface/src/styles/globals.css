@@ -1,0 +1,178 @@
+@import '@xyflow/react/dist/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+  .glass {
+    @apply bg-background/60 backdrop-blur-xl border-b border-white/5;
+  }
+
+  .glass-card {
+    @apply bg-zinc-900/50 backdrop-blur-md border border-white/10;
+  }
+
+  .no-shadow {
+    box-shadow: none !important;
+  }
+}
+
+/* React Flow dark mode overrides */
+.dark .react-flow__background {
+  background-color: hsl(240 10% 3.9%);
+}
+.dark .react-flow__minimap {
+  background-color: hsl(240 10% 6%);
+}
+.dark .react-flow__controls button {
+  background-color: hsl(240 3.7% 15.9%);
+  color: hsl(0 0% 98%);
+  border-color: hsl(240 3.7% 15.9%);
+}
+.dark .react-flow__controls button:hover {
+  background-color: hsl(240 3.7% 20%);
+}
+.dark .react-flow__edge-path {
+  stroke: hsl(240 5% 64.9%);
+}
+.dark .react-flow__handle {
+  background-color: hsl(240 5% 64.9%);
+  border-color: hsl(240 10% 3.9%);
+}
+
+/* Legacy styles for backward compatibility */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+table th,
+table td {
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 12px;
+  text-align: left;
+}
+
+table th {
+  @apply text-muted-foreground font-medium text-xs uppercase tracking-wider;
+}
+
+button {
+  @apply px-4 py-2 rounded-lg font-medium transition-all active:scale-95;
+}
+
+input,
+select {
+  @apply px-3 py-2 border border-input rounded-lg bg-secondary/50 text-foreground focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all;
+}
+
+/* Chat markdown styling */
+.chat-markdown p {
+  @apply mb-2 last:mb-0;
+}
+.chat-markdown strong {
+  @apply font-semibold text-white;
+}
+.chat-markdown em {
+  @apply italic;
+}
+.chat-markdown h1, .chat-markdown h2, .chat-markdown h3 {
+  @apply font-semibold text-white mt-3 mb-1;
+}
+.chat-markdown h1 { @apply text-base; }
+.chat-markdown h2 { @apply text-sm; }
+.chat-markdown h3 { @apply text-sm; }
+.chat-markdown ul {
+  @apply list-disc pl-4 mb-2 space-y-0.5;
+}
+.chat-markdown ol {
+  @apply list-decimal pl-4 mb-2 space-y-0.5;
+}
+.chat-markdown li {
+  @apply text-sm;
+}
+.chat-markdown code {
+  @apply bg-white/10 px-1 py-0.5 rounded text-xs font-mono text-blue-300;
+}
+.chat-markdown pre {
+  @apply bg-black/30 rounded-lg p-3 my-2 overflow-x-auto;
+}
+.chat-markdown pre code {
+  @apply bg-transparent p-0 text-xs;
+}
+.chat-markdown a {
+  @apply text-blue-400 underline hover:text-blue-300;
+}
+.chat-markdown blockquote {
+  @apply border-l-2 border-white/20 pl-3 italic text-gray-400 my-2;
+}
+.chat-markdown hr {
+  @apply border-white/10 my-3;
+}

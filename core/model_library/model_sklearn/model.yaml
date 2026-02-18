@@ -1,0 +1,13 @@
+name: model_sklearn
+version: 1.0.0
+runtime: sklearn
+description: Isolation Forest Anomaly Detection
+parameters:
+  contamination:
+    type: float
+    default: 0.1
+    description: The amount of contamination of the data set, i.e. the proportion of outliers in the data set.
+  random_state:
+    type: integer
+    default: 42
+    description: Random state for reproducibility

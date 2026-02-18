@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgraphile
+  namespace: openuba
+spec:
+  ports:
+    - port: 5000
+      targetPort: 5000
+      name: graphql
+  selector:
+    app: postgraphile
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgraphile
+  namespace: openuba
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgraphile
+  template:
+    metadata:
+      labels:
+        app: postgraphile
+    spec:
+      containers:
+        - name: postgraphile
+          image: graphile/postgraphile:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          args:
+            - "-c"
+            - "$(DATABASE_URL)"
+            - "-s"
+            - "public"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "5000"
+            - "--cors"
+            - "--enhance-graphiql"
+            - "--watch"
+            - "--subscriptions"
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: database-url
+          readinessProbe:
+            httpGet:
+              path: /graphiql
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /graphiql
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

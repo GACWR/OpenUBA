@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: openuba
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: openuba-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 0
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "http://localhost:8000"
+            - name: NEXT_PUBLIC_GRAPHQL_URL
+              value: "http://localhost:5001/graphql"
+            - name: BACKEND_URL
+              value: "http://backend:8000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+          volumeMounts:
+            - name: frontend-source
+              mountPath: /app/next.config.js
+              subPath: next.config.js
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+        - name: proxy
+          image: alpine:latest
+          command: ["/bin/sh", "-c", "apk add --no-cache socat && (socat TCP4-LISTEN:8000,fork,reuseaddr TCP:backend:8000 & socat TCP6-LISTEN:8000,fork,reuseaddr TCP:backend:8000)"]
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+      volumes:
+        - name: frontend-source
+          persistentVolumeClaim:
+            claimName: frontend-source-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: openuba
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: frontend
+

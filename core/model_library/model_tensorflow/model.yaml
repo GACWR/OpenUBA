@@ -1,0 +1,13 @@
+name: model_tensorflow
+version: 1.0.0
+runtime: tensorflow
+description: TensorFlow Custom Model
+parameters:
+  layers:
+    type: integer
+    default: 3
+    description: Number of dense layers
+  units:
+    type: integer
+    default: 64
+    description: Units per layer

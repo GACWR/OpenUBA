@@ -1,0 +1,14 @@
+name: basic_model
+version: 1.0.0
+runtime: python-base
+description: Basic model demonstrating Spark/ES adapters
+parameters:
+  threshold:
+    type: integer
+    default: 10000
+    description: Row count threshold for anomaly detection
+  data_source:
+    type: string
+    default: spark
+    description: Data source type (spark, elasticsearch, local_csv)
+    enum: [spark, elasticsearch, local_csv]

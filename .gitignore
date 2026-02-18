@@ -1,22 +1,51 @@
-core/__pycache__/*
-core/.mypy_cache/*
-/core/__pycache__/*
-/core/.mypy_cache/*
-/core/*pycache*/
-*.pyc
-__pycache__/*
-.mypy_cache/*
-.mypy_cache
-*.mypy_cache
-/core/__pycache__/*
-/core/.mypy_cache/*
-core/__pycache__/*
-core/.mypy_cache/*
-interface/dist/
-/interface/dist/
-*.DS_Store
-/**/.DS_Store
-/**/__pycache__
-/**/.mypy_cache
-/**/.pyc
-/**/*.mypy_cache
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.pytest_cache/
+.mypy_cache/
+*.log
+
+# Models (Ephemeral Test Data)
+core/model_library/jit_model_*
+core/model_library/debug_model_*
+core/model_library/dummy_model_*
+core/model_library/e2e_test_model_*
+core/model_library/test_model_*
+core/model_library/inference/
+core/model_library/*_backup/
+core/storage/saved_models/**/model.pkl
+core/storage/saved_models/**/*.pt
+core/storage/saved_models/**/*.pb
+
+# Next.js
+interface/.next/
+interface/node_modules/
+interface/out/
+interface/build/
+interface/build.log
+interface/frontend_debug.log
+interface/tsconfig.tsbuildinfo
+
+# OS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Runtime
+.openuba/
+
+# Build Artifacts
+*.tar
+watch_*
+
+# Deployment & Data
+metastore/
+spark-warehouse/
+derby.log
+k8s_metrics.json
+dashboard_token.txt

@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: source-code-pv
+  labels:
+    type: local
+    volume: source-code
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/mnt/openuba/root/core"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: source-code-pvc
+  namespace: openuba
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      volume: source-code

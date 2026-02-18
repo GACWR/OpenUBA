@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openuba-operator
+  namespace: openuba
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openuba-operator
+  template:
+    metadata:
+      labels:
+        app: openuba-operator
+    spec:
+      serviceAccountName: openuba-operator
+      containers:
+        - name: operator
+          image: openuba-operator:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUBERNETES_NAMESPACE
+              value: openuba
