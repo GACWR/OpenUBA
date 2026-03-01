@@ -497,3 +497,39 @@ redeploy-db:
 	@kubectl wait --for=condition=ready pod -l app=postgres -n openuba --timeout=300s
 	@echo "Postgres redeployed! You can now connect with user: gacwr, password: gacwr"
 
+# =====================================================================
+#  SDK — Python Package (PyPI)
+# =====================================================================
+
+SDK_DIR := sdk
+
+# Set version: make sdk-publish VERSION=0.2.0
+ifdef VERSION
+sdk-set-version:
+	@echo "Setting version to $(VERSION)..."
+	@sed -i '' 's/^version = ".*"/version = "$(VERSION)"/' $(SDK_DIR)/pyproject.toml
+	@sed -i '' 's/^__version__ = ".*"/__version__ = "$(VERSION)"/' $(SDK_DIR)/src/openuba/__init__.py
+	@echo "Version set to $(VERSION)"
+else
+sdk-set-version:
+	@true
+endif
+
+sdk-build: sdk-set-version sdk-clean ## Build the openuba Python package (VERSION=x.y.z)
+	@echo "Building openuba SDK..."
+	cd $(SDK_DIR) && python3 -m pip install --upgrade build --quiet && python3 -m build
+	@echo "Build artifacts:"
+	@ls -lh $(SDK_DIR)/dist/
+
+sdk-publish-test: sdk-build ## Publish openuba to TestPyPI (VERSION=x.y.z)
+	@echo "Uploading to TestPyPI..."
+	cd $(SDK_DIR) && python3 -m pip install --upgrade twine --quiet && python3 -m twine upload --repository testpypi dist/*
+	@echo "Done! Install with: pip install --index-url https://test.pypi.org/simple/ openuba"
+
+sdk-publish: sdk-build ## Publish openuba to PyPI (VERSION=x.y.z)
+	@echo "Uploading to PyPI..."
+	cd $(SDK_DIR) && python3 -m pip install --upgrade twine --quiet && python3 -m twine upload dist/*
+	@echo "Done! Install with: pip install openuba"
+
+sdk-clean: ## Remove SDK build artifacts
+	rm -rf $(SDK_DIR)/dist/ $(SDK_DIR)/build/ $(SDK_DIR)/*.egg-info

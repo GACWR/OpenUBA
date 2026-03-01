@@ -1,0 +1,50 @@
+name: SDK CI
+
+on:
+  push:
+    branches: [master, dev/**]
+    paths:
+      - "sdk/**"
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build & verify (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build tools
+        run: python -m pip install --upgrade pip build
+
+      - name: Build package
+        working-directory: sdk
+        run: python -m build
+
+      - name: Install from built wheel
+        run: pip install sdk/dist/*.whl
+
+      - name: Verify CLI entry point
+        run: openuba --help
+
+      - name: Verify Python imports
+        run: |
+          python -c "import openuba; print(f'openuba version: {openuba.__version__}')"
+          python -c "from openuba.client import OpenUBAClient; print('Client import OK')"
+          python -c "from openuba.cli import main; print('CLI import OK')"
+
+      - name: Upload build artifacts
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-dist
+          path: sdk/dist/
