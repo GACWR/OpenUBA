@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openuba"
+version = "0.0.1"
+description = "OpenUBA CLI & SDK — install, run, and manage user behavior analytics models"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "GPL-3.0-only"
+license-files = ["LICEN[CS]E*"]
+authors = [
+    { name = "jovonni", email = "jovonnipharr@gmail.com" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "requests>=2.28",
+    "click>=8.0",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+openuba = "openuba.cli:main"
+
+[project.urls]
+Homepage = "https://openuba.org"
+Repository = "https://github.com/GACWR/OpenUBA"
+Issues = "https://github.com/GACWR/OpenUBA/issues"
+Documentation = "https://openuba.org"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openuba"]

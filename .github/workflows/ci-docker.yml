@@ -1,0 +1,62 @@
+name: Docker Build
+
+on:
+  push:
+    branches: [master, dev/**]
+    paths:
+      - "docker/**"
+      - "core/**"
+      - "interface/**"
+      - "requirements.txt"
+      - "Makefile"
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-backend:
+    name: Build backend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend Docker image
+        run: docker build -f docker/backend.dockerfile -t openuba-backend:ci .
+
+  build-frontend:
+    name: Build frontend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build frontend Docker image
+        run: docker build -f docker/frontend.dockerfile -t openuba-frontend:ci .
+
+  build-operator:
+    name: Build operator image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build operator Docker image
+        run: docker build -f docker/operator.dockerfile -t openuba-operator:ci .
+
+  build-model-runners:
+    name: Build model runner images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build base model runner
+        run: docker build -f docker/model-runner/Dockerfile.base -t openuba-model-runner:base .
+
+      - name: Build sklearn runner
+        run: docker build -f docker/model-runner/Dockerfile.sklearn -t openuba-model-runner:sklearn --build-arg BASE_IMAGE=openuba-model-runner:base .
+
+      - name: Build PyTorch runner
+        run: docker build -f docker/model-runner/Dockerfile.pytorch -t openuba-model-runner:pytorch --build-arg BASE_IMAGE=openuba-model-runner:base .
+
+      - name: Build TensorFlow runner
+        run: docker build -f docker/model-runner/Dockerfile.tensorflow -t openuba-model-runner:tensorflow --build-arg BASE_IMAGE=openuba-model-runner:base .
+
+      - name: Build NetworkX runner
+        run: docker build -f docker/model-runner/Dockerfile.networkx -t openuba-model-runner:networkx --build-arg BASE_IMAGE=openuba-model-runner:base .
