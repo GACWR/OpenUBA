@@ -6,7 +6,7 @@ A robust, flexible, and lightweight open source User & Entity Behavior Analytics
 
 | Status | Badge | Status | Badge |
 | --- | --- | --- | --- |
-| `Build` | [![Build](https://img.shields.io/github/actions/workflow/status/GACWR/OpenUBA/ci.yml?branch=master&label=build)](https://github.com/GACWR/OpenUBA/actions) | `License` | [![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/GACWR/OpenUBA/blob/master/LICENSE) |
+| `Build` | [![Build](https://img.shields.io/github/actions/workflow/status/GACWR/OpenUBA/docker-publish.yml?branch=master&label=build)](https://github.com/GACWR/OpenUBA/actions) | `License` | [![License](https://img.shields.io/badge/license-GPL-blue.svg)](https://github.com/GACWR/OpenUBA/blob/master/LICENSE) |
 | `Issues` | [![Issues](https://img.shields.io/github/issues/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/issues) | `Closed Issues` | [![Closed Issues](https://img.shields.io/github/issues-closed/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/issues?q=is%3Aissue+is%3Aclosed) |
 | `Pull Requests` | [![PRs](https://img.shields.io/github/issues-pr/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/pulls) | `Last Commit` | [![Last commit](https://img.shields.io/github/last-commit/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA/commits/master) |
 | `Top Language` | [![Top language](https://img.shields.io/github/languages/top/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) | `Code Size` | [![Code size](https://img.shields.io/github/languages/code-size/GACWR/OpenUBA.svg)](https://github.com/GACWR/OpenUBA) |

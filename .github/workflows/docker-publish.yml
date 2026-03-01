@@ -18,10 +18,10 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build frontend Docker image
-        run: docker build -f docker/frontend.dockerfile -t ${{ secrets.DOCKER_USERNAME }}/openuba-frontend:latest .
+        run: docker build -f docker/frontend.dockerfile -t gacwr/openuba-frontend:latest .
 
       - name: Push frontend Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/openuba-frontend:latest
+        run: docker push gacwr/openuba-frontend:latest
 
   build-backend:
     name: Build and push backend
@@ -34,7 +34,7 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build backend Docker image
-        run: docker build -f docker/backend.dockerfile -t ${{ secrets.DOCKER_USERNAME }}/openuba-backend:latest .
+        run: docker build -f docker/backend.dockerfile -t gacwr/openuba-backend:latest .
 
       - name: Push backend Docker image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/openuba-backend:latest
+        run: docker push gacwr/openuba-backend:latest
