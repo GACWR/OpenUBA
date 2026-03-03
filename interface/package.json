@@ -20,7 +20,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.0.4",
     "@xyflow/react": "^12.10.0",
-    "axios": "^1.6.2",
+    "axios": "^1.13.5",
     "cmdk": "^0.2.0",
     "graphql": "^16.8.1",
     "graphql-ws": "^5.14.2",

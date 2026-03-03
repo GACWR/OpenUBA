@@ -48,8 +48,8 @@ importers:
         specifier: ^12.10.0
         version: 12.10.0(@types/react@18.3.27)(immer@11.0.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       axios:
-        specifier: ^1.6.2
-        version: 1.13.2
+        specifier: ^1.13.5
+        version: 1.13.5
       cmdk:
         specifier: ^0.2.0
         version: 0.2.1(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -254,28 +254,24 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@next/swc-linux-arm64-musl@14.0.4':
     resolution: {integrity: sha512-8QftwPEW37XxXoAwsn+nXlodKWHfpMaSvt81W43Wh8dv0gkheD+30ezWMcFGHLI71KiWmHK5PSQbTQGUiidvLQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@next/swc-linux-x64-gnu@14.0.4':
     resolution: {integrity: sha512-/s/Pme3VKfZAfISlYVq2hzFS8AcAIOTnoKupc/j4WlvF6GQ0VouS2Q2KEgPuO1eMBwakWPB1aYFIA4VNVh667A==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@next/swc-linux-x64-musl@14.0.4':
     resolution: {integrity: sha512-m8z/6Fyal4L9Bnlxde5g2Mfa1Z7dasMQyhEhskDATpqr+Y0mjOBZcXQ7G5U+vgL22cI4T7MfvgtrM2jdopqWaw==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@next/swc-win32-arm64-msvc@14.0.4':
     resolution: {integrity: sha512-7Wv4PRiWIAWbm5XrGz3D8HUkCVDMMz9igffZG4NB1p4u1KoItwx9qjATHz88kwCEal/HXmbShucaslXCQXUM5w==}
@@ -1034,49 +1030,41 @@ packages:
     resolution: {integrity: sha512-34gw7PjDGB9JgePJEmhEqBhWvCiiWCuXsL9hYphDF7crW7UgI05gyBAi6MF58uGcMOiOqSJ2ybEeCvHcq0BCmQ==}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-arm64-musl@1.11.1':
     resolution: {integrity: sha512-RyMIx6Uf53hhOtJDIamSbTskA99sPHS96wxVE/bJtePJJtpdKGXO1wY90oRdXuYOGOTuqjT8ACccMc4K6QmT3w==}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@unrs/resolver-binding-linux-ppc64-gnu@1.11.1':
     resolution: {integrity: sha512-D8Vae74A4/a+mZH0FbOkFJL9DSK2R6TFPC9M+jCWYia/q2einCubX10pecpDiTmkJVUH+y8K3BZClycD8nCShA==}
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-riscv64-gnu@1.11.1':
     resolution: {integrity: sha512-frxL4OrzOWVVsOc96+V3aqTIQl1O2TjgExV4EKgRY09AJ9leZpEg8Ak9phadbuX0BA4k8U5qtvMSQQGGmaJqcQ==}
     cpu: [riscv64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-riscv64-musl@1.11.1':
     resolution: {integrity: sha512-mJ5vuDaIZ+l/acv01sHoXfpnyrNKOk/3aDoEdLO/Xtn9HuZlDD6jKxHlkN8ZhWyLJsRBxfv9GYM2utQ1SChKew==}
     cpu: [riscv64]
     os: [linux]
-    libc: [musl]
 
   '@unrs/resolver-binding-linux-s390x-gnu@1.11.1':
     resolution: {integrity: sha512-kELo8ebBVtb9sA7rMe1Cph4QHreByhaZ2QEADd9NzIQsYNQpt9UkM9iqr2lhGr5afh885d/cB5QeTXSbZHTYPg==}
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-x64-gnu@1.11.1':
     resolution: {integrity: sha512-C3ZAHugKgovV5YvAMsxhq0gtXuwESUKc5MhEtjBpLoHPLYM+iuwSj3lflFwK3DPm68660rZ7G8BMcwSro7hD5w==}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@unrs/resolver-binding-linux-x64-musl@1.11.1':
     resolution: {integrity: sha512-rV0YSoyhK2nZ4vEswT/QwqzqQXw5I6CjoaYMOX0TqBlWhojUf8P94mvI7nuJTeaCkkds3QE4+zS8Ko+GdXuZtA==}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@unrs/resolver-binding-wasm32-wasi@1.11.1':
     resolution: {integrity: sha512-5u4RkfxJm+Ng7IWgkzi3qrFOvLvQYnPBmjmZQ8+szTK/b31fQCnleNl1GgEt7nIsZRIf5PLhPwT0WM+q45x/UQ==}
@@ -1226,8 +1214,8 @@ packages:
     resolution: {integrity: sha512-ilYanEU8vxxBexpJd8cWM4ElSQq4QctCLKih0TSfjIfCQTeyH/6zVrmIJfLPrKTKJRbiG+cfnZbQIjAlJmF1jQ==}
     engines: {node: '>=4'}
 
-  axios@1.13.2:
-    resolution: {integrity: sha512-VPk9ebNqPcy5lRGuSlKx752IlDatOjT9paPlm8A7yOuW2Fbvp4X3JznJtT4f0GzGLLiWE9W8onz51SqLYwzGaA==}
+  axios@1.13.5:
+    resolution: {integrity: sha512-cz4ur7Vb0xS4/KUN0tPWe44eqxrIu31me+fbang3ijiNscE129POzipJJA6zniq2C/Z6sJCjMimjS8Lc/GAs8Q==}
 
   axobject-query@4.1.0:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
@@ -1812,11 +1800,11 @@ packages:
 
   glob@7.1.7:
     resolution: {integrity: sha512-OvD9ENzPLbegENnYP5UUfJIirTg4+XwMWGaQfQTY0JenxNvvIKP3U3/tAQSPIu/lHxXYSZmpXlUHeqAIdKzBLQ==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   globals@13.24.0:
     resolution: {integrity: sha512-AhO5QUcj8llrbG09iWhPU2B204J1xnPeL8kQmVorSsy+Sjj1sk8gIyh6cUocGmH4L0UuhAJy+hJMRA4mgA4mFQ==}
@@ -2290,6 +2278,7 @@ packages:
   next@14.0.4:
     resolution: {integrity: sha512-qbwypnM7327SadwFtxXnQdGiKpkuhaRLE2uq62/nRul9cj9KhQ5LhHmlziTNqUidZotw/Q1I9OjirBROdUJNgA==}
     engines: {node: '>=18.17.0'}
+    deprecated: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/security-update-2025-12-11 for more details.
     hasBin: true
     peerDependencies:
       '@opentelemetry/api': ^1.1.0
@@ -4140,7 +4129,7 @@ snapshots:
 
   axe-core@4.11.0: {}
 
-  axios@1.13.2:
+  axios@1.13.5:
     dependencies:
       follow-redirects: 1.15.11
       form-data: 4.0.5
@@ -4540,7 +4529,7 @@ snapshots:
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
       eslint-plugin-jsx-a11y: 6.10.2(eslint@8.57.1)
       eslint-plugin-react: 7.37.5(eslint@8.57.1)
       eslint-plugin-react-hooks: 5.0.0-canary-7118f5dd7-20230705(eslint@8.57.1)
@@ -4570,7 +4559,7 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -4585,7 +4574,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
