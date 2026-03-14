@@ -86,12 +86,28 @@ def workspace_create(spec, name, namespace, status, patch, **kwargs):
         k8s_client.V1EnvVar(name='OPENUBA_API_URL', value=BACKEND_SERVICE_URL),
         k8s_client.V1EnvVar(name='OPENUBA_WORKSPACE_ID', value=name),
         k8s_client.V1EnvVar(name='JUPYTER_ENABLE_LAB', value='yes'),
-        k8s_client.V1EnvVar(name='JUPYTER_TOKEN', value=''),
+    ]
+
+    # JupyterLab command: disable auth, allow iframe embedding, allow cross-origin
+    # This matches OMS pattern for seamless iframe embedding in the frontend UI
+    jupyter_cmd = [
+        'start-notebook.sh',
+        '--ServerApp.token=',
+        '--ServerApp.password=',
+        '--ServerApp.allow_origin=*',
+        '--ServerApp.allow_remote_access=True',
+        '--ServerApp.disable_check_xsrf=True',
+        '--ServerApp.tornado_settings={"headers":{"Content-Security-Policy":"frame-ancestors * \'self\'"}}',
+        f'--ServerApp.base_url=/',
+        '--NotebookApp.token=',
+        '--NotebookApp.password=',
     ]
 
     container = k8s_client.V1Container(
         name='workspace',
         image=WORKSPACE_IMAGE,
+        command=['bash', '-c'],
+        args=[' '.join(jupyter_cmd)],
         ports=[k8s_client.V1ContainerPort(container_port=8888)],
         env=env_vars,
         resources=k8s_client.V1ResourceRequirements(

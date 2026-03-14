@@ -119,11 +119,61 @@ async def get_workspace(
 ):
     '''
     get workspace by id
+    syncs CRD status with DB if workspace is in a transitional state
     '''
     repo = WorkspaceRepository(db)
     workspace = repo.get_by_id(workspace_id)
     if not workspace:
         raise HTTPException(status_code=404, detail="workspace not found")
+
+    # sync CRD status → DB for pending/creating workspaces
+    if workspace.status in ("pending", "creating") and workspace.cr_name:
+        workspace = _sync_workspace_crd_status(workspace, repo)
+
+    return workspace
+
+
+def _sync_workspace_crd_status(workspace, repo: WorkspaceRepository):
+    '''
+    read workspace CRD status and sync to DB
+    this lets the frontend see when a workspace transitions to running
+    '''
+    try:
+        from kubernetes import client as k8s_client, config as k8s_config
+        try:
+            k8s_config.load_incluster_config()
+        except k8s_config.ConfigException:
+            k8s_config.load_kube_config()
+
+        api = k8s_client.CustomObjectsApi()
+        cr = api.get_namespaced_custom_object(
+            group="openuba.io",
+            version="v1",
+            namespace=WORKSPACE_NAMESPACE,
+            plural="ubaworkspaces",
+            name=workspace.cr_name,
+        )
+        cr_status = cr.get("status", {})
+        cr_phase = cr_status.get("phase", "").lower()
+
+        if cr_phase == "running" and workspace.status != "running":
+            workspace = repo.update(
+                workspace.id,
+                status="running",
+                pod_name=cr_status.get("pod_name"),
+                service_name=cr_status.get("service_name"),
+                pvc_name=cr_status.get("pvc_name"),
+                access_url=cr_status.get("access_url", workspace.access_url),
+                node_port=cr_status.get("node_port", workspace.node_port),
+            )
+        elif cr_phase == "failed" and workspace.status != "failed":
+            workspace = repo.update(
+                workspace.id,
+                status="failed",
+            )
+    except Exception as e:
+        logger.debug(f"could not sync CRD status for {workspace.cr_name}: {e}")
+
     return workspace
 
 

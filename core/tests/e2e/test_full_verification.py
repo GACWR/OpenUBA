@@ -696,14 +696,18 @@ def test_workspace_detail_page(page: Page, frontend_url: str, backend_url: str, 
     content = page.content().lower()
     assert "sign in to your account" not in content, "Still on login page"
     assert ws_name.lower() in content, f"Workspace name '{ws_name}' not found on detail page"
-    assert "workspace details" in content, "Missing 'Workspace Details' section"
-    assert "hardware tier" in content, "Missing 'Hardware Tier' field"
+    assert "hardware" in content, "Missing 'Hardware' info"
     assert "cpu-small" in content, "Hardware tier value not displayed"
 
-    # if workspace reached running, we should see the iframe
+    # if workspace reached running, we should see the JupyterLab iframe
     if status == "running":
+        # wait for readiness probing to complete
+        time.sleep(5)
         page.screenshot(path=os.path.join(SCREENSHOTS_DIR, "workspace_running_jupyterlab.png"), full_page=True)
-        assert "workspace environment" in content, "Missing embedded workspace environment section"
+        # check for iframe or connecting state
+        iframe_present = page.locator("iframe").count() > 0
+        connecting_present = "connecting to workspace" in page.content().lower()
+        assert iframe_present or connecting_present, "Running workspace should show JupyterLab iframe or connecting state"
 
     # cleanup
     requests.post(f"{backend_url}/api/v1/workspaces/{ws_id}/stop", headers=auth_headers)

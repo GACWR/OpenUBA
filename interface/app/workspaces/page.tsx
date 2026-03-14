@@ -4,17 +4,18 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-provider'
 import Link from 'next/link'
 import {
-  Plus, Monitor, Square, Trash2, ExternalLink, Loader2, X,
+  Plus, Monitor, Square, Trash2, ExternalLink, Loader2, X, Play, RotateCcw,
 } from 'lucide-react'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/20 text-yellow-400',
-  running: 'bg-blue-500/20 text-blue-400',
-  completed: 'bg-green-500/20 text-green-400',
-  failed: 'bg-red-500/20 text-red-400',
+  creating: 'bg-yellow-500/20 text-yellow-400',
+  running: 'bg-green-500/20 text-green-400',
+  stopping: 'bg-orange-500/20 text-orange-400',
   stopped: 'bg-gray-500/20 text-gray-400',
+  failed: 'bg-red-500/20 text-red-400',
 }
 
 interface Workspace {
@@ -143,19 +144,10 @@ export default function WorkspacesPage() {
                   <span>Hardware</span>
                   <span className="font-mono text-foreground">{ws.hardware_tier}</span>
                 </div>
-                {ws.access_url && ws.status === 'running' && (
-                  <div className="flex justify-between">
-                    <span>Access</span>
-                    <a
-                      href={ws.access_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-blue-400 hover:underline"
-                    >
-                      Open <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span>IDE</span>
+                  <span className="text-foreground">JupyterLab</span>
+                </div>
                 <div className="flex justify-between">
                   <span>Created</span>
                   <span>{new Date(ws.created_at).toLocaleDateString()}</span>
@@ -164,12 +156,33 @@ export default function WorkspacesPage() {
 
               <div className="flex items-center gap-2 pt-1">
                 {ws.status === 'running' && (
-                  <button
-                    onClick={() => handleStop(ws.id)}
-                    className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium hover:bg-yellow-500/10 hover:border-yellow-500/50 transition-colors"
+                  <>
+                    <Link
+                      href={`/workspaces/${ws.id}`}
+                      className="inline-flex items-center gap-1 rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 transition-colors"
+                    >
+                      <Play className="h-3 w-3" /> Open
+                    </Link>
+                    <button
+                      onClick={() => handleStop(ws.id)}
+                      className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium hover:bg-yellow-500/10 hover:border-yellow-500/50 transition-colors"
+                    >
+                      <Square className="h-3 w-3" /> Stop
+                    </button>
+                  </>
+                )}
+                {(ws.status === 'stopped' || ws.status === 'failed') && (
+                  <Link
+                    href={`/workspaces/${ws.id}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium hover:bg-blue-500/10 hover:border-blue-500/50 transition-colors"
                   >
-                    <Square className="h-3 w-3" /> Stop
-                  </button>
+                    <RotateCcw className="h-3 w-3" /> Restart
+                  </Link>
+                )}
+                {(ws.status === 'pending' || ws.status === 'creating') && (
+                  <span className="inline-flex items-center gap-1 text-xs text-yellow-400">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Starting...
+                  </span>
                 )}
                 <button
                   onClick={() => handleDelete(ws.id)}

@@ -83,14 +83,17 @@ class WorkspaceService:
             timeout_hours=timeout_hours,
         )
 
-        # set allocated nodeport
+        # set allocated nodeport and access_url
+        # access_url is set now so the frontend can start probing immediately
+        access_url = f"http://localhost:{node_port}"
         workspace = self.repo.update(
             workspace.id,
             node_port=node_port,
+            access_url=access_url,
             cr_name=f"uba-ws-{str(workspace.id)[:8]}",
         )
 
-        logger.info(f"workspace launched: {workspace.id} with nodeport {node_port}")
+        logger.info(f"workspace launched: {workspace.id} at {access_url}")
         return workspace
 
     def stop_workspace(self, workspace_id: UUID) -> Optional[Workspace]:
@@ -115,11 +118,12 @@ class WorkspaceService:
     def restart_workspace(self, workspace_id: UUID) -> Optional[Workspace]:
         '''
         restart a stopped workspace
+        preserves access_url so frontend can start probing when pod is back
         '''
         workspace = self.repo.get_by_id(workspace_id)
         if not workspace:
             return None
-        if workspace.status != "stopped":
+        if workspace.status not in ("stopped", "failed"):
             return workspace
 
         workspace = self.repo.update(

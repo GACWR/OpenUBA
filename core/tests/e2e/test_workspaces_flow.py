@@ -193,6 +193,30 @@ def test_workspace_appears_in_ui(
     assert page.locator(f"text={ws_name}").is_visible()
 
 
+def test_workspace_detail_has_jupyterlab_iframe(
+    backend_url: str,
+    auth_headers: dict
+):
+    '''
+    test that workspace API returns access_url for iframe embedding
+    this is what the frontend uses to embed JupyterLab
+    '''
+    ws_name = f"e2e_test_ws_{uuid4().hex[:8]}"
+    ws_data = {"name": ws_name, "environment": "default", "hardware_tier": "cpu-small", "ide": "jupyterlab"}
+    create_resp = requests.post(f"{backend_url}/api/v1/workspaces/launch", json=ws_data, headers=auth_headers)
+    assert create_resp.status_code == 201
+    workspace = create_resp.json()
+
+    # workspace should have access_url set at creation for immediate probing
+    assert workspace["access_url"] is not None, "workspace missing access_url for iframe"
+    assert workspace["access_url"].startswith("http://"), "access_url should be an HTTP URL"
+    assert workspace["node_port"] is not None, "workspace missing node_port"
+    assert workspace["ide"] == "jupyterlab"
+
+    # cleanup
+    requests.delete(f"{backend_url}/api/v1/workspaces/{workspace['id']}", headers=auth_headers)
+
+
 def test_workspace_lifecycle_full(
     backend_url: str,
     db_utils: DBTestUtils,
