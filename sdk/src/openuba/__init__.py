@@ -234,6 +234,19 @@ def run_pipeline(pipeline_id, wait=False):
     return _get_client().run_pipeline(pipeline_id, wait=wait)
 
 
+# ─── Data Query Methods ──────────────────────────────────────────────
+
+
+def query_spark(query, spark_master=None):
+    """Execute a Spark SQL query and return results."""
+    return _get_client().query_spark(query, spark_master=spark_master)
+
+
+def query_elasticsearch(index, query_body, es_host=None):
+    """Execute an Elasticsearch query and return hits."""
+    return _get_client().query_elasticsearch(index, query_body, es_host=es_host)
+
+
 # ─── UBA-Specific Query Methods ─────────────────────────────────────
 
 
@@ -310,6 +323,9 @@ __all__ = [
     # Pipelines
     "create_pipeline",
     "run_pipeline",
+    # Data queries
+    "query_spark",
+    "query_elasticsearch",
     # UBA queries
     "query_anomalies",
     "get_entity_risk",

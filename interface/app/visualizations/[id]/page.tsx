@@ -4,17 +4,11 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-provider'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, BarChart3, Trash2, ExternalLink, Loader2, Eye, EyeOff,
+  ArrowLeft, BarChart3, Trash2, Loader2, Eye, Save, Code2,
 } from 'lucide-react'
-import {
-  BarChart, Bar, LineChart, Line, AreaChart, Area,
-  PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts'
+import VizRenderer from '@/components/shared/viz-renderer'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28', '#FF8042']
 
 interface Visualization {
   id: string
@@ -33,97 +27,15 @@ interface Visualization {
 }
 
 const backendColors: Record<string, string> = {
-  plotly: 'bg-blue-500/20 text-blue-400',
-  recharts: 'bg-green-500/20 text-green-400',
-  vega: 'bg-purple-500/20 text-purple-400',
   matplotlib: 'bg-orange-500/20 text-orange-400',
-  d3: 'bg-yellow-500/20 text-yellow-400',
-}
-
-function RenderChart({ viz }: { viz: Visualization }) {
-  const config = viz.config || {}
-  const chartType = config.chart_type || 'bar'
-  const chartData = viz.data?.values || viz.data?.datasets || config.sample_data || [
-    { name: 'Jan', value: 400 },
-    { name: 'Feb', value: 300 },
-    { name: 'Mar', value: 600 },
-    { name: 'Apr', value: 800 },
-    { name: 'May', value: 500 },
-    { name: 'Jun', value: 700 },
-  ]
-
-  const xKey = config.x_key || 'name'
-  const yKey = config.y_key || 'value'
-
-  if (chartType === 'line') {
-    return (
-      <ResponsiveContainer width="100%" height={400}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey={xKey} stroke="#888" />
-          <YAxis stroke="#888" />
-          <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-          <Legend />
-          <Line type="monotone" dataKey={yKey} stroke="#8884d8" strokeWidth={2} dot={{ fill: '#8884d8' }} />
-        </LineChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (chartType === 'area') {
-    return (
-      <ResponsiveContainer width="100%" height={400}>
-        <AreaChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey={xKey} stroke="#888" />
-          <YAxis stroke="#888" />
-          <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-          <Legend />
-          <Area type="monotone" dataKey={yKey} stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
-        </AreaChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  if (chartType === 'pie') {
-    return (
-      <ResponsiveContainer width="100%" height={400}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            labelLine={true}
-            label={({ name, value }: any) => `${name}: ${value}`}
-            outerRadius={150}
-            fill="#8884d8"
-            dataKey={yKey}
-            nameKey={xKey}
-          >
-            {chartData.map((_: any, index: number) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    )
-  }
-
-  // default: bar chart
-  return (
-    <ResponsiveContainer width="100%" height={400}>
-      <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-        <XAxis dataKey={xKey} stroke="#888" />
-        <YAxis stroke="#888" />
-        <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-        <Legend />
-        <Bar dataKey={yKey} fill="#8884d8" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  )
+  seaborn: 'bg-blue-500/20 text-blue-400',
+  plotly: 'bg-cyan-500/20 text-cyan-400',
+  bokeh: 'bg-green-500/20 text-green-400',
+  altair: 'bg-purple-500/20 text-purple-400',
+  plotnine: 'bg-pink-500/20 text-pink-400',
+  datashader: 'bg-teal-500/20 text-teal-400',
+  networkx: 'bg-yellow-500/20 text-yellow-400',
+  geopandas: 'bg-indigo-500/20 text-indigo-400',
 }
 
 export default function VisualizationDetailPage({ params }: { params: { id: string } }) {
@@ -132,6 +44,8 @@ export default function VisualizationDetailPage({ params }: { params: { id: stri
   const [viz, setViz] = useState<Visualization | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [editingCode, setEditingCode] = useState(false)
+  const [codeValue, setCodeValue] = useState('')
 
   useEffect(() => {
     loadViz()
@@ -141,7 +55,9 @@ export default function VisualizationDetailPage({ params }: { params: { id: stri
     try {
       const res = await authFetch(`${API_URL}/api/v1/visualizations/${params.id}`)
       if (res.ok) {
-        setViz(await res.json())
+        const data = await res.json()
+        setViz(data)
+        setCodeValue(data.code || '')
       }
     } catch (err) {
       console.error('failed to load visualization:', err)
@@ -157,6 +73,23 @@ export default function VisualizationDetailPage({ params }: { params: { id: stri
       await loadViz()
     } catch (err) {
       console.error('failed to publish:', err)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleSaveCode = async () => {
+    setActionLoading('save')
+    try {
+      await authFetch(`${API_URL}/api/v1/visualizations/${params.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codeValue }),
+      })
+      setEditingCode(false)
+      await loadViz()
+    } catch (err) {
+      console.error('failed to save code:', err)
     } finally {
       setActionLoading(null)
     }
@@ -244,13 +177,67 @@ export default function VisualizationDetailPage({ params }: { params: { id: stri
         </div>
       </div>
 
-      {/* Chart Render */}
+      {/* Chart Preview */}
       <div className="rounded-lg border border-white/10 bg-card p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Chart Preview</h2>
           <span className="text-xs text-muted-foreground">Rendered with {viz.backend}</span>
         </div>
-        <RenderChart viz={viz} />
+        <VizRenderer
+          backend={viz.backend}
+          outputType={viz.output_type}
+          config={viz.config}
+          data={viz.data}
+          renderedOutput={viz.rendered_output}
+          code={viz.code}
+        />
+      </div>
+
+      {/* Code Editor */}
+      <div className="rounded-lg border border-white/10 bg-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Code2 className="h-4 w-4 text-blue-400" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Visualization Code</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {editingCode ? (
+              <>
+                <button onClick={handleSaveCode} disabled={!!actionLoading} className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                  {actionLoading === 'save' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                  Save
+                </button>
+                <button onClick={() => { setEditingCode(false); setCodeValue(viz.code || '') }} className="rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium hover:bg-muted/40">
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setEditingCode(true)} className="inline-flex items-center gap-1 rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium hover:bg-blue-500/10 hover:border-blue-500/50 transition-colors">
+                <Code2 className="h-3 w-3" /> Edit Code
+              </button>
+            )}
+          </div>
+        </div>
+
+        {editingCode ? (
+          <textarea
+            value={codeValue}
+            onChange={(e) => setCodeValue(e.target.value)}
+            rows={20}
+            spellCheck={false}
+            className="w-full rounded-md border border-white/10 bg-black/40 px-4 py-3 text-sm font-mono text-green-300 focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+            placeholder={`# Write your ${viz.backend} visualization code here\nimport matplotlib.pyplot as plt\n\n# Your code...`}
+          />
+        ) : viz.code ? (
+          <pre className="bg-black/40 rounded-md p-4 text-sm font-mono overflow-auto max-h-96 text-green-300 whitespace-pre-wrap">
+            {viz.code}
+          </pre>
+        ) : (
+          <div className="text-center text-muted-foreground py-8">
+            <Code2 className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">No code yet. Click "Edit Code" to add visualization code.</p>
+          </div>
+        )}
       </div>
 
       {/* Config/Data Section */}

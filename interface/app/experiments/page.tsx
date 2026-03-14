@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-provider'
+import Link from 'next/link'
 import {
   Plus, FlaskConical, X, Loader2,
 } from 'lucide-react'
@@ -98,7 +99,7 @@ export default function ExperimentsPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {items.map((exp) => (
             <div key={exp.id} className="rounded-lg border border-white/10 bg-card p-4 space-y-3">
-              <div className="font-medium">{exp.name}</div>
+              <Link href={`/experiments/${exp.id}`} className="font-medium hover:underline block">{exp.name}</Link>
               {exp.description && (
                 <p className="text-sm text-muted-foreground line-clamp-2">{exp.description}</p>
               )}

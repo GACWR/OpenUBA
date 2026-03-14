@@ -3,11 +3,13 @@ Copyright 2019-Present The OpenUBA Platform Authors
 jobs api router
 '''
 
+import asyncio
 import logging
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
+from sse_starlette.sse import EventSourceResponse
 
 from core.db import get_db
 from core.repositories.job_repository import JobRepository
@@ -174,6 +176,70 @@ async def post_training_metric(
         raise HTTPException(status_code=404, detail="job not found")
     logger.info(f"metric posted for job {job_id}: {metric_data.metric_name}={metric_data.metric_value}")
     return metric
+
+
+@router.get("/jobs/{job_id}/metrics/stream")
+async def stream_job_metrics(
+    job_id: UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("jobs", "read"))
+):
+    '''
+    SSE endpoint for streaming job metrics in real-time
+    the frontend connects to this and receives metric updates as they happen
+    '''
+    import json
+
+    repo = JobRepository(db)
+    job = repo.get_by_id(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="job not found")
+
+    async def event_generator():
+        last_count = 0
+        while True:
+            if await request.is_disconnected():
+                break
+
+            metrics = repo.get_metrics(job_id)
+            current_count = len(metrics)
+
+            if current_count > last_count:
+                new_metrics = metrics[last_count:]
+                for m in new_metrics:
+                    yield {
+                        "event": "metric",
+                        "data": json.dumps({
+                            "metric_name": m.metric_name,
+                            "metric_value": m.metric_value,
+                            "epoch": m.epoch,
+                            "step": m.step,
+                            "created_at": str(m.created_at),
+                        })
+                    }
+                last_count = current_count
+
+            # also send job status updates
+            job_now = repo.get_by_id(job_id)
+            if job_now:
+                yield {
+                    "event": "status",
+                    "data": json.dumps({
+                        "status": job_now.status,
+                        "progress": job_now.progress,
+                        "epoch_current": job_now.epoch_current,
+                        "epoch_total": job_now.epoch_total,
+                        "loss": job_now.loss,
+                    })
+                }
+                if job_now.status in ("completed", "failed", "cancelled"):
+                    yield {"event": "done", "data": json.dumps({"status": job_now.status})}
+                    break
+
+            await asyncio.sleep(2)
+
+    return EventSourceResponse(event_generator())
 
 
 @router.post("/internal/logs/{job_id}", response_model=JobLogResponse, status_code=201)

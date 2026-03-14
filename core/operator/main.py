@@ -10,6 +10,12 @@ try:
 except ImportError:
     pass  # workspace handler not available in all environments
 
+# import pipeline handler to register its kopf handlers
+try:
+    import core.operator.pipeline_handler  # noqa: F401
+except ImportError:
+    pass  # pipeline handler not available in all environments
+
 # Setup K8s client
 if os.getenv("KUBERNETES_SERVICE_HOST"):
     kubernetes.config.load_incluster_config()

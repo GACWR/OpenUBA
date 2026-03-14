@@ -580,6 +580,51 @@ class OpenUBAClient:
         '''list detection rules'''
         return self._get("/api/v1/rules", params={"enabled": enabled})
 
+    # ─── Data Query Methods ─────────────────────────────────────────
+
+    def query_spark(self, query, spark_master=None):
+        '''execute a Spark SQL query and return results as list of dicts'''
+        try:
+            from pyspark.sql import SparkSession
+        except ImportError:
+            raise ImportError("pyspark is required for query_spark(). Install with: pip install pyspark")
+
+        master = spark_master or os.environ.get("SPARK_MASTER", "local[*]")
+        spark = SparkSession.builder \
+            .appName("openuba-sdk") \
+            .master(master) \
+            .getOrCreate()
+
+        df = spark.sql(query)
+        results = [row.asDict() for row in df.collect()]
+        return results
+
+    def query_elasticsearch(self, index, query_body, es_host=None):
+        '''execute an Elasticsearch query and return hits'''
+        try:
+            from elasticsearch import Elasticsearch
+        except ImportError:
+            raise ImportError("elasticsearch is required for query_elasticsearch(). Install with: pip install elasticsearch")
+
+        host = es_host or os.environ.get("ELASTICSEARCH_HOST", "http://localhost:9200")
+        es = Elasticsearch(host)
+        result = es.search(index=index, body=query_body)
+        hits = result.get("hits", {}).get("hits", [])
+        return [hit.get("_source", {}) for hit in hits]
+
+    # ─── Source Code Generation ────────────────────────────────────
+
+    def _generate_source_code(self, model_name, framework=None, template="basic"):
+        '''generate boilerplate MODEL.py source code for a given framework'''
+        fw = framework or "sklearn"
+        templates = {
+            "sklearn": _SKLEARN_TEMPLATE,
+            "pytorch": _PYTORCH_TEMPLATE,
+            "tensorflow": _TENSORFLOW_TEMPLATE,
+        }
+        code = templates.get(fw, _SKLEARN_TEMPLATE)
+        return code.replace("{{MODEL_NAME}}", model_name)
+
     # ─── Framework Detection ────────────────────────────────────────
 
     @staticmethod
@@ -653,6 +698,126 @@ class _SimpleLogger:
 
     def error(self, msg: str):
         print(f"[{self._name}] ERROR: {msg}")
+
+
+_SKLEARN_TEMPLATE = '''"""{{MODEL_NAME}} — sklearn-based UBA model."""
+
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+
+
+class Model:
+    def __init__(self):
+        self.clf = IsolationForest(contamination=0.05, random_state=42)
+
+    def train(self, ctx):
+        self.clf.fit(ctx.df)
+        ctx.logger.info("training complete")
+        return {"status": "trained"}
+
+    def infer(self, ctx):
+        predictions = self.clf.predict(ctx.df)
+        ctx.df["anomaly_score"] = self.clf.score_samples(ctx.df)
+        ctx.df["is_anomaly"] = predictions == -1
+        return ctx.df
+'''
+
+_PYTORCH_TEMPLATE = '''"""{{MODEL_NAME}} — PyTorch-based UBA model."""
+
+import torch
+import torch.nn as nn
+import pandas as pd
+import numpy as np
+
+
+class Autoencoder(nn.Module):
+    def __init__(self, input_dim, hidden_dim=32):
+        super().__init__()
+        self.encoder = nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.ReLU())
+        self.decoder = nn.Sequential(nn.Linear(hidden_dim, input_dim), nn.Sigmoid())
+
+    def forward(self, x):
+        return self.decoder(self.encoder(x))
+
+
+class Model:
+    def __init__(self):
+        self.model = None
+        self.threshold = None
+
+    def train(self, ctx):
+        data = torch.FloatTensor(ctx.df.values)
+        self.model = Autoencoder(data.shape[1])
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        criterion = nn.MSELoss()
+
+        for epoch in range(50):
+            output = self.model(data)
+            loss = criterion(output, data)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            ctx.log_metric("loss", loss.item(), epoch=epoch)
+
+        with torch.no_grad():
+            recon = self.model(data)
+            errors = ((recon - data) ** 2).mean(dim=1).numpy()
+            self.threshold = np.percentile(errors, 95)
+
+        ctx.logger.info(f"training complete, threshold={self.threshold:.4f}")
+        return {"status": "trained", "threshold": self.threshold}
+
+    def infer(self, ctx):
+        data = torch.FloatTensor(ctx.df.values)
+        with torch.no_grad():
+            recon = self.model(data)
+            errors = ((recon - data) ** 2).mean(dim=1).numpy()
+        ctx.df["reconstruction_error"] = errors
+        ctx.df["is_anomaly"] = errors > self.threshold
+        return ctx.df
+'''
+
+_TENSORFLOW_TEMPLATE = '''"""{{MODEL_NAME}} — TensorFlow/Keras-based UBA model."""
+
+import numpy as np
+import pandas as pd
+
+
+class Model:
+    def __init__(self):
+        self.model = None
+        self.threshold = None
+
+    def train(self, ctx):
+        import tensorflow as tf
+
+        data = ctx.df.values.astype("float32")
+        input_dim = data.shape[1]
+
+        self.model = tf.keras.Sequential([
+            tf.keras.layers.Dense(32, activation="relu", input_shape=(input_dim,)),
+            tf.keras.layers.Dense(16, activation="relu"),
+            tf.keras.layers.Dense(32, activation="relu"),
+            tf.keras.layers.Dense(input_dim, activation="sigmoid"),
+        ])
+        self.model.compile(optimizer="adam", loss="mse")
+        self.model.fit(data, data, epochs=50, batch_size=32, verbose=0)
+
+        recon = self.model.predict(data)
+        errors = np.mean((recon - data) ** 2, axis=1)
+        self.threshold = np.percentile(errors, 95)
+
+        ctx.logger.info(f"training complete, threshold={self.threshold:.4f}")
+        return {"status": "trained"}
+
+    def infer(self, ctx):
+        data = ctx.df.values.astype("float32")
+        recon = self.model.predict(data)
+        errors = np.mean((recon - data) ** 2, axis=1)
+        ctx.df["reconstruction_error"] = errors
+        ctx.df["is_anomaly"] = errors > self.threshold
+        return ctx.df
+'''
 
 
 def _hash_file(path: Path) -> str:

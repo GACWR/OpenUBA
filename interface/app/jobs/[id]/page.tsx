@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-provider'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Cpu, RefreshCw,
+  ArrowLeft, Cpu, RefreshCw, Radio,
 } from 'lucide-react'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -38,6 +41,14 @@ interface Job {
   completed_at?: string
 }
 
+interface SSEMetric {
+  metric_name: string
+  metric_value: number
+  epoch?: number
+  step?: number
+  created_at: string
+}
+
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { authFetch } = useAuth()
   const router = useRouter()
@@ -45,11 +56,47 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   const [logs, setLogs] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [logsLoading, setLogsLoading] = useState(true)
+  const [sseConnected, setSSEConnected] = useState(false)
+  const [sseMetrics, setSSEMetrics] = useState<SSEMetric[]>([])
+  const sseRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
     loadJob()
     loadLogs()
   }, [params.id])
+
+  // SSE streaming for live metrics
+  useEffect(() => {
+    if (!job || !['pending', 'running'].includes(job.status)) return
+
+    const url = `${API_URL}/api/v1/jobs/${params.id}/metrics/stream`
+    const source = new EventSource(url)
+    sseRef.current = source
+
+    source.addEventListener('metric', (e: MessageEvent) => {
+      const metric: SSEMetric = JSON.parse(e.data)
+      setSSEMetrics(prev => [...prev, metric])
+    })
+
+    source.addEventListener('status', (e: MessageEvent) => {
+      const status = JSON.parse(e.data)
+      setJob(prev => prev ? { ...prev, ...status } : prev)
+    })
+
+    source.addEventListener('done', () => {
+      source.close()
+      setSSEConnected(false)
+      loadJob()
+    })
+
+    source.onopen = () => setSSEConnected(true)
+    source.onerror = () => {
+      setSSEConnected(false)
+      source.close()
+    }
+
+    return () => { source.close() }
+  }, [job?.status, params.id])
 
   const loadJob = async () => {
     try {
@@ -179,6 +226,29 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           </div>
         )}
       </div>
+
+      {/* SSE Live Metrics */}
+      {sseMetrics.length > 0 && (
+        <div className="rounded-lg border border-white/10 bg-card p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <Radio className={`h-4 w-4 ${sseConnected ? 'text-green-400 animate-pulse' : 'text-gray-400'}`} />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Live Training Metrics</h2>
+            {sseConnected && <span className="text-xs text-green-400">streaming</span>}
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={sseMetrics.map((m, i) => ({ idx: m.epoch ?? m.step ?? i, [m.metric_name]: m.metric_value }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis dataKey="idx" stroke="#888" fontSize={12} />
+              <YAxis stroke="#888" fontSize={12} />
+              <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
+              <Legend />
+              {Array.from(new Set(sseMetrics.map(m => m.metric_name))).map((name, i) => (
+                <Line key={name} type="monotone" dataKey={name} stroke={['#8884d8', '#82ca9d', '#ffc658', '#ff7300'][i % 4]} strokeWidth={2} dot={false} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Metrics */}
       {job.metrics && Object.keys(job.metrics).length > 0 && (
