@@ -16,7 +16,7 @@ interface VizRendererProps {
   data?: any
   renderedOutput?: string
   code?: string
-  width?: string | number
+  width?: number | `${number}%`
   height?: number
 }
 

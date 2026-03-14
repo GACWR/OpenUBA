@@ -6,15 +6,21 @@ import json
 
 # import workspace handler to register its kopf handlers
 try:
-    import core.operator.workspace_handler  # noqa: F401
+    import workspace_handler  # noqa: F401
 except ImportError:
-    pass  # workspace handler not available in all environments
+    try:
+        import core.operator.workspace_handler  # noqa: F401
+    except ImportError:
+        pass
 
 # import pipeline handler to register its kopf handlers
 try:
-    import core.operator.pipeline_handler  # noqa: F401
+    import pipeline_handler  # noqa: F401
 except ImportError:
-    pass  # pipeline handler not available in all environments
+    try:
+        import core.operator.pipeline_handler  # noqa: F401
+    except ImportError:
+        pass
 
 # Setup K8s client
 if os.getenv("KUBERNETES_SERVICE_HOST"):

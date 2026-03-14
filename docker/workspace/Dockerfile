@@ -63,9 +63,10 @@ RUN mkdir -p /opt/conda/share/jupyter/lab/settings && \
     echo '{"@jupyterlab/apputils-extension:themes": {"theme": "JupyterLab Dark"}}' \
     > /opt/conda/share/jupyter/lab/settings/overrides.json
 
-# welcome notebook
-COPY workspace/welcome.ipynb /home/jovyan/work/
+# workspace notebooks (welcome + SDK tutorials)
+COPY workspace/*.ipynb /home/jovyan/work/
+RUN chown -R 1000:100 /home/jovyan/work/
 
 USER jovyan
 
-WORKDIR /workspace
+WORKDIR /home/jovyan/work
