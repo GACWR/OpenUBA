@@ -52,18 +52,27 @@ DEFAULT_PERMISSIONS = {
         "rules": (True, False), "alerts": (True, False), "entities": (True, False),
         "anomalies": (True, False), "cases": (True, False), "schedules": (True, False),
         "settings": (True, False), "users": (True, False),
+        "workspaces": (True, False), "visualizations": (True, False),
+        "dashboards": (True, False), "experiments": (True, False),
+        "features": (True, False), "jobs": (True, False), "pipelines": (True, False),
     },
     "triage": {
         "home": (True, False), "data": (False, False), "models": (False, False),
         "rules": (True, False), "alerts": (True, False), "entities": (True, False),
         "anomalies": (False, False), "cases": (True, False), "schedules": (False, False),
         "settings": (False, False), "users": (False, False),
+        "workspaces": (False, False), "visualizations": (True, False),
+        "dashboards": (True, False), "experiments": (False, False),
+        "features": (False, False), "jobs": (False, False), "pipelines": (False, False),
     },
     "analyst": {
         "home": (True, False), "data": (True, False), "models": (True, True),
         "rules": (True, True), "alerts": (True, False), "entities": (True, True),
         "anomalies": (True, True), "cases": (True, False), "schedules": (False, False),
         "settings": (False, False), "users": (False, False),
+        "workspaces": (True, True), "visualizations": (True, True),
+        "dashboards": (True, True), "experiments": (True, True),
+        "features": (True, True), "jobs": (True, True), "pipelines": (True, True),
     },
 }
 
@@ -258,6 +267,20 @@ app.include_router(source_groups.router, prefix="/api/v1", tags=["source_groups"
 app.include_router(data.router, tags=["data"])
 from core.api_routers import system
 app.include_router(system.router, tags=["system"])
+
+# workspace & platform enhancement routers
+from core.api_routers import workspaces, jobs, visualizations, dashboards
+from core.api_routers import features, experiments, hyperparameters, pipelines, datasets, sdk
+app.include_router(workspaces.router, prefix="/api/v1", tags=["workspaces"])
+app.include_router(jobs.router, prefix="/api/v1", tags=["jobs"])
+app.include_router(visualizations.router, prefix="/api/v1", tags=["visualizations"])
+app.include_router(dashboards.router, prefix="/api/v1", tags=["dashboards"])
+app.include_router(features.router, prefix="/api/v1", tags=["features"])
+app.include_router(experiments.router, prefix="/api/v1", tags=["experiments"])
+app.include_router(hyperparameters.router, prefix="/api/v1", tags=["hyperparameters"])
+app.include_router(pipelines.router, prefix="/api/v1", tags=["pipelines"])
+app.include_router(datasets.router, prefix="/api/v1", tags=["datasets"])
+app.include_router(sdk.router, prefix="/api/v1", tags=["sdk"])
 
 
 @app.get("/")

@@ -3,7 +3,7 @@ Copyright 2019-Present The OpenUBA Platform Authors
 sqlalchemy models for openuba database
 '''
 
-from sqlalchemy import Column, String, Integer, Boolean, Text, DECIMAL, TIMESTAMP, ForeignKey, JSON
+from sqlalchemy import Column, String, Integer, Float, Boolean, Text, DECIMAL, TIMESTAMP, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -410,4 +410,355 @@ class SourceGroup(Base):
 
     def __repr__(self) -> str:
         return f"<SourceGroup(slug={self.slug})>"
+
+
+# ─── Workspace System (Phase 1) ───────────────────────────────────────────────
+
+
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    environment = Column(String(100), default="default")
+    hardware_tier = Column(String(50), default="cpu-small")
+    ide = Column(String(50), default="jupyterlab")
+    status = Column(String(50), default="pending")
+    pod_name = Column(String(255))
+    service_name = Column(String(255))
+    pvc_name = Column(String(255))
+    access_url = Column(Text)
+    node_port = Column(Integer)
+    cr_name = Column(String(255))
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
+    started_at = Column(TIMESTAMP(timezone=True))
+    stopped_at = Column(TIMESTAMP(timezone=True))
+    timeout_hours = Column(Integer, default=24)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<Workspace(id={self.id}, name={self.name}, status={self.status})>"
+
+
+class Environment(Base):
+    __tablename__ = "environments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False, unique=True)
+    display_name = Column(String(255))
+    description = Column(Text)
+    docker_image = Column(Text, nullable=False)
+    default_packages = Column(JSONB)
+    hardware_requirements = Column(JSONB)
+    enabled = Column(Boolean, default=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __repr__(self) -> str:
+        return f"<Environment(name={self.name}, enabled={self.enabled})>"
+
+
+# ─── Dataset Management (Phase 2) ─────────────────────────────────────────────
+
+
+class Dataset(Base):
+    __tablename__ = "datasets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    source_type = Column(String(50), default="upload")
+    file_path = Column(Text)
+    file_size = Column(Integer)
+    row_count = Column(Integer)
+    column_count = Column(Integer)
+    columns = Column(JSONB)
+    format = Column(String(50), default="csv")
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<Dataset(id={self.id}, name={self.name}, format={self.format})>"
+
+
+# ─── Jobs & Execution Engine (Phase 3) ────────────────────────────────────────
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255))
+    model_id = Column(UUID(as_uuid=True), ForeignKey("models.id", ondelete="SET NULL"))
+    dataset_id = Column(UUID(as_uuid=True), ForeignKey("datasets.id", ondelete="SET NULL"))
+    job_type = Column(String(50), nullable=False)
+    status = Column(String(50), default="pending")
+    cr_name = Column(String(255))
+    k8s_job_name = Column(String(255))
+    hardware_tier = Column(String(50), default="cpu-small")
+    hyperparameters = Column(JSONB)
+    metrics = Column(JSONB)
+    progress = Column(Integer, default=0)
+    epoch_current = Column(Integer)
+    epoch_total = Column(Integer)
+    loss = Column(Float)
+    learning_rate = Column(Float)
+    error_message = Column(Text)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    started_at = Column(TIMESTAMP(timezone=True))
+    completed_at = Column(TIMESTAMP(timezone=True))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    model = relationship("Model", foreign_keys=[model_id])
+    dataset = relationship("Dataset", foreign_keys=[dataset_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    job_logs = relationship("JobLog", back_populates="job", cascade="all, delete-orphan", order_by="JobLog.created_at")
+    training_metrics = relationship("TrainingMetric", back_populates="job", cascade="all, delete-orphan", order_by="TrainingMetric.created_at")
+
+    def __repr__(self) -> str:
+        return f"<Job(id={self.id}, job_type={self.job_type}, status={self.status})>"
+
+
+class JobLog(Base):
+    __tablename__ = "job_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+    level = Column(String(20), default="info")
+    message = Column(Text, nullable=False)
+    logger_name = Column(String(255))
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # relationships
+    job = relationship("Job", back_populates="job_logs")
+
+    def __repr__(self) -> str:
+        return f"<JobLog(id={self.id}, level={self.level})>"
+
+
+class TrainingMetric(Base):
+    __tablename__ = "training_metrics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
+    metric_name = Column(String(255), nullable=False)
+    metric_value = Column(Float, nullable=False)
+    epoch = Column(Integer)
+    step = Column(Integer)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # relationships
+    job = relationship("Job", back_populates="training_metrics")
+
+    def __repr__(self) -> str:
+        return f"<TrainingMetric(job_id={self.job_id}, name={self.metric_name}, value={self.metric_value})>"
+
+
+# ─── Visualization Framework (Phase 4) ────────────────────────────────────────
+
+
+class Visualization(Base):
+    __tablename__ = "visualizations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    backend = Column(String(50), nullable=False)
+    output_type = Column(String(50), nullable=False)
+    code = Column(Text)
+    data = Column(JSONB)
+    config = Column(JSONB)
+    rendered_output = Column(Text)
+    refresh_interval = Column(Integer, default=0)
+    published = Column(Boolean, default=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<Visualization(id={self.id}, name={self.name}, backend={self.backend})>"
+
+
+# ─── Dashboard Framework (Phase 5) ────────────────────────────────────────────
+
+
+class Dashboard(Base):
+    __tablename__ = "dashboards"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    layout = Column(JSONB, default=[])
+    published = Column(Boolean, default=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<Dashboard(id={self.id}, name={self.name}, published={self.published})>"
+
+
+# ─── Feature Store & Experiment Tracking (Phase 6) ────────────────────────────
+
+
+class FeatureGroup(Base):
+    __tablename__ = "feature_groups"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False, unique=True)
+    description = Column(Text)
+    entity = Column(String(100), default="default")
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    features = relationship("Feature", back_populates="group", cascade="all, delete-orphan")
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<FeatureGroup(id={self.id}, name={self.name})>"
+
+
+class Feature(Base):
+    __tablename__ = "features"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_id = Column(UUID(as_uuid=True), ForeignKey("feature_groups.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(255), nullable=False)
+    dtype = Column(String(50))
+    mean = Column(Float)
+    std = Column(Float)
+    min_val = Column(Float)
+    max_val = Column(Float)
+    null_rate = Column(Float)
+    transform = Column(String(100))
+    transform_params = Column(JSONB)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # relationships
+    group = relationship("FeatureGroup", back_populates="features")
+
+    def __repr__(self) -> str:
+        return f"<Feature(id={self.id}, name={self.name}, dtype={self.dtype})>"
+
+
+class Experiment(Base):
+    __tablename__ = "experiments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    runs = relationship("ExperimentRun", back_populates="experiment", cascade="all, delete-orphan")
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<Experiment(id={self.id}, name={self.name})>"
+
+
+class ExperimentRun(Base):
+    __tablename__ = "experiment_runs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    experiment_id = Column(UUID(as_uuid=True), ForeignKey("experiments.id", ondelete="CASCADE"), nullable=False)
+    job_id = Column(UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="SET NULL"))
+    model_id = Column(UUID(as_uuid=True), ForeignKey("models.id", ondelete="SET NULL"))
+    parameters = Column(JSONB)
+    metrics = Column(JSONB)
+    status = Column(String(50), default="pending")
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # relationships
+    experiment = relationship("Experiment", back_populates="runs")
+    job = relationship("Job", foreign_keys=[job_id])
+    model = relationship("Model", foreign_keys=[model_id])
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<ExperimentRun(id={self.id}, experiment_id={self.experiment_id}, status={self.status})>"
+
+
+class HyperparameterSet(Base):
+    __tablename__ = "hyperparameter_sets"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    model_id = Column(UUID(as_uuid=True), ForeignKey("models.id", ondelete="SET NULL"))
+    parameters = Column(JSONB, nullable=False)
+    description = Column(Text)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    model = relationship("Model", foreign_keys=[model_id])
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<HyperparameterSet(id={self.id}, name={self.name})>"
+
+
+# ─── Pipeline System (Phase 7) ────────────────────────────────────────────────
+
+
+class Pipeline(Base):
+    __tablename__ = "pipelines"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    steps = Column(JSONB, nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # relationships
+    pipeline_runs = relationship("PipelineRun", back_populates="pipeline", cascade="all, delete-orphan")
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<Pipeline(id={self.id}, name={self.name})>"
+
+
+class PipelineRun(Base):
+    __tablename__ = "pipeline_runs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pipeline_id = Column(UUID(as_uuid=True), ForeignKey("pipelines.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(50), default="pending")
+    current_step = Column(Integer, default=0)
+    step_statuses = Column(JSONB, default=[])
+    started_at = Column(TIMESTAMP(timezone=True))
+    completed_at = Column(TIMESTAMP(timezone=True))
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+    # relationships
+    pipeline = relationship("Pipeline", back_populates="pipeline_runs")
+    creator = relationship("User", foreign_keys=[created_by])
+
+    def __repr__(self) -> str:
+        return f"<PipelineRun(id={self.id}, pipeline_id={self.pipeline_id}, status={self.status})>"
 

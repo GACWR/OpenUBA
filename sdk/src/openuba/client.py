@@ -42,6 +42,7 @@ class OpenUBAClient:
             api_url or os.environ.get("OPENUBA_API_URL") or "http://localhost:8000"
         ).rstrip("/")
         self.token = token or os.environ.get("OPENUBA_TOKEN")
+        self.workspace_id = os.environ.get("OPENUBA_WORKSPACE_ID")
 
         # Hub registry (used for list/install — works without a server)
         self.registry_url = (
@@ -263,6 +264,355 @@ class OpenUBAClient:
         if isinstance(result, dict):
             return {"status": "success", **result}
         return {"status": "success", "results": result}
+
+    # ─── HTTP helpers ───────────────────────────────────────────────
+
+    def _headers(self):
+        '''get request headers with auth token'''
+        headers = {"Content-Type": "application/json"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        return headers
+
+    def _get(self, path, params=None):
+        '''authenticated GET request'''
+        url = f"{self.api_url}{path}"
+        response = requests.get(url, headers=self._headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+
+    def _post(self, path, body=None):
+        '''authenticated POST request'''
+        url = f"{self.api_url}{path}"
+        response = requests.post(url, headers=self._headers(), json=body)
+        response.raise_for_status()
+        return response.json()
+
+    def _put(self, path, body=None):
+        '''authenticated PUT request'''
+        url = f"{self.api_url}{path}"
+        response = requests.put(url, headers=self._headers(), json=body)
+        response.raise_for_status()
+        return response.json()
+
+    def _patch(self, path, body=None):
+        '''authenticated PATCH request'''
+        url = f"{self.api_url}{path}"
+        response = requests.patch(url, headers=self._headers(), json=body)
+        response.raise_for_status()
+        return response.json()
+
+    def _delete(self, path):
+        '''authenticated DELETE request'''
+        url = f"{self.api_url}{path}"
+        response = requests.delete(url, headers=self._headers())
+        response.raise_for_status()
+        return True
+
+    # ─── Model Registration (SDK-first) ─────────────────────────────
+
+    def register_model(self, name, model=None, framework=None, description=None):
+        '''register a model with the platform, optionally with auto-detection'''
+        body = {"name": name, "description": description or ""}
+        if model is not None:
+            detected = framework or self._detect_framework(model)
+            body["framework"] = detected
+            serialized = self._serialize_model(model, detected)
+            body["model_data"] = serialized
+        elif framework:
+            body["framework"] = framework
+        return self._post("/api/v1/sdk/register-model", body)
+
+    def publish_version(self, model_id, version=None, summary=None):
+        '''publish a new version of a model'''
+        body = {"model_id": str(model_id)}
+        if version:
+            body["version"] = version
+        if summary:
+            body["summary"] = summary
+        return self._post("/api/v1/sdk/publish-version", body)
+
+    def load_model(self, name_or_id, version=None):
+        '''load a model by name or ID'''
+        try:
+            return self._get(f"/api/v1/sdk/models/resolve/{name_or_id}")
+        except Exception:
+            return self._get(f"/api/v1/models/{name_or_id}")
+
+    # ─── Dataset Management ─────────────────────────────────────────
+
+    def list_datasets(self):
+        '''list all datasets'''
+        return self._get("/api/v1/datasets")
+
+    def get_dataset(self, dataset_id):
+        '''get dataset by ID'''
+        return self._get(f"/api/v1/datasets/{dataset_id}")
+
+    def create_dataset(self, name, description=None, source_type="upload", format="csv"):
+        '''create a dataset record'''
+        return self._post("/api/v1/datasets", {
+            "name": name,
+            "description": description,
+            "source_type": source_type,
+            "format": format,
+        })
+
+    # ─── Jobs ───────────────────────────────────────────────────────
+
+    def start_training(self, model_id, dataset_id=None, hardware_tier="cpu-small",
+                       hyperparameters=None, wait=False):
+        '''start a training job'''
+        body = {
+            "model_id": str(model_id),
+            "job_type": "training",
+            "hardware_tier": hardware_tier,
+        }
+        if dataset_id:
+            body["dataset_id"] = str(dataset_id)
+        if hyperparameters:
+            body["hyperparameters"] = hyperparameters
+        result = self._post("/api/v1/jobs", body)
+        if wait and result.get("id"):
+            return self.wait_for_job(result["id"])
+        return result
+
+    def start_inference(self, model_id, dataset_id=None, hardware_tier="cpu-small",
+                        wait=False):
+        '''start an inference job'''
+        body = {
+            "model_id": str(model_id),
+            "job_type": "inference",
+            "hardware_tier": hardware_tier,
+        }
+        if dataset_id:
+            body["dataset_id"] = str(dataset_id)
+        result = self._post("/api/v1/jobs", body)
+        if wait and result.get("id"):
+            return self.wait_for_job(result["id"])
+        return result
+
+    def get_job(self, job_id):
+        '''get job details'''
+        return self._get(f"/api/v1/jobs/{job_id}")
+
+    def wait_for_job(self, job_id, poll_interval=2, timeout=3600):
+        '''wait for a job to complete'''
+        import time as _time
+        start = _time.time()
+        while _time.time() - start < timeout:
+            job = self.get_job(job_id)
+            status = job.get("status", "unknown")
+            if status in ("completed", "failed", "error"):
+                return job
+            _time.sleep(poll_interval)
+        raise TimeoutError(f"job {job_id} did not complete within {timeout}s")
+
+    def get_logs(self, job_id):
+        '''get job logs'''
+        return self._get(f"/api/v1/jobs/{job_id}/logs")
+
+    def post_log(self, job_id, message, level="info"):
+        '''post a log entry for a job'''
+        return self._post(f"/api/v1/internal/logs/{job_id}", {
+            "message": message,
+            "level": level,
+        })
+
+    # ─── Visualizations ─────────────────────────────────────────────
+
+    def create_visualization(self, name, backend="matplotlib", description=None,
+                              output_type=None):
+        '''create a visualization'''
+        if output_type is None:
+            output_type_map = {
+                "matplotlib": "svg", "seaborn": "svg", "plotly": "plotly",
+                "bokeh": "bokeh", "altair": "vega-lite", "plotnine": "svg",
+                "datashader": "png", "networkx": "svg", "geopandas": "svg",
+            }
+            output_type = output_type_map.get(backend, "svg")
+        return self._post("/api/v1/visualizations", {
+            "name": name,
+            "backend": backend,
+            "output_type": output_type,
+            "description": description,
+        })
+
+    def publish_visualization(self, viz_id):
+        '''publish a visualization'''
+        return self._post(f"/api/v1/visualizations/{viz_id}/publish")
+
+    def list_visualizations(self):
+        '''list all visualizations'''
+        return self._get("/api/v1/visualizations")
+
+    # ─── Dashboards ─────────────────────────────────────────────────
+
+    def create_dashboard(self, name, layout=None, description=None):
+        '''create a dashboard'''
+        return self._post("/api/v1/dashboards", {
+            "name": name,
+            "layout": layout or [],
+            "description": description,
+        })
+
+    def update_dashboard(self, dashboard_id, layout=None, name=None):
+        '''update a dashboard'''
+        body = {}
+        if layout is not None:
+            body["layout"] = layout
+        if name is not None:
+            body["name"] = name
+        return self._put(f"/api/v1/dashboards/{dashboard_id}", body)
+
+    def list_dashboards(self):
+        '''list all dashboards'''
+        return self._get("/api/v1/dashboards")
+
+    # ─── Features ───────────────────────────────────────────────────
+
+    def create_features(self, feature_names, group_name, description=None, entity="default"):
+        '''create a feature group with features'''
+        group = self._post("/api/v1/features/groups", {
+            "name": group_name,
+            "description": description,
+            "entity": entity,
+        })
+        group_id = group.get("id")
+        for fname in feature_names:
+            self._post(f"/api/v1/features/groups/{group_id}/features", {
+                "group_id": group_id,
+                "name": fname,
+            })
+        return group
+
+    def load_features(self, group_name):
+        '''load feature group by name'''
+        return self._get(f"/api/v1/features/groups/name/{group_name}")
+
+    # ─── Experiments ────────────────────────────────────────────────
+
+    def create_experiment(self, name, description=None):
+        '''create an experiment'''
+        return self._post("/api/v1/experiments", {
+            "name": name,
+            "description": description,
+        })
+
+    def add_experiment_run(self, experiment_id, job_id=None, model_id=None,
+                           parameters=None, metrics=None):
+        '''add a run to an experiment'''
+        body = {}
+        if job_id:
+            body["job_id"] = str(job_id)
+        if model_id:
+            body["model_id"] = str(model_id)
+        if parameters:
+            body["parameters"] = parameters
+        if metrics:
+            body["metrics"] = metrics
+        return self._post(f"/api/v1/experiments/{experiment_id}/runs", body)
+
+    def compare_experiment_runs(self, experiment_id):
+        '''compare experiment runs'''
+        return self._get(f"/api/v1/experiments/{experiment_id}/compare")
+
+    # ─── Hyperparameters ────────────────────────────────────────────
+
+    def create_hyperparameters(self, name, parameters, model_id=None, description=None):
+        '''create a hyperparameter set'''
+        body = {"name": name, "parameters": parameters}
+        if model_id:
+            body["model_id"] = str(model_id)
+        if description:
+            body["description"] = description
+        return self._post("/api/v1/hyperparameters", body)
+
+    def load_hyperparameters(self, name_or_id):
+        '''load hyperparameter set'''
+        return self._get(f"/api/v1/hyperparameters/{name_or_id}")
+
+    # ─── Pipelines ──────────────────────────────────────────────────
+
+    def create_pipeline(self, name, steps, description=None):
+        '''create a pipeline'''
+        return self._post("/api/v1/pipelines", {
+            "name": name,
+            "steps": steps,
+            "description": description,
+        })
+
+    def run_pipeline(self, pipeline_id, wait=False):
+        '''run a pipeline'''
+        result = self._post(f"/api/v1/pipelines/{pipeline_id}/run")
+        return result
+
+    # ─── UBA-Specific Query Methods ─────────────────────────────────
+
+    def query_anomalies(self, entity_id=None, model_id=None, min_risk=None,
+                        max_risk=None, limit=1000):
+        '''query anomalies from the platform'''
+        params = {"limit": limit}
+        if entity_id:
+            params["entity_id"] = entity_id
+        if model_id:
+            params["model_id"] = str(model_id)
+        if min_risk is not None:
+            params["min_risk_score"] = min_risk
+        if max_risk is not None:
+            params["max_risk_score"] = max_risk
+        return self._get("/api/v1/anomalies", params=params)
+
+    def get_entity_risk(self, entity_id):
+        '''get entity risk profile'''
+        return self._get(f"/api/v1/entities/{entity_id}")
+
+    def query_cases(self, status=None, severity=None, limit=100):
+        '''query security cases'''
+        params = {"limit": limit}
+        if status:
+            params["status"] = status
+        if severity:
+            params["severity"] = severity
+        return self._get("/api/v1/cases", params=params)
+
+    def list_rules(self, enabled=True):
+        '''list detection rules'''
+        return self._get("/api/v1/rules", params={"enabled": enabled})
+
+    # ─── Framework Detection ────────────────────────────────────────
+
+    @staticmethod
+    def _detect_framework(model):
+        '''detect ML framework from model object'''
+        module = type(model).__module__
+        if 'sklearn' in module:
+            return 'sklearn'
+        elif 'torch' in module:
+            return 'pytorch'
+        elif 'tensorflow' in module or 'keras' in module:
+            return 'tensorflow'
+        elif 'networkx' in module:
+            return 'networkx'
+        return 'unknown'
+
+    @staticmethod
+    def _serialize_model(model, framework):
+        '''serialize model to base64 string'''
+        import base64
+        import pickle
+        import io
+        buf = io.BytesIO()
+        if framework == 'sklearn':
+            pickle.dump(model, buf)
+        elif framework == 'pytorch':
+            import torch
+            torch.save(model, buf)
+        elif framework == 'tensorflow':
+            pickle.dump(model, buf)
+        else:
+            pickle.dump(model, buf)
+        return base64.b64encode(buf.getvalue()).decode('utf-8')
 
 
 class _ModelContext:

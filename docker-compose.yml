@@ -120,6 +120,14 @@ services:
     profiles:
       - elastic
 
+  # workspace image (build only, launched via K8s/SDK)
+  workspace:
+    build:
+      context: .
+      dockerfile: docker/workspace/Dockerfile
+    profiles:
+      - workspace-build
+
 volumes:
   postgres-data:
   model-storage:

@@ -1,0 +1,162 @@
+'''
+Copyright 2019-Present The OpenUBA Platform Authors
+workspace service for managing workspace lifecycle
+'''
+
+import logging
+import os
+from datetime import timedelta
+from typing import Optional
+from uuid import UUID
+from sqlalchemy.orm import Session
+
+from core.db.models import Workspace
+from core.repositories.workspace_repository import WorkspaceRepository
+from core.auth import create_access_token
+
+logger = logging.getLogger(__name__)
+
+# hardware tier resource definitions
+HARDWARE_TIERS = {
+    "cpu-small": {
+        "requests": {"cpu": "250m", "memory": "512Mi"},
+        "limits": {"cpu": "500m", "memory": "1Gi"},
+    },
+    "cpu-large": {
+        "requests": {"cpu": "500m", "memory": "2Gi"},
+        "limits": {"cpu": "2", "memory": "4Gi"},
+    },
+    "gpu-small": {
+        "requests": {"cpu": "500m", "memory": "1Gi"},
+        "limits": {"cpu": "2", "memory": "4Gi", "nvidia.com/gpu": "1"},
+    },
+    "gpu-large": {
+        "requests": {"cpu": "1", "memory": "2Gi"},
+        "limits": {"cpu": "4", "memory": "8Gi", "nvidia.com/gpu": "4"},
+    },
+}
+
+# nodeport range for workspaces
+NODE_PORT_START = int(os.getenv("WORKSPACE_NODE_PORT_START", "31100"))
+NODE_PORT_END = int(os.getenv("WORKSPACE_NODE_PORT_END", "31199"))
+
+
+class WorkspaceService:
+    '''
+    service for managing workspace lifecycle
+    handles workspace creation, stopping, restarting, and deletion
+    '''
+
+    def __init__(self, db: Session):
+        self.db = db
+        self.repo = WorkspaceRepository(db)
+
+    def launch_workspace(
+        self,
+        name: str,
+        created_by: UUID,
+        environment: str = "default",
+        hardware_tier: str = "cpu-small",
+        ide: str = "jupyterlab",
+        timeout_hours: int = 24,
+    ) -> Workspace:
+        '''
+        launch a new workspace
+        creates the database record and prepares for k8s deployment
+        '''
+        # allocate nodeport
+        node_port = self._allocate_node_port()
+
+        # generate workspace jwt token (30-day expiry)
+        workspace_token = create_access_token(
+            data={"sub": "workspace", "workspace_name": name},
+            expires_delta=timedelta(days=30),
+        )
+
+        # create workspace record
+        workspace = self.repo.create(
+            name=name,
+            environment=environment,
+            hardware_tier=hardware_tier,
+            ide=ide,
+            created_by=created_by,
+            timeout_hours=timeout_hours,
+        )
+
+        # set allocated nodeport
+        workspace = self.repo.update(
+            workspace.id,
+            node_port=node_port,
+            cr_name=f"uba-ws-{str(workspace.id)[:8]}",
+        )
+
+        logger.info(f"workspace launched: {workspace.id} with nodeport {node_port}")
+        return workspace
+
+    def stop_workspace(self, workspace_id: UUID) -> Optional[Workspace]:
+        '''
+        stop a running workspace
+        '''
+        from datetime import datetime
+        workspace = self.repo.get_by_id(workspace_id)
+        if not workspace:
+            return None
+        if workspace.status not in ("running", "pending"):
+            return workspace
+
+        workspace = self.repo.update(
+            workspace_id,
+            status="stopped",
+            stopped_at=datetime.utcnow(),
+        )
+        logger.info(f"workspace stopped: {workspace_id}")
+        return workspace
+
+    def restart_workspace(self, workspace_id: UUID) -> Optional[Workspace]:
+        '''
+        restart a stopped workspace
+        '''
+        workspace = self.repo.get_by_id(workspace_id)
+        if not workspace:
+            return None
+        if workspace.status != "stopped":
+            return workspace
+
+        workspace = self.repo.update(
+            workspace_id,
+            status="pending",
+            stopped_at=None,
+        )
+        logger.info(f"workspace restart requested: {workspace_id}")
+        return workspace
+
+    def delete_workspace(self, workspace_id: UUID) -> bool:
+        '''
+        delete a workspace and its associated resources
+        '''
+        success = self.repo.delete(workspace_id)
+        if success:
+            logger.info(f"workspace deleted: {workspace_id}")
+        return success
+
+    def get_hardware_tier(self, tier_name: str) -> dict:
+        '''
+        get resource limits for a hardware tier
+        '''
+        return HARDWARE_TIERS.get(tier_name, HARDWARE_TIERS["cpu-small"])
+
+    def _allocate_node_port(self) -> int:
+        '''
+        allocate an available nodeport from the workspace range
+        '''
+        used_ports = set()
+        workspaces = self.repo.list_all(limit=200)
+        for ws in workspaces:
+            if ws.node_port and ws.status not in ("stopped", "failed"):
+                used_ports.add(ws.node_port)
+
+        for port in range(NODE_PORT_START, NODE_PORT_END + 1):
+            if port not in used_ports:
+                return port
+
+        raise RuntimeError("no available nodeports in workspace range")

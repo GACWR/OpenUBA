@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openuba"
-version = "0.0.1"
+version = "0.1.0"
 description = "OpenUBA CLI & SDK — install, run, and manage user behavior analytics models"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -32,6 +32,26 @@ dependencies = [
     "requests>=2.28",
     "click>=8.0",
     "pyyaml>=6.0",
+    "pandas>=1.5",
+    "numpy>=1.23",
+]
+
+[project.optional-dependencies]
+viz = [
+    "matplotlib>=3.6",
+    "seaborn>=0.12",
+    "plotly>=5.0",
+]
+all = [
+    "matplotlib>=3.6",
+    "seaborn>=0.12",
+    "plotly>=5.0",
+    "bokeh>=3.0",
+    "altair>=5.0",
+    "plotnine>=0.12",
+    "datashader>=0.15",
+    "networkx>=3.0",
+    "geopandas>=0.13",
 ]
 
 [project.scripts]

@@ -96,8 +96,24 @@ build-runner-networkx:
 	docker build -f docker/model-runner/Dockerfile.networkx -t openuba-model-runner:networkx --build-arg BASE_IMAGE=openuba-model-runner:base .
 build-operator:
 	docker build -f docker/operator.dockerfile -t openuba-operator:latest .
-build-containers: build-backend build-frontend build-model-runner build-operator
+build-workspace:
+	docker build -f docker/workspace/Dockerfile -t openuba-workspace:latest .
+
+build-containers: build-backend build-frontend build-model-runner build-operator build-workspace
 	@echo "all containers built successfully"
+
+# workspace targets
+apply-crds:
+	kubectl apply -f k8s/crds/
+
+# sdk
+test-sdk:
+	@echo "Running SDK tests..."
+	cd sdk && python -m pytest tests/ -v --tb=short
+
+# all tests including sdk (unit + integration)
+test-ci: test test-sdk
+	@echo "All unit and integration tests passed"
 
 # load images into kind cluster
 load-images:
@@ -112,6 +128,7 @@ load-images:
 	kind load docker-image openuba-model-runner:tensorflow --name openuba-cluster || echo "kind cluster not found or not using kind"
 	kind load docker-image openuba-model-runner:networkx --name openuba-cluster || echo "kind cluster not found or not using kind"
 	kind load docker-image openuba-operator:latest --name openuba-cluster || echo "kind cluster not found or not using kind"
+	kind load docker-image openuba-workspace:latest --name openuba-cluster || echo "kind cluster not found or not using kind"
 	@echo "images loaded successfully"
 
 # kubernetes deployment - deploys all services
@@ -303,6 +320,42 @@ e2e-test-display:
 	@echo "Running E2E display/dashboard tests..."
 	pytest core/tests/e2e/test_display_flow.py -v --tb=short
 
+e2e-test-workspaces:
+	@echo "Running E2E workspace tests..."
+	pytest core/tests/e2e/test_workspaces_flow.py -v --tb=short
+
+e2e-test-jobs:
+	@echo "Running E2E jobs tests..."
+	pytest core/tests/e2e/test_jobs_flow.py -v --tb=short
+
+e2e-test-visualizations:
+	@echo "Running E2E visualizations tests..."
+	pytest core/tests/e2e/test_visualizations_flow.py -v --tb=short
+
+e2e-test-dashboards:
+	@echo "Running E2E dashboards tests..."
+	pytest core/tests/e2e/test_dashboards_flow.py -v --tb=short
+
+e2e-test-experiments:
+	@echo "Running E2E experiments tests..."
+	pytest core/tests/e2e/test_experiments_flow.py -v --tb=short
+
+e2e-test-features:
+	@echo "Running E2E features tests..."
+	pytest core/tests/e2e/test_features_flow.py -v --tb=short
+
+e2e-test-pipelines:
+	@echo "Running E2E pipelines tests..."
+	pytest core/tests/e2e/test_pipelines_flow.py -v --tb=short
+
+e2e-test-datasets:
+	@echo "Running E2E datasets tests..."
+	pytest core/tests/e2e/test_datasets_flow.py -v --tb=short
+
+e2e-test-navigation:
+	@echo "Running E2E platform navigation tests..."
+	pytest core/tests/e2e/test_platform_navigation.py -v --tb=short
+
 e2e-cleanup:
 	@echo "Cleaning up E2E deployment..."
 	$(MAKE) k8s-delete
@@ -312,8 +365,8 @@ e2e-full: e2e-setup e2e-deploy
 	$(MAKE) e2e-test || ($(MAKE) e2e-cleanup && exit 1)
 	$(MAKE) e2e-cleanup
 
-# run all tests (unit + e2e)
-test-all: test e2e-full
+# run all tests (unit + integration + sdk + e2e)
+test-all: test test-sdk e2e-full
 	@echo "All tests completed"
 
 # local development
