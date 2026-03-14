@@ -36,7 +36,11 @@ RUN pip install --no-cache-dir \
 
 # configure JupyterLab for iframe embedding (token-less, XSRF-disabled, CSP-allowed)
 # this allows the OpenUBA frontend to embed JupyterLab seamlessly in an iframe
-RUN mkdir -p /etc/jupyter && cat > /etc/jupyter/jupyter_server_config.py << 'JCONF'
+# NOTE: we append to the base image config AND write a user-level config to ensure
+# our settings take effect regardless of base image entrypoint behavior
+RUN cat >> /etc/jupyter/jupyter_server_config.py << 'JCONF'
+
+# OpenUBA iframe embedding configuration
 c.ServerApp.token = ''
 c.ServerApp.password = ''
 c.ServerApp.allow_origin = '*'
@@ -51,6 +55,8 @@ c.ServerApp.tornado_settings = {
 c.NotebookApp.token = ''
 c.NotebookApp.password = ''
 JCONF
+# also write user-level config (takes highest priority)
+RUN mkdir -p /home/jovyan/.jupyter && cp /etc/jupyter/jupyter_server_config.py /home/jovyan/.jupyter/jupyter_server_config.py
 
 # set dark theme as default
 RUN mkdir -p /opt/conda/share/jupyter/lab/settings && \
