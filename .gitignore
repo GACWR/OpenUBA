@@ -36,6 +36,10 @@ interface/tsconfig.tsbuildinfo
 .vscode/
 *.swp
 
+# E2E test screenshots (generated on each run)
+core/tests/e2e/screenshots/
+interface/core/
+
 # Runtime
 .openuba/
 
