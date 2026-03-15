@@ -108,6 +108,13 @@ async def list_workspaces(
         limit=limit,
         offset=offset
     )
+
+    # sync CRD status for any pending/creating workspaces so the list
+    # reflects real-time operator progress without requiring a detail page visit
+    for i, ws in enumerate(workspaces):
+        if ws.status in ("pending", "creating") and ws.cr_name:
+            workspaces[i] = _sync_workspace_crd_status(ws, repo)
+
     return workspaces
 
 

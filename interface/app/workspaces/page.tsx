@@ -45,6 +45,19 @@ export default function WorkspacesPage() {
     loadWorkspaces()
   }, [])
 
+  // auto-poll every 3s while any workspace is pending/creating
+  useEffect(() => {
+    const hasPending = workspaces.some(
+      (ws) => ws.status === 'pending' || ws.status === 'creating'
+    )
+    if (!hasPending) return
+
+    const interval = setInterval(() => {
+      loadWorkspaces()
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [workspaces])
+
   const loadWorkspaces = async () => {
     try {
       const res = await authFetch(`${API_URL}/api/v1/workspaces`)
