@@ -353,8 +353,16 @@ export default function VisualizationDetailPage({ params }: { params: { id: stri
               </span>
             </div>
 
-            {/* Preview content */}
-            <div className="flex-1 min-h-0 overflow-auto p-4" ref={previewContainerRef}>
+            {/* Preview content — interactive backends (plotly/vega/bokeh) need
+                overflow:hidden so height:100% resolves correctly */}
+            <div
+              className={`flex-1 min-h-0 p-4 ${
+                ['plotly', 'vega-lite', 'bokeh'].includes(viz.output_type)
+                  ? 'overflow-hidden'
+                  : 'overflow-auto'
+              }`}
+              ref={previewContainerRef}
+            >
               {viz.rendered_output ? (
                 <VizRenderer
                   backend={viz.backend}

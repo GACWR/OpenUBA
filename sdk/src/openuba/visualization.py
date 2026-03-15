@@ -149,7 +149,10 @@ class VisualizationContext:
 
     @staticmethod
     def _render_geopandas(figure, format="svg"):
-        '''render geopandas GeoDataFrame'''
+        '''render geopandas GeoDataFrame or pre-rendered matplotlib Figure'''
+        import matplotlib.figure
+        if isinstance(figure, matplotlib.figure.Figure):
+            return VisualizationContext._render_matplotlib(figure, format)
         import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(12, 8))
         figure.plot(ax=ax)

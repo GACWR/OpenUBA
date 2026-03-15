@@ -1,53 +1,129 @@
 'use client'
 
-import { useMemo, useRef, useEffect, useState } from 'react'
-import {
-  BarChart, Bar, LineChart, Line, AreaChart, Area,
-  PieChart, Pie, Cell, ScatterChart, Scatter,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-} from 'recharts'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { BarChart3, Loader2 } from 'lucide-react'
 
-const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F', '#FFBB28', '#FF8042']
+/**
+ * Universal visualization renderer.
+ *
+ * Renders visualization output based on its type:
+ *   - "svg"       → inline SVG (matplotlib, seaborn, plotnine, networkx, geopandas)
+ *   - "png"       → <img> tag (datashader, base64-encoded)
+ *   - "plotly"    → Plotly.js (loaded from CDN on demand)
+ *   - "vega-lite" → vega-embed (loaded from CDN on demand)
+ *   - "bokeh"     → BokehJS (loaded from CDN on demand)
+ */
 
-// ─── CDN Script Loader ──────────────────────────────────────────────
-function loadCdnScript(src: string, globalName: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if ((window as any)[globalName]) { resolve(); return }
-    const script = document.createElement('script')
-    script.src = src
-    script.async = true
-    // hide AMD define so UMD wrapper falls through to global assignment
-    const savedDefine = (window as any).define;
-    (window as any).define = undefined
-    script.onload = () => {
-      if (savedDefine) (window as any).define = savedDefine
-      let attempts = 0
-      const check = () => {
-        if ((window as any)[globalName]) { resolve() }
-        else if (attempts++ < 60) { setTimeout(check, 50) }
-        else { reject(new Error(`${globalName} not found after loading ${src}`)) }
+interface VizRendererProps {
+  backend: string
+  outputType: string
+  config?: Record<string, any>
+  data?: any
+  renderedOutput?: string
+  code?: string
+  width?: number | `${number}%`
+  height?: number
+  autoResize?: boolean
+}
+
+export default function VizRenderer({
+  backend,
+  outputType,
+  config,
+  data,
+  renderedOutput,
+  code,
+  width = '100%',
+  height = 400,
+  autoResize = true,
+}: VizRendererProps) {
+  // SVG — strip fixed dimensions so it scales to 100% container width
+  const scaledSvg = useMemo(() => {
+    if (outputType !== 'svg' || !renderedOutput) return ''
+    const sanitized = renderedOutput.replace(/<script[\s\S]*?<\/script>/gi, '')
+    return sanitized.replace(
+      /<svg([^>]*)>/,
+      (_match: string, attrs: string) => {
+        const cleaned = attrs
+          .replace(/\s+width="[^"]*"/g, '')
+          .replace(/\s+height="[^"]*"/g, '')
+        return `<svg${cleaned} style="width:100%;height:auto;display:block">`
       }
-      check()
-    }
-    script.onerror = () => {
-      if (savedDefine) (window as any).define = savedDefine
-      reject(new Error(`failed to load ${src}`))
-    }
-    document.head.appendChild(script)
-  })
+    )
+  }, [renderedOutput, outputType])
+
+  // ── SVG ──
+  if (outputType === 'svg' && renderedOutput) {
+    return (
+      <div
+        className="viz-renderer viz-svg"
+        dangerouslySetInnerHTML={{ __html: scaledSvg }}
+        style={{ width: '100%' }}
+      />
+    )
+  }
+
+  // ── PNG ──
+  if (outputType === 'png' && renderedOutput) {
+    const src = renderedOutput.startsWith('data:')
+      ? renderedOutput
+      : `data:image/png;base64,${renderedOutput}`
+    return (
+      <div
+        className="viz-renderer viz-png flex items-center justify-center"
+        style={{ width: '100%', height: '100%' }}
+      >
+        <img
+          src={src}
+          alt="Visualization"
+          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+        />
+      </div>
+    )
+  }
+
+  // ── Plotly ──
+  if (outputType === 'plotly' && renderedOutput) {
+    return <PlotlyRenderer spec={renderedOutput} className="" autoResize={autoResize} />
+  }
+
+  // ── Vega-Lite (Altair) ──
+  if (outputType === 'vega-lite' && renderedOutput) {
+    return <VegaLiteRenderer spec={renderedOutput} className="" />
+  }
+
+  // ── Bokeh ──
+  if (outputType === 'bokeh' && renderedOutput) {
+    return <BokehRenderer spec={renderedOutput} className="" />
+  }
+
+  // ── Empty state ──
+  return (
+    <div
+      className="flex flex-col items-center justify-center text-center p-6"
+      style={{ width: '100%', height: '100%', minHeight: 120 }}
+    >
+      <BarChart3 className="h-8 w-8 text-muted-foreground/20 mb-2" />
+      <p className="text-[11px] text-muted-foreground/40">
+        {renderedOutput
+          ? `Unsupported output type: ${outputType}`
+          : 'Not rendered yet — run from a notebook to generate output.'}
+      </p>
+    </div>
+  )
 }
 
-let _plotlyPromise: Promise<void> | null = null
-function loadPlotly(): Promise<void> {
-  if ((window as any).Plotly) return Promise.resolve()
-  if (_plotlyPromise) return _plotlyPromise
-  _plotlyPromise = loadCdnScript('https://cdn.plot.ly/plotly-2.35.2.min.js', 'Plotly')
-  _plotlyPromise.catch(() => { _plotlyPromise = null })
-  return _plotlyPromise
-}
+// ── Plotly Renderer ────────────────────────────────────────────────
 
-// ─── Plotly Renderer ─────────────────────────────────────────────────
-function PlotlyRenderer({ spec, className }: { spec: string; className?: string }) {
+function PlotlyRenderer({
+  spec,
+  className,
+  autoResize,
+}: {
+  spec: string
+  className: string
+  autoResize: boolean
+}) {
   const divRef = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -58,12 +134,20 @@ function PlotlyRenderer({ spec, className }: { spec: string; className?: string 
       .catch((err) => setLoadError(err.message))
   }, [])
 
+  // Parse spec once
+  const parsed = useMemo(() => {
+    try {
+      return typeof spec === 'string' ? JSON.parse(spec) : spec
+    } catch { return null }
+  }, [spec])
+
   useEffect(() => {
-    if (!ready || !divRef.current) return
+    if (!ready || !divRef.current || !parsed) return
     const Plotly = (window as any).Plotly
     if (!Plotly) return
-    try {
-      const parsed = typeof spec === 'string' ? JSON.parse(spec) : spec
+    const el = divRef.current
+
+    const doPlot = () => {
       const userLayout = parsed.layout || {}
       const layout = {
         ...userLayout,
@@ -78,58 +162,272 @@ function PlotlyRenderer({ spec, className }: { spec: string; className?: string 
       }
       const data = parsed.data || []
       const config = { responsive: true, displayModeBar: false }
-      Plotly.newPlot(divRef.current, data, layout, config)
-    } catch (err) {
-      console.error('Plotly render error:', err)
+      Plotly.newPlot(el, data, layout, config)
     }
+
+    let plotted = false
+    const raf = requestAnimationFrame(() => {
+      doPlot()
+      plotted = true
+    })
+
+    // Watch parent for size changes (grid column toggle)
+    // Plotly.Plots.resize is the only reliable way to update Plotly's internal SVG
+    const parent = el.parentElement
+    const observer = parent ? new ResizeObserver(() => {
+      if (!plotted) return
+      if ((window as any).Plotly) {
+        try { (window as any).Plotly.Plots.resize(el) } catch {}
+      }
+    }) : null
+    if (observer && parent) observer.observe(parent)
 
     return () => {
-      if (divRef.current && (window as any).Plotly) {
-        try { (window as any).Plotly.purge(divRef.current) } catch {}
+      cancelAnimationFrame(raf)
+      if (observer) observer.disconnect()
+      if (el && (window as any).Plotly) {
+        try { (window as any).Plotly.purge(el) } catch {}
       }
     }
-  }, [ready, spec])
+  }, [ready, parsed, autoResize])
 
   if (loadError) {
-    return <div className="text-sm text-red-400 p-4">Failed to load Plotly: {loadError}</div>
+    return (
+      <div className="flex items-center justify-center w-full h-full min-h-[120px] text-xs text-red-400">
+        Failed to load Plotly: {loadError}
+      </div>
+    )
   }
-  if (!ready) {
-    return <div className="text-sm text-muted-foreground p-4 animate-pulse">Loading Plotly...</div>
-  }
+  if (!ready) return <LoadingSpinner />
 
   return (
     <div
       ref={divRef}
-      className={`viz-renderer viz-plotly ${className || ''}`}
-      style={{ width: '100%', height: '100%', minHeight: 300 }}
+      className={`viz-renderer viz-plotly ${className}`}
+      style={{ width: '100%', height: '100%' }}
     />
   )
 }
 
-// ─── Download Utility ────────────────────────────────────────────────
+// ── Vega-Lite Renderer ─────────────────────────────────────────────
+
+function VegaLiteRenderer({
+  spec,
+  className,
+}: {
+  spec: string
+  className: string
+}) {
+  const divRef = useRef<HTMLDivElement>(null)
+  const [ready, setReady] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadVegaEmbed()
+      .then(() => setReady(true))
+      .catch((err) => setLoadError(err.message))
+  }, [])
+
+  useEffect(() => {
+    if (!ready || !divRef.current) return
+    const el = divRef.current
+    let observer: ResizeObserver | null = null
+    let viewRef: any = null
+
+    const doEmbed = () => {
+      try {
+        const parsed = typeof spec === 'string' ? JSON.parse(spec) : spec
+        const vegaSpec = {
+          ...parsed,
+          width: 'container',
+          height: 'container',
+          background: 'transparent',
+          config: {
+            ...(parsed.config || {}),
+            axis: { labelColor: 'rgba(255,255,255,0.6)', titleColor: 'rgba(255,255,255,0.7)' },
+            legend: { labelColor: 'rgba(255,255,255,0.6)', titleColor: 'rgba(255,255,255,0.7)' },
+            title: { color: 'rgba(255,255,255,0.8)' },
+            view: { stroke: 'transparent' },
+          },
+        }
+        ;(window as any).vegaEmbed(el, vegaSpec, {
+          actions: false,
+          theme: 'dark',
+        }).then((result: any) => {
+          viewRef = result.view
+          // Force vega-embed wrapper to fill width
+          const embedEl = el.querySelector('.vega-embed') as HTMLElement
+          if (embedEl) {
+            embedEl.style.width = '100%'
+            embedEl.style.display = 'block'
+          }
+          // Watch parent for container resize (e.g. toggle code panel)
+          const parent = el.parentElement
+          if (parent) {
+            observer = new ResizeObserver(() => {
+              if (viewRef) {
+                try { viewRef.resize().runAsync() } catch {}
+              }
+            })
+            observer.observe(parent)
+          }
+        })
+      } catch (err) {
+        console.error('Vega-Lite render error:', err)
+      }
+    }
+    const raf = requestAnimationFrame(doEmbed)
+    return () => {
+      cancelAnimationFrame(raf)
+      if (observer) observer.disconnect()
+    }
+  }, [ready, spec])
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center w-full h-full min-h-[120px] text-xs text-red-400">
+        Failed to load Vega: {loadError}
+      </div>
+    )
+  }
+  if (!ready) return <LoadingSpinner />
+
+  return (
+    <div
+      ref={divRef}
+      className={`viz-renderer viz-vega ${className}`}
+      style={{ width: '100%', height: '100%' }}
+    />
+  )
+}
+
+// ── Bokeh Renderer ─────────────────────────────────────────────────
+
+function BokehRenderer({
+  spec,
+  className,
+}: {
+  spec: string
+  className: string
+}) {
+  const divRef = useRef<HTMLDivElement>(null)
+  const [bokehId] = useState(() => `bokeh-${Math.random().toString(36).slice(2)}`)
+  const [ready, setReady] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    loadBokeh()
+      .then(() => setReady(true))
+      .catch((err) => setLoadError(err.message))
+  }, [])
+
+  useEffect(() => {
+    if (!ready || !divRef.current) return
+    const el = divRef.current
+    let observer: ResizeObserver | null = null
+
+    const doEmbed = () => {
+      try {
+        const parsed = typeof spec === 'string' ? JSON.parse(spec) : spec
+        // Override sizing_mode on all layout-capable models
+        if (parsed.doc?.roots?.references) {
+          for (const ref of parsed.doc.roots.references) {
+            if (ref.attributes && ('sizing_mode' in ref.attributes || ref.type === 'Figure' || ref.type === 'Plot' || ref.type === 'Column' || ref.type === 'Row')) {
+              ref.attributes = { ...ref.attributes, sizing_mode: 'stretch_width' }
+            }
+          }
+        }
+        el.innerHTML = ''
+        ;(window as any).Bokeh.embed.embed_item(parsed, bokehId)
+
+        // Force Bokeh's generated wrapper elements to fill width
+        requestAnimationFrame(() => {
+          const bkRoot = el.querySelector('.bk-root, .bk-Column, .bk') as HTMLElement
+          if (bkRoot) bkRoot.style.width = '100%'
+          // Also resize any canvas elements
+          const allBk = el.querySelectorAll('.bk') as NodeListOf<HTMLElement>
+          allBk.forEach(bk => { bk.style.width = '100%' })
+        })
+
+        // Watch parent for container resize
+        const parent = el.parentElement
+        if (parent) {
+          observer = new ResizeObserver(() => {
+            try { window.dispatchEvent(new Event('resize')) } catch {}
+          })
+          observer.observe(parent)
+        }
+      } catch (err) {
+        console.error('Bokeh render error:', err)
+      }
+    }
+    const raf = requestAnimationFrame(doEmbed)
+    return () => {
+      cancelAnimationFrame(raf)
+      if (observer) observer.disconnect()
+    }
+  }, [ready, spec, bokehId])
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center w-full h-full min-h-[120px] text-xs text-red-400">
+        Failed to load Bokeh: {loadError}
+      </div>
+    )
+  }
+  if (!ready) return <LoadingSpinner />
+
+  return (
+    <div
+      ref={divRef}
+      id={bokehId}
+      className={`viz-renderer viz-bokeh ${className}`}
+      style={{ width: '100%', height: '100%' }}
+    />
+  )
+}
+
+// ── Shared Helpers ─────────────────────────────────────────────────
+
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center w-full h-full min-h-[120px]">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/40" />
+    </div>
+  )
+}
+
+// ── Download Utility ──────────────────────────────────────────────
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 export async function downloadVisualization(
-  filename: string,
+  name: string,
   outputType: string,
   renderedOutput: string | undefined,
-  containerEl: HTMLElement | null,
+  containerEl?: HTMLElement | null,
 ) {
-  if (!renderedOutput) return
+  const filename = name.replace(/[^a-zA-Z0-9_-]/g, '_')
 
-  const triggerDownload = (blob: Blob, name: string) => {
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = name; a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  if (outputType === 'svg') {
+  if (outputType === 'svg' && renderedOutput) {
     const blob = new Blob([renderedOutput], { type: 'image/svg+xml' })
     triggerDownload(blob, `${filename}.svg`)
-  } else if (outputType === 'png') {
-    const binary = atob(renderedOutput)
-    const bytes = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-    triggerDownload(new Blob([bytes], { type: 'image/png' }), `${filename}.png`)
+  } else if (outputType === 'png' && renderedOutput) {
+    const src = renderedOutput.startsWith('data:')
+      ? renderedOutput
+      : `data:image/png;base64,${renderedOutput}`
+    const res = await fetch(src)
+    const blob = await res.blob()
+    triggerDownload(blob, `${filename}.png`)
   } else if (outputType === 'plotly' && containerEl) {
     const plotlyDiv = containerEl.querySelector('.viz-plotly')
     const Plotly = (window as any).Plotly
@@ -139,205 +437,113 @@ export async function downloadVisualization(
       const blob = await res.blob()
       triggerDownload(blob, `${filename}.png`)
     }
-  } else {
-    const blob = new Blob([renderedOutput], { type: 'application/json' })
-    triggerDownload(blob, `${filename}.json`)
-  }
-}
-
-// ─── Main VizRenderer ────────────────────────────────────────────────
-interface VizRendererProps {
-  backend: string
-  outputType: string
-  config?: Record<string, any>
-  data?: any
-  renderedOutput?: string
-  code?: string
-  width?: number | `${number}%`
-  height?: number
-  autoResize?: boolean
-  containerRef?: React.RefObject<HTMLDivElement>
-}
-
-export default function VizRenderer({
-  backend,
-  outputType,
-  config = {},
-  data,
-  renderedOutput,
-  code,
-  width = '100%',
-  height = 400,
-  autoResize = false,
-  containerRef,
-}: VizRendererProps) {
-  const safeConfig = config || {}
-  const chartType = safeConfig.chart_type || 'bar'
-  const xKey = safeConfig.x_key || 'name'
-  const yKey = safeConfig.y_key || 'value'
-  const color = safeConfig.color || COLORS[0]
-
-  const chartData = useMemo(() => {
-    if (data?.values) return data.values
-    if (data?.datasets) return data.datasets
-    if (safeConfig.sample_data) return safeConfig.sample_data
-    if (Array.isArray(data)) return data
-    return [
-      { name: 'A', value: 400 },
-      { name: 'B', value: 300 },
-      { name: 'C', value: 600 },
-      { name: 'D', value: 500 },
-    ]
-  }, [data, safeConfig.sample_data])
-
-  // server-rendered SVG/PNG (matplotlib, seaborn, plotnine, datashader, geopandas, networkx)
-  if (renderedOutput && ['svg', 'png'].includes(outputType)) {
-    if (outputType === 'svg') {
-      return (
-        <div
-          ref={containerRef as any}
-          className="viz-rendered-svg"
-          dangerouslySetInnerHTML={{ __html: renderedOutput }}
-          style={{ width: '100%', overflow: 'auto' }}
-        />
-      )
+  } else if ((outputType === 'vega-lite' || outputType === 'bokeh') && containerEl) {
+    const canvas = containerEl.querySelector('canvas') as HTMLCanvasElement | null
+    if (canvas) {
+      canvas.toBlob((blob) => {
+        if (blob) triggerDownload(blob, `${filename}.png`)
+      })
     }
-    return (
-      <div ref={containerRef as any}>
-        <img
-          src={`data:image/png;base64,${renderedOutput}`}
-          alt="Visualization"
-          style={{ maxWidth: '100%' }}
-        />
-      </div>
-    )
   }
+}
 
-  // plotly backend — interactive rendering via CDN
-  if (backend === 'plotly' && renderedOutput) {
-    return (
-      <div ref={containerRef as any} style={{ width: '100%', height: '100%', minHeight: 300 }}>
-        <PlotlyRenderer spec={renderedOutput} />
-      </div>
-    )
-  }
+// ── CDN Script Loading ─────────────────────────────────────────────
+// UMD libraries set globals but Webpack's `define` intercepts AMD.
+// We hide `define` before script injection so UMD falls through to globals.
 
-  // vega-lite (altair) backend
-  if (backend === 'altair' && (renderedOutput || safeConfig.vega_spec)) {
-    const spec = renderedOutput || JSON.stringify(safeConfig.vega_spec)
-    return (
-      <div ref={containerRef as any} className="text-sm text-muted-foreground">
-        <pre className="bg-muted/30 p-4 rounded-md overflow-auto max-h-64 text-xs">
-          {spec}
-        </pre>
-        <p className="mt-2 text-xs">Vega-Lite spec ready for rendering.</p>
-      </div>
-    )
-  }
+const _scriptCache = new Map<string, Promise<void>>()
 
-  // bokeh backend
-  if (backend === 'bokeh' && renderedOutput) {
-    return (
-      <div ref={containerRef as any} className="text-sm text-muted-foreground">
-        <pre className="bg-muted/30 p-4 rounded-md overflow-auto max-h-64 text-xs">
-          {renderedOutput}
-        </pre>
-        <p className="mt-2 text-xs">Bokeh spec ready for rendering.</p>
-      </div>
-    )
-  }
+function loadCdnScript(src: string, globalName: string): Promise<void> {
+  if ((window as any)[globalName]) return Promise.resolve()
+  if (_scriptCache.has(src)) return _scriptCache.get(src)!
 
-  // recharts fallback for config-driven viz
-  if (chartType === 'line') {
-    return (
-      <ResponsiveContainer width={width} height={height}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey={xKey} stroke="#888" fontSize={12} />
-          <YAxis stroke="#888" fontSize={12} />
-          <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-          <Legend />
-          <Line type="monotone" dataKey={yKey} stroke={color} strokeWidth={2} dot={{ fill: color }} />
-        </LineChart>
-      </ResponsiveContainer>
-    )
-  }
+  const promise = new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = src
+    script.async = true
 
-  if (chartType === 'area') {
-    return (
-      <ResponsiveContainer width={width} height={height}>
-        <AreaChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey={xKey} stroke="#888" fontSize={12} />
-          <YAxis stroke="#888" fontSize={12} />
-          <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-          <Legend />
-          <Area type="monotone" dataKey={yKey} stroke={color} fill={color} fillOpacity={0.3} />
-        </AreaChart>
-      </ResponsiveContainer>
-    )
-  }
+    const savedDefine = (window as any).define
+    ;(window as any).define = undefined
 
-  if (chartType === 'pie') {
-    return (
-      <ResponsiveContainer width={width} height={height}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%" cy="50%"
-            outerRadius={Math.min(height / 3, 120)}
-            fill={color}
-            dataKey={yKey}
-            nameKey={xKey}
-            label={({ name, value }: any) => `${name}: ${value}`}
-          >
-            {chartData.map((_: any, i: number) => (
-              <Cell key={i} fill={COLORS[i % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    )
-  }
+    script.onload = () => {
+      if (savedDefine) (window as any).define = savedDefine
+      let attempts = 0
+      const check = () => {
+        if ((window as any)[globalName]) { resolve() }
+        else if (attempts++ < 60) { setTimeout(check, 50) }
+        else { reject(new Error(`${globalName} not found after loading ${src}`)) }
+      }
+      check()
+    }
 
-  if (chartType === 'scatter') {
-    return (
-      <ResponsiveContainer width={width} height={height}>
-        <ScatterChart>
-          <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-          <XAxis dataKey={xKey} stroke="#888" fontSize={12} />
-          <YAxis dataKey={yKey} stroke="#888" fontSize={12} />
-          <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-          <Scatter data={chartData} fill={color} />
-        </ScatterChart>
-      </ResponsiveContainer>
-    )
-  }
+    script.onerror = () => {
+      if (savedDefine) (window as any).define = savedDefine
+      _scriptCache.delete(src)
+      reject(new Error(`Failed to load ${src}`))
+    }
 
-  if (chartType === 'stat') {
-    return (
-      <div className="flex items-center justify-center" style={{ height }}>
-        <div className="text-center">
-          <div className="text-4xl font-bold text-primary">{safeConfig.stat_value ?? chartData[0]?.value ?? '—'}</div>
-          <div className="text-sm text-muted-foreground mt-1">{safeConfig.stat_label || yKey}</div>
-        </div>
-      </div>
-    )
-  }
+    document.head.appendChild(script)
+  })
 
-  // default: bar chart
-  return (
-    <ResponsiveContainer width={width} height={height}>
-      <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-        <XAxis dataKey={xKey} stroke="#888" fontSize={12} />
-        <YAxis stroke="#888" fontSize={12} />
-        <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #333' }} />
-        <Legend />
-        <Bar dataKey={yKey} fill={color} radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+  _scriptCache.set(src, promise)
+  return promise
+}
+
+// ── Plotly Loader ──────────────────────────────────────────────────
+
+let _plotlyPromise: Promise<void> | null = null
+
+function loadPlotly(): Promise<void> {
+  if ((window as any).Plotly) return Promise.resolve()
+  if (_plotlyPromise) return _plotlyPromise
+  _plotlyPromise = loadCdnScript(
+    'https://cdn.plot.ly/plotly-2.35.2.min.js',
+    'Plotly'
   )
+  _plotlyPromise.catch(() => { _plotlyPromise = null })
+  return _plotlyPromise
+}
+
+// ── Vega-Embed Loader ──────────────────────────────────────────────
+// Must load vega -> vega-lite -> vega-embed sequentially (each depends on prior).
+
+let _vegaPromise: Promise<void> | null = null
+
+function loadVegaEmbed(): Promise<void> {
+  if ((window as any).vegaEmbed) return Promise.resolve()
+  if (_vegaPromise) return _vegaPromise
+
+  _vegaPromise = loadCdnScript('https://cdn.jsdelivr.net/npm/vega@5', 'vega')
+    .then(() => loadCdnScript('https://cdn.jsdelivr.net/npm/vega-lite@5', 'vegaLite'))
+    .then(() => loadCdnScript('https://cdn.jsdelivr.net/npm/vega-embed@6', 'vegaEmbed'))
+
+  _vegaPromise.catch(() => { _vegaPromise = null })
+  return _vegaPromise
+}
+
+// ── Bokeh Loader ───────────────────────────────────────────────────
+// Load main bokeh first, then API extension (which adds to window.Bokeh).
+
+let _bokehPromise: Promise<void> | null = null
+
+function loadBokeh(): Promise<void> {
+  if ((window as any).Bokeh) return Promise.resolve()
+  if (_bokehPromise) return _bokehPromise
+
+  _bokehPromise = loadCdnScript(
+    'https://cdn.bokeh.org/bokeh/release/bokeh-3.4.3.min.js',
+    'Bokeh'
+  ).then(() => {
+    return new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = 'https://cdn.bokeh.org/bokeh/release/bokeh-api-3.4.3.min.js'
+      script.async = true
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error('Failed to load bokeh-api'))
+      document.head.appendChild(script)
+    })
+  })
+
+  _bokehPromise.catch(() => { _bokehPromise = null })
+  return _bokehPromise
 }
