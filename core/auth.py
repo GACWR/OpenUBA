@@ -58,6 +58,8 @@ async def get_current_user(
 ) -> dict:
     '''
     get current user from jwt token
+    validates that the user still exists in the database (handles stale tokens
+    after database resets)
     '''
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -74,12 +76,35 @@ async def get_current_user(
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
+
+        # verify user still exists in the database (catches stale tokens
+        # from before a cluster/db reset)
+        user_id = payload.get("user_id")
+        if user_id:
+            from core.db import get_db_context
+            try:
+                with get_db_context() as db:
+                    row = db.execute(
+                        text("SELECT id FROM users WHERE id = CAST(:uid AS uuid)"),
+                        {"uid": user_id},
+                    ).fetchone()
+                    if row is None:
+                        logger.warning(f"stale token: user {user_id} not found in database")
+                        raise credentials_exception
+            except HTTPException:
+                raise
+            except Exception as e:
+                # if users table doesn't exist yet, allow through
+                logger.debug(f"user existence check skipped: {e}")
+
         return {
             "username": username,
-            "user_id": payload.get("user_id"),
+            "user_id": user_id,
             "role": payload.get("role", "analyst"),
             "payload": payload,
         }
+    except HTTPException:
+        raise
     except JWTError:
         raise credentials_exception
 
