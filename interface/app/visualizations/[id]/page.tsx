@@ -235,7 +235,7 @@ export default function VisualizationDetailPage({ params }: { params: { id: stri
         ) : (
           <div className="text-center text-muted-foreground py-8">
             <Code2 className="h-8 w-8 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No code yet. Click "Edit Code" to add visualization code.</p>
+            <p className="text-sm">No code yet. Click &quot;Edit Code&quot; to add visualization code.</p>
           </div>
         )}
       </div>

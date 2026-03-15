@@ -230,10 +230,24 @@ class DBTestUtils:
         '''
         return self.query_case(case_id) is not None
 
+    # allowlist of valid table names for generic queries
+    ALLOWED_TABLES = {
+        "models", "anomalies", "cases", "rules", "alerts",
+        "execution_logs", "model_versions", "model_runs",
+        "data_ingestion_runs", "case_anomalies", "user_feedback",
+        "workspaces", "datasets", "jobs", "job_logs", "training_metrics",
+        "visualizations", "dashboards", "features", "feature_groups",
+        "experiments", "experiment_runs", "hyperparameter_sets",
+        "pipelines", "pipeline_runs", "environments",
+        "users", "role_permissions", "schedules",
+    }
+
     def query_generic(self, table: str, record_id: str) -> Optional[Dict[str, Any]]:
         '''
         query any table by id
         '''
+        if table not in self.ALLOWED_TABLES:
+            raise ValueError(f"table '{table}' is not in the allowed tables list")
         with self.get_session() as session:
             result = session.execute(
                 text(f"SELECT * FROM {table} WHERE id::text = :id"),
@@ -248,6 +262,8 @@ class DBTestUtils:
         '''
         count rows in any table with optional where clause
         '''
+        if table not in self.ALLOWED_TABLES:
+            raise ValueError(f"table '{table}' is not in the allowed tables list")
         with self.get_session() as session:
             result = session.execute(text(f"SELECT COUNT(*) FROM {table} WHERE {where_clause}"), params or {})
             return result.scalar() or 0

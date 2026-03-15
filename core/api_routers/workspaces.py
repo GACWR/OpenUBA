@@ -23,9 +23,10 @@ logger = logging.getLogger(__name__)
 WORKSPACE_NAMESPACE = os.getenv("WORKSPACE_NAMESPACE", "openuba")
 
 
-def _create_workspace_crd(workspace) -> None:
+def _create_workspace_crd(workspace, repo: WorkspaceRepository) -> None:
     '''
     create UBAWorkspace custom resource so the operator provisions the pod
+    if creation fails, mark the workspace as failed with the error message
     '''
     try:
         from kubernetes import client as k8s_client, config as k8s_config
@@ -63,6 +64,7 @@ def _create_workspace_crd(workspace) -> None:
         logger.info(f"created UBAWorkspace CRD: {cr_name}")
     except Exception as e:
         logger.error(f"failed to create workspace CRD: {e}")
+        repo.update(workspace.id, status="failed", error_message=str(e))
 
 
 @router.post("/workspaces/launch", response_model=WorkspaceResponse, status_code=201)
@@ -85,7 +87,8 @@ async def launch_workspace(
     )
 
     # create the CRD so the operator provisions the pod
-    _create_workspace_crd(workspace)
+    repo = WorkspaceRepository(db)
+    _create_workspace_crd(workspace, repo)
 
     logger.info(f"workspace launched: {workspace.id}")
     return workspace

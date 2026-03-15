@@ -430,6 +430,7 @@ class Workspace(Base):
     access_url = Column(Text)
     node_port = Column(Integer)
     cr_name = Column(String(255))
+    error_message = Column(Text)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"))
     started_at = Column(TIMESTAMP(timezone=True))
     stopped_at = Column(TIMESTAMP(timezone=True))

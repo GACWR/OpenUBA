@@ -29,6 +29,7 @@ jobs:
           context: .
           file: docker/workspace/Dockerfile
           push: false
+          load: true
           tags: openuba-workspace:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

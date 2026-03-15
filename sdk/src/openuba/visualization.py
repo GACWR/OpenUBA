@@ -91,8 +91,9 @@ class VisualizationContext:
     @staticmethod
     def _render_bokeh(figure, format="bokeh"):
         '''render bokeh figure to JSON'''
+        import json
         from bokeh.embed import json_item
-        return str(json_item(figure))
+        return json.dumps(json_item(figure))
 
     @staticmethod
     def _render_altair(figure, format="vega-lite"):

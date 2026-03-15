@@ -86,6 +86,7 @@ def workspace_create(spec, name, namespace, status, patch, **kwargs):
     env_vars = [
         k8s_client.V1EnvVar(name='OPENUBA_API_URL', value=BACKEND_SERVICE_URL),
         k8s_client.V1EnvVar(name='OPENUBA_WORKSPACE_ID', value=name),
+        k8s_client.V1EnvVar(name='OPENUBA_TOKEN', value=spec.get('workspace_token', '')),
         k8s_client.V1EnvVar(name='JUPYTER_ENABLE_LAB', value='yes'),
     ]
 

@@ -45,7 +45,7 @@ export function useJobSSE({ jobId, enabled = true, onMetric, onStatus, onDone }:
 
     source.addEventListener('metric', (e) => {
       const metric: SSEMetric = JSON.parse(e.data)
-      setMetrics(prev => [...prev, metric])
+      setMetrics(prev => [...prev, metric].slice(-1000))
       onMetric?.(metric)
     })
 

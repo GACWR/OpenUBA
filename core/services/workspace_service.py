@@ -5,14 +5,12 @@ workspace service for managing workspace lifecycle
 
 import logging
 import os
-from datetime import timedelta
 from typing import Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
 
 from core.db.models import Workspace
 from core.repositories.workspace_repository import WorkspaceRepository
-from core.auth import create_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -67,12 +65,6 @@ class WorkspaceService:
         '''
         # allocate nodeport
         node_port = self._allocate_node_port()
-
-        # generate workspace jwt token (30-day expiry)
-        workspace_token = create_access_token(
-            data={"sub": "workspace", "workspace_name": name},
-            expires_delta=timedelta(days=30),
-        )
 
         # create workspace record
         workspace = self.repo.create(
