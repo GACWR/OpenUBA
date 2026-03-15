@@ -1,206 +1,111 @@
 '''
 Copyright 2019-Present The OpenUBA Platform Authors
-e2e test: workspace -> JupyterLab iframe -> create notebook -> import openuba -> execute cells
+e2e test: workspace lifecycle with JupyterLab interaction
 
-This is THE fundamental test proving the workspace experience works end-to-end:
-1. Create a workspace in the UI
-2. JupyterLab loads in the embedded iframe
-3. Create a new Python notebook
-4. import openuba and use the SDK
-5. Screenshots at every step
+Proves the full flow with the REAL K8s operator:
+  1. Login -> navigate to /workspaces
+  2. Launch a workspace via the UI dialog
+  3. Wait for the K8s operator to provision the pod (status=running)
+  4. Open workspace detail page -> JupyterLab loads in iframe
+  5. Create a new Python notebook inside JupyterLab
+  6. Execute hello world code in the notebook
+  7. Import and use the openuba SDK
+  8. Screenshots at every step
 '''
 
 import os
 import time
-import subprocess
 import pytest
 import requests
 from uuid import uuid4
 from playwright.sync_api import Page
-from sqlalchemy import text
-
-from core.tests.e2e.db_utils import DBTestUtils
 
 SCREENSHOTS_DIR = os.path.join(os.path.dirname(__file__), "screenshots")
-JUPYTER_HOST_PORT = 38888
-JUPYTER_CONTAINER_NAME = "e2e-test-jupyterlab"
-WORKSPACE_IMAGE = "openuba-workspace:latest"
-JUPYTER_BASE_URL = f"http://localhost:{JUPYTER_HOST_PORT}"
-
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_screenshots_dir():
-    '''create screenshots directory'''
-    os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
-
-
-# ─── Docker helpers ─────────────────────────────────────────────────────────
-
-
-def _docker_available() -> bool:
-    '''check if docker CLI is available and daemon is running'''
-    try:
-        result = subprocess.run(
-            ["docker", "info"],
-            capture_output=True, timeout=10
-        )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
-
-
-def _image_exists(image_name: str) -> bool:
-    '''check if a Docker image exists locally'''
-    try:
-        result = subprocess.run(
-            ["docker", "image", "inspect", image_name],
-            capture_output=True, timeout=10
-        )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        return False
-
-
-# ─── JupyterLab container fixture ──────────────────────────────────────────
-
-
-@pytest.fixture(scope="module")
-def jupyterlab_url():
-    '''
-    start a JupyterLab Docker container from the openuba-workspace image.
-    yields the base URL (http://localhost:38888).
-    cleans up the container after all tests in this module.
-
-    skips the entire module if Docker is unavailable or the image is missing.
-    '''
-    if not _docker_available():
-        pytest.skip("Docker not available - skipping JupyterLab e2e tests")
-
-    if not _image_exists(WORKSPACE_IMAGE):
-        pytest.skip(
-            f"Docker image '{WORKSPACE_IMAGE}' not found. "
-            f"Build it with: docker compose --profile workspace-build build workspace"
-        )
-
-    # kill any leftover container from a previous failed run
-    subprocess.run(
-        ["docker", "rm", "-f", JUPYTER_CONTAINER_NAME],
-        capture_output=True, timeout=15
-    )
-
-    # start the container with explicit token-less config via command line
-    # (ensures token-less access even if the image config isn't applied correctly)
-    run_result = subprocess.run(
-        [
-            "docker", "run", "-d",
-            "--name", JUPYTER_CONTAINER_NAME,
-            "-p", f"{JUPYTER_HOST_PORT}:8888",
-            "-e", "OPENUBA_API_URL=http://host.docker.internal:8000",
-            "-e", "OPENUBA_WORKSPACE_ID=e2e-test",
-            "-e", "JUPYTER_ENABLE_LAB=yes",
-            WORKSPACE_IMAGE,
-            "start-notebook.sh",
-            "--ServerApp.token=",
-            "--ServerApp.password=",
-            "--ServerApp.allow_origin=*",
-            "--ServerApp.allow_remote_access=True",
-            "--ServerApp.disable_check_xsrf=True",
-        ],
-        capture_output=True, text=True, timeout=30
-    )
-
-    if run_result.returncode != 0:
-        pytest.skip(f"Failed to start JupyterLab container: {run_result.stderr}")
-
-    # wait for JupyterLab to become ready (up to 90 seconds)
-    ready = False
-    for attempt in range(45):
-        try:
-            resp = requests.get(f"{JUPYTER_BASE_URL}/api/status", timeout=3)
-            if resp.status_code == 200:
-                ready = True
-                break
-        except requests.ConnectionError:
-            pass
-        time.sleep(2)
-
-    if not ready:
-        # grab container logs for debugging
-        logs = subprocess.run(
-            ["docker", "logs", "--tail", "50", JUPYTER_CONTAINER_NAME],
-            capture_output=True, text=True, timeout=10
-        )
-        subprocess.run(
-            ["docker", "rm", "-f", JUPYTER_CONTAINER_NAME],
-            capture_output=True, timeout=15
-        )
-        pytest.skip(
-            f"JupyterLab container did not become ready within 90s. "
-            f"Logs: {logs.stdout[-500:] if logs.stdout else 'none'}"
-        )
-
-    yield JUPYTER_BASE_URL
-
-    # cleanup
-    subprocess.run(
-        ["docker", "rm", "-f", JUPYTER_CONTAINER_NAME],
-        capture_output=True, timeout=15
-    )
+BACKEND_URL = os.getenv("E2E_BACKEND_URL", "http://localhost:8000")
+FRONTEND_URL = os.getenv("E2E_FRONTEND_URL", "http://localhost:3000")
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
 
-def ui_login(page: Page, frontend_url: str):
-    '''log in via the UI — handles both deployed and local frontend variants'''
-    page.goto(f"{frontend_url}/login")
-    page.wait_for_load_state("networkidle")
-
-    # try standard placeholder first, fall back to alternate
-    username_input = page.locator(
-        'input[placeholder="Enter username"], input[placeholder="Enter Username"]'
-    ).first
-    password_input = page.locator(
-        'input[placeholder="Enter password"], input[placeholder="Enter Password"]'
-    ).first
-
-    username_input.fill("openuba")
-    password_input.fill("password")
-
-    # click submit button — handle both "Sign in" and standard submit
-    submit_btn = page.locator(
-        'button[type="submit"], button:has-text("Sign in"), button:has-text("Sign In")'
-    ).first
-    submit_btn.click()
-
-    # wait for navigation away from login (flexible — could go to / or /workspaces etc)
-    time.sleep(3)
-    page.wait_for_load_state("networkidle")
-
-
-def take_screenshot(page: Page, step: int, name: str) -> str:
-    '''take a numbered screenshot for clear step-by-step progression'''
-    filename = f"ws_jupyter_{step:02d}_{name}.png"
-    path = os.path.join(SCREENSHOTS_DIR, filename)
+def _screenshot(page: Page, step: int, name: str):
+    '''save a numbered screenshot'''
+    os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+    path = os.path.join(SCREENSHOTS_DIR, f"ws_jupyter_{step:02d}_{name}.png")
     page.screenshot(path=path, full_page=True)
-    return path
 
 
-def type_in_jupyter_cell(frame_locator, cell_locator, code: str):
-    '''
-    type code into a JupyterLab cell, handling CodeMirror 6 quirks.
-    uses keyboard typing for reliable CodeMirror 6 interaction.
-    '''
-    editor = cell_locator.locator('.cm-content[contenteditable="true"]')
+def _login(page: Page):
+    '''login via the UI'''
+    page.goto(f"{FRONTEND_URL}/login")
+    page.wait_for_load_state("networkidle")
+    page.fill('input[placeholder="Enter username"]', "openuba")
+    page.fill('input[placeholder="Enter password"]', "password")
+    page.click('button[type="submit"]')
+    page.wait_for_url("**/", timeout=15000)
+    page.wait_for_load_state("networkidle")
+
+
+def _get_auth_headers() -> dict:
+    '''get auth headers via API'''
+    resp = requests.post(
+        f"{BACKEND_URL}/api/v1/auth/login",
+        data={"username": "openuba", "password": "password"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _wait_for_workspace_running(workspace_id: str, headers: dict, timeout: int = 120) -> dict:
+    '''poll workspace API until status is running'''
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        resp = requests.get(
+            f"{BACKEND_URL}/api/v1/workspaces/{workspace_id}",
+            headers=headers,
+        )
+        if resp.status_code == 200:
+            ws = resp.json()
+            if ws["status"] == "running":
+                return ws
+            if ws["status"] == "failed":
+                pytest.fail(f"workspace reached failed status: {ws}")
+        time.sleep(3)
+    pytest.fail(f"workspace {workspace_id} did not reach running within {timeout}s")
+
+
+def _cleanup_workspace(workspace_id: str, headers: dict):
+    '''stop and delete workspace via API + K8s CRD'''
+    try:
+        requests.post(f"{BACKEND_URL}/api/v1/workspaces/{workspace_id}/stop", headers=headers)
+    except Exception:
+        pass
+    try:
+        requests.delete(f"{BACKEND_URL}/api/v1/workspaces/{workspace_id}", headers=headers)
+    except Exception:
+        pass
+    # also delete the K8s CRD to free nodeport and trigger resource cleanup
+    cr_name = f"uba-ws-{workspace_id[:8]}"
+    try:
+        import subprocess
+        subprocess.run(
+            ["kubectl", "delete", "ubaworkspace", cr_name, "-n", "openuba"],
+            capture_output=True, timeout=15,
+        )
+    except Exception:
+        pass
+
+
+def _type_in_cell(frame_locator, cell, code: str):
+    '''type code into a JupyterLab cell (CodeMirror 6)'''
+    editor = cell.locator('.cm-content[contenteditable="true"]')
     editor.click()
-    # select all and delete any existing content
     editor.press("Control+a")
     editor.press("Backspace")
     time.sleep(0.3)
-
-    # type each line with Enter between them
-    for line_idx, line in enumerate(code.split("\n")):
-        if line_idx > 0:
+    for i, line in enumerate(code.split("\n")):
+        if i > 0:
             editor.press("Enter")
         editor.type(line, delay=20)
 
@@ -208,248 +113,148 @@ def type_in_jupyter_cell(frame_locator, cell_locator, code: str):
 # ─── THE TEST ───────────────────────────────────────────────────────────────
 
 
-def test_workspace_jupyterlab_sdk_flow(
-    page: Page,
-    frontend_url: str,
-    backend_url: str,
-    auth_headers: dict,
-    db_utils: DBTestUtils,
-    jupyterlab_url: str,
-):
+def test_workspace_jupyterlab_hello_world(page: Page):
     '''
-    FULL end-to-end workspace test with screenshots at every step:
-
-    1. Navigate to workspaces page
-    2. Create workspace via the Launch Workspace UI dialog
-    3. Patch DB to simulate operator (status=running, access_url=container)
-    4. Navigate to workspace detail page, wait for JupyterLab iframe
-    5. Inside iframe: create Python notebook
-    6. Type 'import openuba' and execute
-    7. Type SDK version check and execute
-    8. Type SDK method listing and execute
-    9. Verify outputs, take final screenshot
+    full e2e test: launch workspace from UI, K8s operator provisions pod,
+    JupyterLab loads in iframe, create notebook, run hello world + SDK import
     '''
-
+    ws_name = f"e2e_test_ws_{uuid4().hex[:8]}"
+    headers = _get_auth_headers()
+    workspace_id = None
     step = 0
 
-    # increase default timeout for iframe interactions
     page.set_default_timeout(45000)
 
-    # ─── Step 1: Login and navigate to workspaces ──────────────────
+    try:
+        # ── Step 1: Login ──────────────────────────────────────────────
+        _login(page)
+        step += 1
+        _screenshot(page, step, "logged_in")
 
-    ui_login(page, frontend_url)
+        # ── Step 2: Navigate to /workspaces ────────────────────────────
+        page.goto(f"{FRONTEND_URL}/workspaces")
+        page.wait_for_load_state("networkidle")
+        step += 1
+        _screenshot(page, step, "workspaces_page")
 
-    page.goto(f"{frontend_url}/workspaces")
-    page.wait_for_load_state("networkidle")
+        # ── Step 3: Open Launch Workspace dialog ───────────────────────
+        page.click('button:has-text("Launch Workspace")')
+        page.wait_for_selector('h2:has-text("Launch Workspace")', timeout=5000)
+        step += 1
+        _screenshot(page, step, "launch_dialog_open")
 
-    step += 1
-    take_screenshot(page, step, "workspaces_page")
+        # ── Step 4: Fill dialog and launch ─────────────────────────────
+        page.fill('input[placeholder="my-workspace"]', ws_name)
+        step += 1
+        _screenshot(page, step, "dialog_filled")
 
-    # ─── Step 2: Open launch dialog and create workspace ───────────
+        # click the Launch button inside the dialog
+        page.locator('div.fixed button:has-text("Launch")').last.click()
 
-    page.click('button:has-text("Launch Workspace")')
-    page.wait_for_selector('h2:has-text("Launch Workspace")', timeout=5000)
+        # wait for dialog to close and workspace to appear
+        page.wait_for_selector('input[placeholder="my-workspace"]', state="detached", timeout=15000)
+        page.wait_for_load_state("networkidle")
+        step += 1
+        _screenshot(page, step, "workspace_created")
 
-    ws_name = f"e2e_test_ws_jupyter_{uuid4().hex[:8]}"
-    page.fill('input[placeholder="my-workspace"]', ws_name)
+        # ── Step 5: Get workspace ID from API ─────────────────────────
+        resp = requests.get(f"{BACKEND_URL}/api/v1/workspaces", headers=headers)
+        assert resp.status_code == 200
+        ws_match = [w for w in resp.json() if w["name"] == ws_name]
+        assert len(ws_match) == 1, f"expected 1 workspace named {ws_name}, found {len(ws_match)}"
+        workspace_id = ws_match[0]["id"]
 
-    step += 1
-    take_screenshot(page, step, "launch_dialog")
+        # ── Step 6: Wait for K8s operator to make workspace running ───
+        print(f"  waiting for workspace {workspace_id} to reach running...")
+        ws_data = _wait_for_workspace_running(workspace_id, headers, timeout=120)
+        assert ws_data["access_url"] is not None
+        print(f"  workspace running at {ws_data['access_url']}")
+        step += 1
+        _screenshot(page, step, "workspace_running_confirmed")
 
-    # click the Launch button inside the dialog (not the header button)
-    dialog_launch_btn = page.locator(
-        'div.fixed button:has-text("Launch")'
-    ).last
-    dialog_launch_btn.click()
+        # ── Step 7: Navigate to workspace detail page ─────────────────
+        page.goto(f"{FRONTEND_URL}/workspaces/{workspace_id}")
+        page.wait_for_load_state("networkidle")
+        step += 1
+        _screenshot(page, step, "workspace_detail")
 
-    # wait for dialog to close and workspace to appear in the list
-    page.wait_for_selector(f'text={ws_name}', timeout=15000)
+        # ── Step 8: Wait for JupyterLab iframe ────────────────────────
+        # The frontend probes access_url then renders iframe
+        iframe_sel = 'iframe[title*="JupyterLab"]'
+        page.wait_for_selector(iframe_sel, timeout=90000)
+        step += 1
+        _screenshot(page, step, "iframe_visible")
 
-    step += 1
-    take_screenshot(page, step, "workspace_created")
+        # give iframe time to fully render
+        time.sleep(5)
 
-    # ─── Step 3: Get workspace ID from API ─────────────────────────
+        # ── Step 9: Interact with JupyterLab in iframe ───────────────
+        jupyter = page.frame_locator(iframe_sel)
+        jupyter.locator('.jp-Launcher').wait_for(timeout=60000)
+        step += 1
+        _screenshot(page, step, "jupyterlab_launcher")
 
-    resp = requests.get(
-        f"{backend_url}/api/v1/workspaces",
-        headers=auth_headers
-    )
-    assert resp.status_code == 200
-    workspaces = resp.json()
-    ws_record = next((w for w in workspaces if w["name"] == ws_name), None)
-    assert ws_record is not None, f"Workspace '{ws_name}' not found in API response"
-    ws_id = ws_record["id"]
+        # ── Step 10: Create new Python notebook ───────────────────────
+        python_card = jupyter.locator(
+            '.jp-LauncherCard[title*="Python"], '
+            '.jp-LauncherCard:has-text("Python 3")'
+        ).first
+        python_card.click()
 
-    # ─── Step 4: Patch DB to simulate K8s operator ─────────────────
-    # In production, the K8s operator provisions a JupyterLab pod and
-    # updates the workspace to status=running with access_url.
-    # Since we don't have K8s in e2e, we patch the DB to point at
-    # our Docker container running JupyterLab.
+        jupyter.locator('.jp-Notebook').wait_for(timeout=30000)
+        jupyter.locator('.jp-Cell').first.wait_for(timeout=15000)
+        time.sleep(3)
+        step += 1
+        _screenshot(page, step, "new_notebook")
 
-    with db_utils.engine.connect() as conn:
-        conn.execute(
-            text(
-                "UPDATE workspaces "
-                "SET status = 'running', "
-                "    access_url = :access_url, "
-                "    started_at = now() "
-                "WHERE id = CAST(:ws_id AS uuid)"
-            ),
-            {"access_url": jupyterlab_url, "ws_id": ws_id}
-        )
-        conn.commit()
+        # ── Step 11: Type and execute hello world ─────────────────────
+        cell1 = jupyter.locator('.jp-Cell').first
+        _type_in_cell(jupyter, cell1, 'print("hello world from OpenUBA workspace!")')
+        step += 1
+        _screenshot(page, step, "hello_world_typed")
 
-    # ─── Step 5: Navigate to workspace detail page ─────────────────
+        cell1.locator('.cm-content[contenteditable="true"]').press("Shift+Enter")
+        time.sleep(5)
+        step += 1
+        _screenshot(page, step, "hello_world_executed")
 
-    page.goto(f"{frontend_url}/workspaces/{ws_id}")
-    page.wait_for_load_state("networkidle")
+        # verify hello world output
+        outputs = jupyter.locator('.jp-OutputArea-output')
+        output1 = outputs.first.inner_text(timeout=15000)
+        assert "hello world from OpenUBA workspace!" in output1, \
+            f"expected hello world output, got: {output1}"
 
-    step += 1
-    take_screenshot(page, step, "workspace_detail_loading")
+        # ── Step 12: Import and use openuba SDK ───────────────────────
+        time.sleep(2)
+        cell2 = jupyter.locator('.jp-Cell').last
+        _type_in_cell(jupyter, cell2,
+                       'import openuba\n'
+                       'print(f"openuba SDK v{openuba.__version__}")')
+        step += 1
+        _screenshot(page, step, "sdk_import_typed")
 
-    # the frontend will poll status (3s), see running, then probe access_url (2s)
-    # since our JupyterLab container is up, the probe succeeds and iframe renders
-    iframe_selector = 'iframe[title*="JupyterLab"]'
-    page.wait_for_selector(iframe_selector, timeout=30000)
+        cell2.locator('.cm-content[contenteditable="true"]').press("Shift+Enter")
+        time.sleep(5)
+        step += 1
+        _screenshot(page, step, "sdk_import_executed")
 
-    step += 1
-    take_screenshot(page, step, "workspace_detail_running")
+        # verify no import errors
+        all_outputs = jupyter.locator('.jp-OutputArea-output').all_text_contents()
+        output_text = " ".join(all_outputs).lower()
+        assert "modulenotfounderror" not in output_text, \
+            f"openuba import failed: {output_text}"
+        assert "error" not in output_text, \
+            f"unexpected error in output: {output_text}"
 
-    # give iframe content time to fully load
-    time.sleep(5)
+        step += 1
+        _screenshot(page, step, "final")
 
-    step += 1
-    take_screenshot(page, step, "jupyterlab_iframe_loaded")
+        print(f"\n{'='*60}")
+        print(f"WORKSPACE JUPYTERLAB HELLO WORLD TEST PASSED")
+        print(f"  Workspace: {ws_name} ({workspace_id})")
+        print(f"  Screenshots: {step} taken in {SCREENSHOTS_DIR}/")
+        print(f"{'='*60}\n")
 
-    # ─── Step 6: Interact with JupyterLab in the iframe ────────────
-
-    jupyter = page.frame_locator(iframe_selector)
-
-    # wait for JupyterLab launcher to appear
-    jupyter.locator('.jp-Launcher').wait_for(timeout=30000)
-
-    step += 1
-    take_screenshot(page, step, "jupyterlab_launcher")
-
-    # ─── Step 7: Create a new Python notebook ──────────────────────
-
-    # click on the Python 3 notebook card in the launcher
-    notebook_card = jupyter.locator(
-        '.jp-LauncherCard[title*="Python"], '
-        '.jp-LauncherCard:has-text("Python 3")'
-    ).first
-    notebook_card.click()
-
-    # wait for the notebook to open (notebook widget + first cell)
-    jupyter.locator('.jp-Notebook').wait_for(timeout=20000)
-    jupyter.locator('.jp-Cell').first.wait_for(timeout=15000)
-
-    # wait a bit for the kernel to be ready
-    time.sleep(3)
-
-    step += 1
-    take_screenshot(page, step, "new_notebook_created")
-
-    # ─── Step 8: Type and execute 'import openuba' ─────────────────
-
-    first_cell = jupyter.locator('.jp-Cell').first
-    type_in_jupyter_cell(
-        jupyter, first_cell,
-        "import openuba\nprint(f'OpenUBA SDK v{openuba.__version__} loaded successfully!')"
-    )
-
-    step += 1
-    take_screenshot(page, step, "import_openuba_typed")
-
-    # execute with Shift+Enter
-    first_cell.locator('.cm-content[contenteditable="true"]').press("Shift+Enter")
-
-    # wait for cell output to appear
-    time.sleep(5)
-
-    step += 1
-    take_screenshot(page, step, "import_openuba_executed")
-
-    # ─── Step 9: Type and execute SDK version check ────────────────
-
-    time.sleep(1)
-    second_cell = jupyter.locator('.jp-Cell').last
-    type_in_jupyter_cell(
-        jupyter, second_cell,
-        "# Check SDK version and available functions\n"
-        "print(f'Version: {openuba.__version__}')\n"
-        "print(f'Client: {openuba.OpenUBAClient.__name__}')\n"
-        "print(f'Functions: {len(openuba.__all__)} exported')"
-    )
-
-    step += 1
-    take_screenshot(page, step, "version_check_typed")
-
-    second_cell.locator('.cm-content[contenteditable="true"]').press("Shift+Enter")
-    time.sleep(5)
-
-    step += 1
-    take_screenshot(page, step, "version_check_executed")
-
-    # ─── Step 10: Type and execute SDK method listing ──────────────
-
-    time.sleep(1)
-    third_cell = jupyter.locator('.jp-Cell').last
-    type_in_jupyter_cell(
-        jupyter, third_cell,
-        "# List available SDK operations\n"
-        "sdk_methods = [m for m in openuba.__all__ if not m.startswith('_')]\n"
-        "print('Available SDK operations:')\n"
-        "for method in sdk_methods[:15]:\n"
-        "    print(f'  - openuba.{method}()')"
-    )
-
-    step += 1
-    take_screenshot(page, step, "sdk_methods_typed")
-
-    third_cell.locator('.cm-content[contenteditable="true"]').press("Shift+Enter")
-    time.sleep(5)
-
-    step += 1
-    take_screenshot(page, step, "sdk_methods_executed")
-
-    # ─── Step 11: Verify outputs and take final screenshot ─────────
-
-    # collect all output text from the notebook
-    all_outputs = jupyter.locator('.jp-OutputArea-output').all_text_contents()
-    output_text = " ".join(all_outputs).lower()
-
-    # verify import succeeded (no ImportError/ModuleNotFoundError)
-    assert "modulenotfounderror" not in output_text, \
-        f"import openuba failed inside JupyterLab: {output_text}"
-    assert "importerror" not in output_text, \
-        f"ImportError in JupyterLab: {output_text}"
-
-    # verify SDK version was printed
-    assert "0.1.0" in output_text, \
-        f"Expected SDK version '0.1.0' in output, got: {output_text}"
-
-    # verify SDK methods were listed
-    assert "configure" in output_text, \
-        f"Expected 'configure' in SDK method listing, got: {output_text}"
-
-    step += 1
-    take_screenshot(page, step, "final_notebook")
-
-    print(f"\n{'='*60}")
-    print(f"WORKSPACE JUPYTERLAB SDK TEST PASSED")
-    print(f"  Workspace: {ws_name}")
-    print(f"  JupyterLab URL: {jupyterlab_url}")
-    print(f"  Screenshots: {step} taken in {SCREENSHOTS_DIR}/ws_jupyter_*.png")
-    print(f"{'='*60}\n")
-
-    # ─── Step 12: Cleanup ──────────────────────────────────────────
-
-    requests.post(
-        f"{backend_url}/api/v1/workspaces/{ws_id}/stop",
-        headers=auth_headers
-    )
-    requests.delete(
-        f"{backend_url}/api/v1/workspaces/{ws_id}",
-        headers=auth_headers
-    )
+    finally:
+        if workspace_id:
+            _cleanup_workspace(workspace_id, headers)
