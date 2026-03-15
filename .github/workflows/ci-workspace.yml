@@ -5,10 +5,14 @@ on:
     branches: [master, dev/workspaces]
     paths:
       - 'docker/workspace/**'
+      - 'sdk/**'
+      - 'workspace/**'
   pull_request:
     branches: [master]
     paths:
       - 'docker/workspace/**'
+      - 'sdk/**'
+      - 'workspace/**'
 
 jobs:
   build-workspace:
@@ -22,7 +26,8 @@ jobs:
       - name: Build workspace image
         uses: docker/build-push-action@v5
         with:
-          context: docker/workspace
+          context: .
+          file: docker/workspace/Dockerfile
           push: false
           tags: openuba-workspace:latest
           cache-from: type=gha
@@ -54,7 +59,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: docker/workspace
+          context: .
+          file: docker/workspace/Dockerfile
           push: true
           tags: |
             gacwr/openuba-workspace:latest

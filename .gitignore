@@ -46,6 +46,7 @@ interface/core/
 # Build Artifacts
 *.tar
 watch_*
+sdk/dist/
 
 # Deployment & Data
 metastore/
