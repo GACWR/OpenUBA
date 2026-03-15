@@ -264,9 +264,13 @@ k8s-logs-postgraphile:
 	kubectl logs -f -l app=postgraphile -n openuba
 k8s-init-data:
 	@echo "Triggering data ingestion via API..."
-	@kubectl exec -n openuba deploy/backend -- curl -X POST http://localhost:8000/api/v1/data/ingest \
-		-H "Content-Type: application/json" \
-		-d '{"dataset_name": "toy_1", "ingest_to_spark": true, "ingest_to_es": true}'
+	@kubectl exec -n openuba deploy/backend -- bash -c '\
+		TOKEN=$$(curl -s -X POST http://localhost:8000/api/v1/auth/login \
+			-d "username=openuba&password=password" | python3 -c "import sys,json; print(json.load(sys.stdin)[\"access_token\"])") && \
+		curl -X POST http://localhost:8000/api/v1/data/ingest \
+			-H "Content-Type: application/json" \
+			-H "Authorization: Bearer $$TOKEN" \
+			-d "{\"dataset_name\": \"toy_1\", \"ingest_to_spark\": true, \"ingest_to_es\": true}"'
 	@echo "Data ingestion triggered. Check logs or UI for status."
 k8s-logs-all:
 	@echo "Viewing logs for all services (use Ctrl+C to exit)..."

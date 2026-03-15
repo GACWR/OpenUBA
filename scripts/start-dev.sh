@@ -1,6 +1,6 @@
 #!/bin/bash
 # scripts/start-dev.sh
-# Automates the 4-terminal workflow for OpenUBA hybrid development.
+# Automates the full OpenUBA dev environment setup.
 set -e # Exit immediately if a command exits with a non-zero status.
 
 # Ensure we are in the project root
@@ -39,36 +39,37 @@ make deploy-k8s
 
 echo "✅ Infrastructure Ready!"
 
-# Function to open a new tab and run a command (macOS Terminal)
-open_tab() {
-    local title="$1"
-    local cmd="$2"
-    
-    osascript -e "
-        tell application \"Terminal\"
-            activate
-            tell application \"System Events\" to keystroke \"t\" using command down
-            repeat while contents of selected tab of window 1 starts with \" \"
-                delay 0.01
-            end repeat
-            do script \"cd \\\"$PROJECT_ROOT\\\" && echo \\\"Starting $title...\\\" && $cmd\" in front window
-        end tell
-    "
-}
+# Step 2: Kill stale port-forwards, then start fresh ones in a new Terminal window.
+# Using `open -a Terminal.app` which reliably opens a new window on macOS
+# without requiring accessibility permissions (unlike osascript keystroke approach).
+echo "🔌 Starting port-forwards..."
+pkill -f "kubectl.*port-forward.*openuba" 2>/dev/null || true
+sleep 1
 
-echo "🚀 Launching services in new tabs..."
+open -a Terminal.app "$PROJECT_ROOT/scripts/port-forward.sh"
 
-# Tab 1: Port Forwarding
-# open_tab "Hybrid Networking" "make dev-hybrid"
-open_tab "K8s Networking" "make k8s-forward"
+# Wait for port-forwards to establish
+echo "   Waiting for services..."
+RETRIES=0
+until curl -s -o /dev/null http://localhost:8000/docs 2>/dev/null; do
+    RETRIES=$((RETRIES + 1))
+    if [ $RETRIES -ge 20 ]; then
+        echo "⚠️  Warning: backend not reachable on port 8000 after 20s"
+        break
+    fi
+    sleep 1
+done
 
-# Tab 2: Backend - this runs a local version of backend on the host
-open_tab "Local Backend" "make dev-backend"
+if [ $RETRIES -lt 20 ]; then
+    echo "   ✓ All services reachable"
+fi
 
-# Tab 3: Frontend - this runs a local version of frontend on the host
-open_tab "Local Frontend" "make dev-frontend"
-
-echo "🎉 All services launched!"
-echo "Backend: http://localhost:8000"
-echo "Frontend: http://localhost:3000"
-echo "Monitor the tabs for logs."
+echo ""
+echo "🎉 OpenUBA is ready!"
+echo "  Frontend:      http://localhost:3000"
+echo "  Backend:       http://localhost:8000"
+echo "  PostGraphile:  http://localhost:5001/graphql"
+echo "  Spark UI:      http://localhost:8080"
+echo ""
+echo "  Port-forwards running in separate Terminal window."
+echo "  Close that window or run: pkill -f 'kubectl.*port-forward.*openuba'"

@@ -9,6 +9,37 @@ nodes:
   - containerPort: 443
     hostPort: 443
     protocol: TCP
+  # workspace NodePort range (31200-31209 for up to 10 concurrent workspaces)
+  - containerPort: 31200
+    hostPort: 31200
+    protocol: TCP
+  - containerPort: 31201
+    hostPort: 31201
+    protocol: TCP
+  - containerPort: 31202
+    hostPort: 31202
+    protocol: TCP
+  - containerPort: 31203
+    hostPort: 31203
+    protocol: TCP
+  - containerPort: 31204
+    hostPort: 31204
+    protocol: TCP
+  - containerPort: 31205
+    hostPort: 31205
+    protocol: TCP
+  - containerPort: 31206
+    hostPort: 31206
+    protocol: TCP
+  - containerPort: 31207
+    hostPort: 31207
+    protocol: TCP
+  - containerPort: 31208
+    hostPort: 31208
+    protocol: TCP
+  - containerPort: 31209
+    hostPort: 31209
+    protocol: TCP
   kubeadmConfigPatches:
   - |
     kind: JoinConfiguration
