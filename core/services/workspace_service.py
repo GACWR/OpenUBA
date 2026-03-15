@@ -17,13 +17,14 @@ from core.auth import create_access_token
 logger = logging.getLogger(__name__)
 
 # hardware tier resource definitions
+# requests are kept low for local Kind clusters; limits allow burst
 HARDWARE_TIERS = {
     "cpu-small": {
-        "requests": {"cpu": "250m", "memory": "512Mi"},
+        "requests": {"cpu": "100m", "memory": "128Mi"},
         "limits": {"cpu": "500m", "memory": "1Gi"},
     },
     "cpu-large": {
-        "requests": {"cpu": "500m", "memory": "2Gi"},
+        "requests": {"cpu": "250m", "memory": "512Mi"},
         "limits": {"cpu": "2", "memory": "4Gi"},
     },
     "gpu-small": {
@@ -37,8 +38,8 @@ HARDWARE_TIERS = {
 }
 
 # nodeport range for workspaces
-NODE_PORT_START = int(os.getenv("WORKSPACE_NODE_PORT_START", "31100"))
-NODE_PORT_END = int(os.getenv("WORKSPACE_NODE_PORT_END", "31199"))
+NODE_PORT_START = int(os.getenv("WORKSPACE_NODE_PORT_START", "31200"))
+NODE_PORT_END = int(os.getenv("WORKSPACE_NODE_PORT_END", "31299"))
 
 
 class WorkspaceService:

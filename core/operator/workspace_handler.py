@@ -16,13 +16,14 @@ WORKSPACE_NAMESPACE = os.getenv("WORKSPACE_NAMESPACE", "openuba")
 BACKEND_SERVICE_URL = os.getenv("BACKEND_SERVICE_URL", "http://backend.openuba.svc:8000")
 
 # hardware tier resource definitions
+# requests are kept low for local Kind clusters; limits allow burst
 HARDWARE_TIERS = {
     "cpu-small": {
-        "requests": {"cpu": "250m", "memory": "512Mi"},
+        "requests": {"cpu": "100m", "memory": "128Mi"},
         "limits": {"cpu": "500m", "memory": "1Gi"},
     },
     "cpu-large": {
-        "requests": {"cpu": "500m", "memory": "2Gi"},
+        "requests": {"cpu": "250m", "memory": "512Mi"},
         "limits": {"cpu": "2", "memory": "4Gi"},
     },
     "gpu-small": {
@@ -88,8 +89,9 @@ def workspace_create(spec, name, namespace, status, patch, **kwargs):
         k8s_client.V1EnvVar(name='JUPYTER_ENABLE_LAB', value='yes'),
     ]
 
-    # JupyterLab command: disable auth, allow iframe embedding, allow cross-origin
-    # This matches OMS pattern for seamless iframe embedding in the frontend UI
+    # JupyterLab startup command
+    # Auth/CORS/iframe settings are baked into the workspace Docker image via
+    # jupyter_server_config.py — we only pass minimal overrides here
     jupyter_cmd = [
         'start-notebook.sh',
         '--ServerApp.token=',
@@ -97,15 +99,13 @@ def workspace_create(spec, name, namespace, status, patch, **kwargs):
         '--ServerApp.allow_origin=*',
         '--ServerApp.allow_remote_access=True',
         '--ServerApp.disable_check_xsrf=True',
-        '--ServerApp.tornado_settings={"headers":{"Content-Security-Policy":"frame-ancestors * \'self\'"}}',
         f'--ServerApp.base_url=/',
-        '--NotebookApp.token=',
-        '--NotebookApp.password=',
     ]
 
     container = k8s_client.V1Container(
         name='workspace',
         image=WORKSPACE_IMAGE,
+        image_pull_policy='IfNotPresent',
         command=['bash', '-c'],
         args=[' '.join(jupyter_cmd)],
         ports=[k8s_client.V1ContainerPort(container_port=8888)],
@@ -171,10 +171,27 @@ def workspace_create(spec, name, namespace, status, patch, **kwargs):
         actual_port = created_svc.spec.ports[0].node_port
         logger.info(f"created service: {svc_name} on nodeport {actual_port}")
     except k8s_client.exceptions.ApiException as e:
-        if e.status != 409:
+        if e.status == 409:
+            # service with same name already exists — reuse it
+            existing = core_v1.read_namespaced_service(svc_name, namespace)
+            actual_port = existing.spec.ports[0].node_port
+            logger.info(f"service already exists: {svc_name} on nodeport {actual_port}")
+        elif e.status == 422 and 'already allocated' in str(e.body):
+            # nodeport is held by a stale service from a previous workspace
+            # find and delete the stale service, then retry
+            logger.warning(f"nodeport {node_port} already allocated, cleaning up stale service")
+            svcs = core_v1.list_namespaced_service(namespace)
+            for s in svcs.items:
+                for p in (s.spec.ports or []):
+                    if p.node_port == node_port and s.metadata.name != svc_name:
+                        logger.info(f"deleting stale service: {s.metadata.name}")
+                        core_v1.delete_namespaced_service(s.metadata.name, namespace)
+            # retry creation
+            created_svc = core_v1.create_namespaced_service(namespace, svc)
+            actual_port = created_svc.spec.ports[0].node_port
+            logger.info(f"created service after cleanup: {svc_name} on nodeport {actual_port}")
+        else:
             raise
-        actual_port = node_port
-        logger.info(f"service already exists: {svc_name}")
 
     access_url = f"http://localhost:{actual_port}"
 
