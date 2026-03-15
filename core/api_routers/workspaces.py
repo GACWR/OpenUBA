@@ -5,7 +5,7 @@ workspaces api router
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -15,7 +15,7 @@ from core.db import get_db
 from core.repositories.workspace_repository import WorkspaceRepository
 from core.services.workspace_service import WorkspaceService
 from core.api_schemas.workspaces import WorkspaceCreate, WorkspaceResponse
-from core.auth import require_permission, get_current_user
+from core.auth import require_permission, get_current_user, create_access_token
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 WORKSPACE_NAMESPACE = os.getenv("WORKSPACE_NAMESPACE", "openuba")
 
 
-def _create_workspace_crd(workspace, repo: WorkspaceRepository) -> None:
+def _create_workspace_crd(workspace, repo: WorkspaceRepository, workspace_token: str = "") -> None:
     '''
     create UBAWorkspace custom resource so the operator provisions the pod
     if creation fails, mark the workspace as failed with the error message
@@ -52,6 +52,7 @@ def _create_workspace_crd(workspace, repo: WorkspaceRepository) -> None:
                 "created_by": str(workspace.created_by),
                 "timeout_hours": workspace.timeout_hours or 24,
                 "node_port": workspace.node_port,
+                "workspace_token": workspace_token,
             },
         }
         api.create_namespaced_custom_object(
@@ -86,9 +87,20 @@ async def launch_workspace(
         timeout_hours=workspace_data.timeout_hours,
     )
 
+    # generate a long-lived workspace token (30 days) so the SDK inside the
+    # workspace pod can authenticate as the launching user automatically
+    workspace_token = create_access_token(
+        data={
+            "sub": current_user["username"],
+            "user_id": current_user["user_id"],
+            "role": current_user.get("role", "analyst"),
+        },
+        expires_delta=timedelta(days=30),
+    )
+
     # create the CRD so the operator provisions the pod
     repo = WorkspaceRepository(db)
-    _create_workspace_crd(workspace, repo)
+    _create_workspace_crd(workspace, repo, workspace_token=workspace_token)
 
     logger.info(f"workspace launched: {workspace.id}")
     return workspace

@@ -36,6 +36,8 @@ spec:
                   default: 24
                 node_port:
                   type: integer
+                workspace_token:
+                  type: string
             status:
               type: object
               properties:
