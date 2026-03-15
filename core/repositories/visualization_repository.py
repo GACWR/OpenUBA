@@ -28,6 +28,7 @@ class VisualizationRepository:
         code: Optional[str] = None,
         data: Optional[Dict[str, Any]] = None,
         config: Optional[Dict[str, Any]] = None,
+        rendered_output: Optional[str] = None,
         refresh_interval: int = 0
     ) -> Visualization:
         '''
@@ -42,6 +43,7 @@ class VisualizationRepository:
             code=code,
             data=data,
             config=config,
+            rendered_output=rendered_output,
             refresh_interval=refresh_interval
         )
         self.db.add(visualization)

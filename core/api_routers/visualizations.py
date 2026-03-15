@@ -39,6 +39,7 @@ async def create_visualization(
         code=viz_data.code,
         data=viz_data.data,
         config=viz_data.config,
+        rendered_output=viz_data.rendered_output,
         refresh_interval=viz_data.refresh_interval
     )
     logger.info(f"visualization created: {visualization.id}")

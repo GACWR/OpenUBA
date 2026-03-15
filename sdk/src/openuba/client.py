@@ -422,8 +422,8 @@ class OpenUBAClient:
     # ─── Visualizations ─────────────────────────────────────────────
 
     def create_visualization(self, name, backend="matplotlib", description=None,
-                              output_type=None):
-        '''create a visualization'''
+                              output_type=None, figure=None):
+        '''create a visualization, optionally rendering a figure object automatically'''
         if output_type is None:
             output_type_map = {
                 "matplotlib": "svg", "seaborn": "svg", "plotly": "plotly",
@@ -431,12 +431,35 @@ class OpenUBAClient:
                 "datashader": "png", "networkx": "svg", "geopandas": "svg",
             }
             output_type = output_type_map.get(backend, "svg")
-        return self._post("/api/v1/visualizations", {
+
+        rendered_output = None
+        if figure is not None:
+            from openuba.visualization import VisualizationContext
+            rendered_output = VisualizationContext.render(figure, backend=backend)
+
+        body = {
             "name": name,
             "backend": backend,
             "output_type": output_type,
             "description": description,
-        })
+        }
+        if rendered_output is not None:
+            body["rendered_output"] = rendered_output
+        return self._post("/api/v1/visualizations", body)
+
+    def update_visualization(self, viz_id, rendered_output=None, code=None,
+                              data=None, config=None):
+        '''update a visualization with rendered output or other fields'''
+        body = {}
+        if rendered_output is not None:
+            body["rendered_output"] = rendered_output
+        if code is not None:
+            body["code"] = code
+        if data is not None:
+            body["data"] = data
+        if config is not None:
+            body["config"] = config
+        return self._put(f"/api/v1/visualizations/{viz_id}", body)
 
     def publish_visualization(self, viz_id):
         '''publish a visualization'''

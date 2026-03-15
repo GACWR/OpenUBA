@@ -34,6 +34,7 @@ class VisualizationContext:
         '''
         render a figure to string output
         auto-detects backend from figure type if not specified
+        returns the rendered content as a string (SVG, JSON, or base64 PNG)
         '''
         if backend is None:
             backend = VisualizationContext._detect_backend(figure)
@@ -50,10 +51,19 @@ class VisualizationContext:
     @staticmethod
     def _detect_backend(figure):
         '''detect rendering backend from figure type'''
+        try:
+            import matplotlib.figure
+            if isinstance(figure, matplotlib.figure.Figure):
+                return 'matplotlib'
+        except ImportError:
+            pass
+
         type_name = type(figure).__module__
 
         if 'matplotlib' in type_name:
             return 'matplotlib'
+        elif 'seaborn' in type_name:
+            return 'seaborn'
         elif 'plotly' in type_name:
             return 'plotly'
         elif 'bokeh' in type_name:
@@ -65,7 +75,14 @@ class VisualizationContext:
         elif 'networkx' in type_name:
             return 'networkx'
 
-        return 'matplotlib'
+        # check for seaborn axes (which are matplotlib axes)
+        if hasattr(figure, 'get_figure'):
+            return 'seaborn'
+
+        raise TypeError(
+            f"cannot detect backend for {type(figure).__name__}. "
+            f"supported backends: {list(VisualizationContext.BACKEND_OUTPUT_MAP.keys())}"
+        )
 
     @staticmethod
     def _render_matplotlib(figure, format="svg"):
@@ -137,3 +154,37 @@ class VisualizationContext:
         fig, ax = plt.subplots(figsize=(12, 8))
         figure.plot(ax=ax)
         return VisualizationContext._render_matplotlib(fig, format)
+
+
+def render(figure, backend=None, viz_id=None, _client=None):
+    '''
+    render a figure and optionally push to the platform.
+    following the OMS pattern: render failures are fatal, push failures are silent.
+
+    Args:
+        figure: matplotlib Figure, seaborn axes, plotly Figure, etc.
+        backend: override auto-detection (matplotlib, seaborn, plotly, etc.)
+        viz_id: if provided, auto-push rendered output to the platform
+        _client: optional client override (for testing)
+
+    Returns:
+        dict with {"type": "svg|plotly|bokeh|...", "content": "..."}
+    '''
+    if backend is None:
+        backend = VisualizationContext._detect_backend(figure)
+
+    output_type = VisualizationContext.BACKEND_OUTPUT_MAP.get(backend, "svg")
+    content = VisualizationContext.render(figure, backend=backend)
+
+    # auto-push to platform when viz_id is provided
+    if viz_id:
+        if _client is None:
+            from openuba import _get_client
+            _client = _get_client()
+        try:
+            _client.update_visualization(str(viz_id), rendered_output=content)
+        except Exception as e:
+            # push failures are silent — don't break the render
+            logger.debug(f"failed to push rendered output for {viz_id}: {e}")
+
+    return {"type": output_type, "content": content}

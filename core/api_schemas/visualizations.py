@@ -16,6 +16,7 @@ class VisualizationCreate(BaseModel):
     code: Optional[str] = None
     data: Optional[Dict[str, Any]] = None
     config: Optional[Dict[str, Any]] = None
+    rendered_output: Optional[str] = None
     refresh_interval: int = Field(default=0, ge=0)
 
 

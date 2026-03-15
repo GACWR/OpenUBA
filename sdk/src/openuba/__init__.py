@@ -1,7 +1,7 @@
 """OpenUBA SDK — install, run, and manage user behavior analytics models."""
 
 from openuba.client import OpenUBAClient
-from openuba.visualization import VisualizationContext
+from openuba.visualization import VisualizationContext, render
 from openuba.context import ModelContext
 
 __version__ = "0.1.0"
@@ -137,11 +137,19 @@ def post_log(job_id, message, level="info"):
 # ─── Visualizations ────────────────────────────────────────────────
 
 
-def create_visualization(name, backend="matplotlib", description=None, output_type=None):
-    """Create a visualization."""
+def create_visualization(name, backend="matplotlib", description=None, output_type=None,
+                         figure=None):
+    """Create a visualization. Pass a figure object to auto-render it."""
     return _get_client().create_visualization(name, backend=backend,
                                                description=description,
-                                               output_type=output_type)
+                                               output_type=output_type,
+                                               figure=figure)
+
+
+def update_visualization(viz_id, rendered_output=None, code=None, data=None, config=None):
+    """Update a visualization with rendered output or other fields."""
+    return _get_client().update_visualization(viz_id, rendered_output=rendered_output,
+                                              code=code, data=data, config=config)
 
 
 def publish_visualization(viz_id):
@@ -304,8 +312,10 @@ __all__ = [
     "post_log",
     # Visualizations
     "create_visualization",
+    "update_visualization",
     "publish_visualization",
     "list_visualizations",
+    "render",
     # Dashboards
     "create_dashboard",
     "update_dashboard",
