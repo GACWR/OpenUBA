@@ -47,7 +47,9 @@ spec:
             - name: NEXT_PUBLIC_API_URL
               value: "http://localhost:8000"
             - name: NEXT_PUBLIC_GRAPHQL_URL
-              value: "http://localhost:5001/graphql"
+              value: "/graphql"
+            - name: POSTGRAPHILE_URL
+              value: "http://postgraphile:5000"
             - name: BACKEND_URL
               value: "http://backend:8000"
             - name: HOSTNAME

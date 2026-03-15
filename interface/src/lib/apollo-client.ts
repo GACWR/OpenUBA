@@ -4,7 +4,7 @@ import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 
 const httpLink = createHttpLink({
-  uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:5001/graphql',
+  uri: process.env.NEXT_PUBLIC_GRAPHQL_URL || '/graphql',
 });
 
 // WebSocket link for subscriptions (if available)
