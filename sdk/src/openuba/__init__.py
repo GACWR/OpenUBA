@@ -4,7 +4,7 @@ from openuba.client import OpenUBAClient
 from openuba.visualization import VisualizationContext, render
 from openuba.context import ModelContext
 
-__version__ = "0.1.0"
+__version__ = "0.0.2"
 
 # Module-level client singleton
 _client = None

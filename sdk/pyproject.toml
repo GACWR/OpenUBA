@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openuba"
-version = "0.1.0"
+version = "0.0.2"
 description = "OpenUBA CLI & SDK — install, run, and manage user behavior analytics models"
 readme = "README.md"
 requires-python = ">=3.9"
