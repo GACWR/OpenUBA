@@ -103,8 +103,14 @@ async def get_current_user(
             except HTTPException:
                 raise
             except Exception as e:
-                # if users table doesn't exist yet, allow through
-                logger.debug(f"user existence check skipped: {e}")
+                err_msg = str(e).lower()
+                # only allow through if the users table doesn't exist yet (during migrations)
+                # all other DB errors (connection refused, timeouts) must reject the request
+                if "relation" in err_msg and "does not exist" in err_msg:
+                    logger.debug(f"user existence check skipped (table missing): {e}")
+                else:
+                    logger.error(f"user existence check failed: {e}")
+                    raise credentials_exception
 
         return {
             "username": username,

@@ -150,7 +150,9 @@ class WorkspaceService:
         used_ports = set()
         workspaces = self.repo.list_all(limit=200)
         for ws in workspaces:
-            if ws.node_port and ws.status not in ("stopped", "failed"):
+            # reserve ports for all non-deleted workspaces to avoid conflicts
+            # when a stopped workspace is restarted and needs its port back
+            if ws.node_port:
                 used_ports.add(ws.node_port)
 
         for port in range(NODE_PORT_START, NODE_PORT_END + 1):

@@ -38,7 +38,7 @@ export function useJobSSE({ jobId, enabled = true, onMetric, onStatus, onDone }:
     if (!enabled || !jobId) return
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('openuba_token') : null
-    const url = `${API_URL}/api/v1/jobs/${jobId}/metrics/stream${token ? `?token=${token}` : ''}`
+    const url = `${API_URL}/api/v1/jobs/${jobId}/metrics/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
 
     const source = new EventSource(url)
     sourceRef.current = source
