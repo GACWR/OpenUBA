@@ -24,7 +24,7 @@ E2E_FRONTEND_PORT = int(os.getenv("E2E_FRONTEND_PORT", "3000"))
 E2E_BACKEND_PORT = int(os.getenv("E2E_BACKEND_PORT", "8000"))
 E2E_DATABASE_URL = os.getenv(
     "E2E_DATABASE_URL",
-    "postgresql://gacwr:gacwr@localhost:5432/openuba"
+    "postgresql://openuba:openuba@localhost:5432/openuba"
 )
 
 

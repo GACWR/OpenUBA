@@ -8,6 +8,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: openuba-operator-role
+  # NOTE: ClusterRole is required because CRDs (openuba.io/*) are cluster-scoped.
+  # The operator only manages resources in the openuba namespace (enforced in code).
+  # For multi-tenant production, consider namespace-scoped Roles for core resources.
 rules:
   # Framework: knowing which other operators are running (i.e. peering).
   - apiGroups: [kopf.dev]

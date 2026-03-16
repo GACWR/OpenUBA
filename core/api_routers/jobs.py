@@ -198,6 +198,7 @@ async def stream_job_metrics(
 
     async def event_generator():
         last_count = 0
+        last_status = job.status
         while True:
             if await request.is_disconnected():
                 break
@@ -220,20 +221,22 @@ async def stream_job_metrics(
                     }
                 last_count = current_count
 
-            # also send job status updates
+            # send job status updates only when something changed
             job_now = repo.get_by_id(job_id)
             if job_now:
-                yield {
-                    "event": "status",
-                    "data": json.dumps({
-                        "status": job_now.status,
-                        "progress": job_now.progress,
-                        "epoch_current": job_now.epoch_current,
-                        "epoch_total": job_now.epoch_total,
-                        "loss": job_now.loss,
-                    })
-                }
-                if job_now.status in ("completed", "failed", "cancelled"):
+                if job_now.status != last_status or current_count > last_count:
+                    yield {
+                        "event": "status",
+                        "data": json.dumps({
+                            "status": job_now.status,
+                            "progress": job_now.progress,
+                            "epoch_current": job_now.epoch_current,
+                            "epoch_total": job_now.epoch_total,
+                            "loss": job_now.loss,
+                        })
+                    }
+                    last_status = job_now.status
+                if job_now.status in ("succeeded", "failed", "cancelled"):
                     yield {"event": "done", "data": json.dumps({"status": job_now.status})}
                     break
 

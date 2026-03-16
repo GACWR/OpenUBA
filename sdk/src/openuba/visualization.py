@@ -74,10 +74,22 @@ class VisualizationContext:
             return 'plotnine'
         elif 'networkx' in type_name:
             return 'networkx'
+        elif 'datashader' in type_name:
+            return 'datashader'
+        elif 'geopandas' in type_name:
+            return 'geopandas'
 
         # check for seaborn axes (which are matplotlib axes)
         if hasattr(figure, 'get_figure'):
             return 'seaborn'
+
+        # check for geopandas GeoDataFrame
+        if hasattr(figure, 'geometry') and hasattr(figure, 'plot'):
+            return 'geopandas'
+
+        # check for datashader Image
+        if hasattr(figure, 'to_pil'):
+            return 'datashader'
 
         raise TypeError(
             f"cannot detect backend for {type(figure).__name__}. "

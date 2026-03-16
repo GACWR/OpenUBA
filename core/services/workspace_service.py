@@ -37,7 +37,7 @@ HARDWARE_TIERS = {
 
 # nodeport range for workspaces
 NODE_PORT_START = int(os.getenv("WORKSPACE_NODE_PORT_START", "31200"))
-NODE_PORT_END = int(os.getenv("WORKSPACE_NODE_PORT_END", "31299"))
+NODE_PORT_END = int(os.getenv("WORKSPACE_NODE_PORT_END", "31209"))
 
 
 class WorkspaceService:
@@ -78,7 +78,8 @@ class WorkspaceService:
 
         # set allocated nodeport and access_url
         # access_url is set now so the frontend can start probing immediately
-        access_url = f"http://localhost:{node_port}"
+        base_url = os.getenv("WORKSPACE_ACCESS_BASE_URL", "http://localhost")
+        access_url = f"{base_url}:{node_port}"
         workspace = self.repo.update(
             workspace.id,
             node_port=node_port,

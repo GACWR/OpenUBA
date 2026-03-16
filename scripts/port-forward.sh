@@ -1,7 +1,7 @@
 #!/bin/bash
 # scripts/port-forward.sh
-# Starts kubectl port-forwards as a persistent background process group.
-# Survives parent shell/make exit via setsid.
+# Starts kubectl port-forwards as background processes.
+# Lives as long as this script is running (killed when parent exits).
 
 pkill -f "kubectl.*port-forward.*openuba" 2>/dev/null || true
 sleep 1

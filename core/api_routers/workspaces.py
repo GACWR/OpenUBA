@@ -102,13 +102,21 @@ async def launch_workspace(
     repo = WorkspaceRepository(db)
     _create_workspace_crd(workspace, repo, workspace_token=workspace_token)
 
+    # re-read workspace to reflect any status changes from CRD creation
+    workspace = repo.get_by_id(workspace.id)
+    if workspace.status == "failed":
+        raise HTTPException(
+            status_code=500,
+            detail=workspace.error_message or "failed to create workspace CRD"
+        )
+
     logger.info(f"workspace launched: {workspace.id}")
     return workspace
 
 
 @router.get("/workspaces", response_model=List[WorkspaceResponse])
 async def list_workspaces(
-    status: Optional[str] = Query(None, pattern="^(pending|starting|running|stopping|stopped|failed)$"),
+    status: Optional[str] = Query(None, pattern="^(pending|creating|running|stopped|failed)$"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
@@ -188,6 +196,8 @@ def _sync_workspace_crd_status(workspace, repo: WorkspaceRepository):
                 access_url=cr_status.get("access_url", workspace.access_url),
                 node_port=cr_status.get("node_port", workspace.node_port),
             )
+        elif cr_phase == "creating" and workspace.status == "pending":
+            workspace = repo.update(workspace.id, status="creating")
         elif cr_phase == "failed" and workspace.status != "failed":
             workspace = repo.update(
                 workspace.id,

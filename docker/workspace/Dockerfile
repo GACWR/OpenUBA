@@ -1,4 +1,4 @@
-FROM jupyter/scipy-notebook:latest
+FROM jupyter/scipy-notebook:python-3.11
 
 USER root
 
@@ -36,6 +36,9 @@ RUN pip install --no-cache-dir \
 
 # configure JupyterLab for iframe embedding (token-less, XSRF-disabled, CSP-allowed)
 # this allows the OpenUBA frontend to embed JupyterLab seamlessly in an iframe
+# SECURITY: this is for local development only. For production, use per-workspace
+# tokens (via OPENUBA_TOKEN / K8s Secret), restrict allow_origin to the frontend
+# origin, and keep XSRF enabled.
 # NOTE: we append to the base image config AND write a user-level config to ensure
 # our settings take effect regardless of base image entrypoint behavior
 RUN cat >> /etc/jupyter/jupyter_server_config.py << 'JCONF'

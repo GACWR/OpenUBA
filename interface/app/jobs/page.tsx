@@ -10,9 +10,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/20 text-yellow-400',
   running: 'bg-blue-500/20 text-blue-400',
-  completed: 'bg-green-500/20 text-green-400',
+  succeeded: 'bg-green-500/20 text-green-400',
   failed: 'bg-red-500/20 text-red-400',
-  stopped: 'bg-gray-500/20 text-gray-400',
+  cancelled: 'bg-gray-500/20 text-gray-400',
 }
 
 const typeColors: Record<string, string> = {
@@ -23,7 +23,7 @@ const typeColors: Record<string, string> = {
 
 interface Job {
   id: string
-  type: string
+  job_type: string
   model?: string
   model_id?: string
   status: string
@@ -97,8 +97,8 @@ export default function JobsPage() {
               {jobs.map((job) => (
                 <tr key={job.id} className="hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeColors[job.type] || 'bg-gray-500/20 text-gray-400'}`}>
-                      {job.type}
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeColors[job.job_type] || 'bg-gray-500/20 text-gray-400'}`}>
+                      {job.job_type}
                     </span>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs">
@@ -114,15 +114,15 @@ export default function JobsPage() {
                       <div className="h-1.5 w-20 rounded-full bg-muted/40 overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
-                            job.status === 'completed' ? 'bg-green-500' :
+                            job.status === 'succeeded' ? 'bg-green-500' :
                             job.status === 'failed' ? 'bg-red-500' :
                             'bg-blue-500'
                           }`}
-                          style={{ width: `${job.progress ?? (job.status === 'completed' ? 100 : 0)}%` }}
+                          style={{ width: `${job.progress ?? (job.status === 'succeeded' ? 100 : 0)}%` }}
                         />
                       </div>
                       <span className="text-xs text-muted-foreground tabular-nums">
-                        {job.progress ?? (job.status === 'completed' ? 100 : 0)}%
+                        {job.progress ?? (job.status === 'succeeded' ? 100 : 0)}%
                       </span>
                     </div>
                   </td>
