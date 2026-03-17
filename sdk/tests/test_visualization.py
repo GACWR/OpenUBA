@@ -93,12 +93,12 @@ class TestVisualizationContext:
         result = VisualizationContext._detect_backend(figure)
         assert result == 'networkx'
 
-    def test_detect_backend_unknown_defaults_to_matplotlib(self):
-        '''test that unknown backend defaults to matplotlib'''
-        figure = MagicMock()
-        figure.__class__.__module__ = 'custom.unknown.module'
-        result = VisualizationContext._detect_backend(figure)
-        assert result == 'matplotlib'
+    def test_detect_backend_unknown_raises_type_error(self):
+        '''test that unknown figure type raises TypeError'''
+        figure = MagicMock(spec=[])
+        figure.__class__ = type('UnknownFigure', (), {'__module__': 'custom.unknown.module'})
+        with pytest.raises(TypeError, match="cannot detect backend"):
+            VisualizationContext._detect_backend(figure)
 
     # ─── Render with Explicit Backend ───────────────────────────────
 

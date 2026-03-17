@@ -148,7 +148,7 @@ class WorkspaceService:
         allocate an available nodeport from the workspace range
         '''
         used_ports = set()
-        workspaces = self.repo.list_all(limit=200)
+        workspaces = self.repo.list_all(limit=1000)
         for ws in workspaces:
             # reserve ports for all non-deleted workspaces to avoid conflicts
             # when a stopped workspace is restarted and needs its port back

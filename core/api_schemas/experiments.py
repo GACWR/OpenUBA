@@ -47,7 +47,7 @@ class ExperimentResponse(BaseModel):
     created_by: UUID
     created_at: datetime
     updated_at: datetime
-    runs: List[ExperimentRunResponse] = []
+    runs: List[ExperimentRunResponse] = Field(default_factory=list)
 
     class Config:
         from_attributes = True

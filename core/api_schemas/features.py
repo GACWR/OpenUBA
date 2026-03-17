@@ -48,7 +48,7 @@ class FeatureGroupResponse(BaseModel):
     created_by: UUID
     created_at: datetime
     updated_at: datetime
-    features: List[FeatureResponse] = []
+    features: List[FeatureResponse] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
