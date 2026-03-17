@@ -50,3 +50,7 @@ pytest-playwright==0.4.3
 python-slugify
 elasticsearch==8.11.0
 pyspark==3.5.0
+# kopf kubernetes operator
+kopf==1.37.2
+# sse for metrics streaming
+sse-starlette==1.8.2

@@ -14,10 +14,10 @@ rules:
   resources: ["pods", "pods/log"]
   verbs: ["get", "list", "watch"]
 - apiGroups: ["openuba.io"]
-  resources: ["ubainferences", "ubatrainings"]
+  resources: ["ubainferences", "ubatrainings", "ubaworkspaces", "ubapipelines"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 - apiGroups: ["openuba.io"]
-  resources: ["ubainferences/status", "ubatrainings/status"]
+  resources: ["ubainferences/status", "ubatrainings/status", "ubaworkspaces/status", "ubapipelines/status"]
   verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

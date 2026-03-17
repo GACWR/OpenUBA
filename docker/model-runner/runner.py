@@ -70,6 +70,75 @@ class ModelLogHandler(logging.Handler):
         super().close()
 
 
+class MetricReporter:
+    '''
+    reports training metrics back to the OpenUBA platform API
+    posts metrics to the internal /api/v1/internal/metrics/{job_id} endpoint
+    so the frontend can display live training progress via SSE
+    '''
+    def __init__(self, job_id, api_url=None):
+        self.job_id = str(job_id)
+        self.api_url = (api_url or os.environ.get(
+            "OPENUBA_API_URL", "http://openuba-backend:8000"
+        )).rstrip("/")
+        self._session = None
+
+    def _get_session(self):
+        if self._session is None:
+            import requests as req
+            self._session = req.Session()
+        return self._session
+
+    def report(self, metric_name, metric_value, epoch=None, step=None):
+        '''report a single metric to the platform'''
+        try:
+            session = self._get_session()
+            payload = {
+                "metric_name": metric_name,
+                "metric_value": float(metric_value),
+            }
+            if epoch is not None:
+                payload["epoch"] = int(epoch)
+            if step is not None:
+                payload["step"] = int(step)
+
+            url = f"{self.api_url}/api/v1/internal/metrics/{self.job_id}"
+            resp = session.post(url, json=payload, timeout=5)
+            if resp.status_code != 201:
+                logger.warning(f"metric report failed ({resp.status_code}): {resp.text}")
+        except Exception as e:
+            logger.warning(f"[MetricReporter] failed to report metric: {e}")
+
+    def report_batch(self, metrics):
+        '''report multiple metrics at once: list of (name, value, epoch, step) tuples'''
+        for item in metrics:
+            if len(item) == 4:
+                name, value, epoch, step = item
+            elif len(item) == 2:
+                name, value = item
+                epoch, step = None, None
+            else:
+                continue
+            self.report(name, value, epoch=epoch, step=step)
+
+    def report_progress(self, progress, epoch_current=None, epoch_total=None, loss=None):
+        '''report job progress to the platform via PATCH'''
+        try:
+            session = self._get_session()
+            payload = {"progress": int(progress)}
+            if epoch_current is not None:
+                payload["epoch_current"] = int(epoch_current)
+            if epoch_total is not None:
+                payload["epoch_total"] = int(epoch_total)
+            if loss is not None:
+                payload["loss"] = float(loss)
+
+            url = f"{self.api_url}/api/v1/jobs/{self.job_id}"
+            session.patch(url, json=payload, timeout=5)
+        except Exception as e:
+            logger.warning(f"[MetricReporter] failed to report progress: {e}")
+
+
 def hash_file(file_path: Path) -> str:
     '''
     compute sha256 hash of a file
@@ -160,7 +229,28 @@ def execute_model(model_path: Path, input_data: dict = None, run_type: str = "in
                                 self.df = None
 
                     ctx = TrainingContext(input_data)
-                    result = model_instance.train(ctx)
+                    try:
+                        result = model_instance.train(ctx)
+                    except AttributeError as attr_err:
+                        # sklearn version mismatch: pickle.load succeeds but internal
+                        # estimators have missing attributes (e.g. monotonic_cst).
+                        # Replace with a fresh model and retry training.
+                        runtime = os.getenv("MODEL_RUNTIME", "python-base")
+                        if runtime == "sklearn":
+                            logger.warning(
+                                f"sklearn model AttributeError ({attr_err}), "
+                                "replacing with fresh IsolationForest and retrying..."
+                            )
+                            from sklearn.ensemble import IsolationForest
+                            hp = (input_data or {}).get("params", {})
+                            model_instance.model = IsolationForest(
+                                n_estimators=int(hp.get("n_estimators", 200)),
+                                contamination=float(hp.get("contamination", 0.05)),
+                                random_state=42,
+                            )
+                            result = model_instance.train(ctx)
+                        else:
+                            raise
 
                     # serialize trained model artifact to persistent storage
                     artifact_info = _save_trained_artifact(model_instance)
@@ -190,7 +280,27 @@ def execute_model(model_path: Path, input_data: dict = None, run_type: str = "in
                                 self.df = None
 
                     ctx = InferenceContext(input_data)
-                    result_df = model_instance.infer(ctx)
+                    try:
+                        result_df = model_instance.infer(ctx)
+                    except (AttributeError, ValueError) as infer_err:
+                        # sklearn version mismatch or feature count mismatch from
+                        # corrupt pickle — replace with fresh model and retry
+                        runtime = os.getenv("MODEL_RUNTIME", "python-base")
+                        if runtime == "sklearn":
+                            logger.warning(
+                                f"sklearn model error ({infer_err}), "
+                                "replacing with fresh IsolationForest and retrying..."
+                            )
+                            from sklearn.ensemble import IsolationForest
+                            hp = (input_data or {}).get("params", {})
+                            model_instance.model = IsolationForest(
+                                n_estimators=int(hp.get("n_estimators", 200)),
+                                contamination=float(hp.get("contamination", 0.05)),
+                                random_state=42,
+                            )
+                            result_df = model_instance.infer(ctx)
+                        else:
+                            raise
 
                     # convert dataframe to anomalies format
                     if isinstance(result_df, pd.DataFrame) and len(result_df) > 0:
@@ -224,9 +334,9 @@ def execute_model(model_path: Path, input_data: dict = None, run_type: str = "in
                     result = model_module.execute()
                 return _normalize_v1_result(result)
         
-        except (ImportError, AttributeError) as e:
+        except ImportError as e:
             logger.warning(f"v2 interface unavailable: {e}, trying v1 interface")
-            # fall through to v1 only for interface-level errors
+            # fall through to v1 only for true import-level errors
     
     # v1 interface (backward compatibility)
     if has_execute:

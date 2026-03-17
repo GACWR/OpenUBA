@@ -28,7 +28,9 @@ jobs:
 
       - name: Build package
         working-directory: sdk
-        run: python -m build
+        run: |
+          rm -rf dist/
+          python -m build
 
       - name: Install from built wheel
         run: pip install sdk/dist/*.whl

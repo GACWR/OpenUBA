@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from core.db import get_db
 from core.repositories.model_repository import ModelRepository
+from core.repositories.job_repository import JobRepository
 from core.api_schemas.models import ModelCreate, ModelUpdate, ModelResponse
 from core.auth import require_permission, get_current_user
 
@@ -371,6 +372,20 @@ async def train_model(
             version_id=_version_id
         )
         logger.info(f"model training dispatched: run_id={run_id} for model {model_id}")
+
+        # create a Job record so this shows up in the /jobs page
+        try:
+            job_repo = JobRepository(db)
+            job_repo.create(
+                model_id=model_id,
+                job_type="training",
+                created_by=UUID(current_user["user_id"]),
+                hardware_tier="cpu-small",
+                model_run_id=run_id,
+            )
+        except Exception as je:
+            logger.warning(f"failed to create job record for training: {je}")
+
         return {
             "model_id": str(model_id),
             "run_id": str(run_id),
@@ -462,6 +477,20 @@ async def execute_model(
             artifact_id=_artifact_id
         )
         logger.info(f"model execution dispatched: run_id={run_id} for model {model_id}")
+
+        # create a Job record so this shows up in the /jobs page
+        try:
+            job_repo = JobRepository(db)
+            job_repo.create(
+                model_id=model_id,
+                job_type="inference",
+                created_by=UUID(current_user["user_id"]),
+                hardware_tier="cpu-small",
+                model_run_id=run_id,
+            )
+        except Exception as je:
+            logger.warning(f"failed to create job record for inference: {je}")
+
         return {
             "model_id": str(model_id),
             "run_id": str(run_id),

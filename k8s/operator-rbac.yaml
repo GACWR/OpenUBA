@@ -8,6 +8,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: openuba-operator-role
+  # NOTE: ClusterRole is required because CRDs (openuba.io/*) are cluster-scoped.
+  # The operator only manages resources in the openuba namespace (enforced in code).
+  # For multi-tenant production, consider namespace-scoped Roles for core resources.
 rules:
   # Framework: knowing which other operators are running (i.e. peering).
   - apiGroups: [kopf.dev]
@@ -21,19 +24,26 @@ rules:
 
   # Watching our CRDs
   - apiGroups: [openuba.io]
-    resources: [ubainferences, ubatrainings]
-    verbs: [list, watch, patch, get, update]
+    resources: [ubainferences, ubatrainings, ubaworkspaces, ubapipelines]
+    verbs: [list, watch, patch, get, update, create, delete]
   - apiGroups: [openuba.io]
-    resources: [ubainferences/status, ubatrainings/status]
+    resources: [ubainferences/status, ubatrainings/status, ubaworkspaces/status, ubapipelines/status]
     verbs: [patch, update]
-    
+
   # Managing Jobs and Pods
   - apiGroups: [batch, extensions]
     resources: [jobs]
     verbs: [create, delete, list, watch, get]
   - apiGroups: [""]
     resources: [pods, pods/log]
-    verbs: [list, watch, get]
+    verbs: [list, watch, get, create, delete]
+  # Services and PVCs for workspace management
+  - apiGroups: [""]
+    resources: [services]
+    verbs: [create, delete, list, watch, get]
+  - apiGroups: [""]
+    resources: [persistentvolumeclaims]
+    verbs: [create, delete, list, watch, get]
   # Events
   - apiGroups: [""]
     resources: [events]

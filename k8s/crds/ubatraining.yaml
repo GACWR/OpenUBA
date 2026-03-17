@@ -33,6 +33,23 @@ spec:
                   type: string
                 modelVersion:
                   type: string
+                modelId:
+                  type: string
+                  description: "UUID of the model record in the platform database"
+                datasetId:
+                  type: string
+                  description: "UUID of the dataset to train on"
+                hardwareTier:
+                  type: string
+                  enum: [cpu-small, cpu-large, gpu-small, gpu-large]
+                  default: cpu-small
+                hyperparameters:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                  description: "hyperparameter overrides for training"
+                experimentId:
+                  type: string
+                  description: "UUID of the experiment to track this run under"
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
@@ -47,6 +64,19 @@ spec:
                   type: string
                 metricsPath:
                   type: string
+      additionalPrinterColumns:
+        - name: Model
+          type: string
+          jsonPath: .spec.modelRef
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: Hardware
+          type: string
+          jsonPath: .spec.hardwareTier
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
   scope: Namespaced
   names:
     plural: ubatrainings

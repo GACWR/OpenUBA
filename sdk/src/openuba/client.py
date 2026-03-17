@@ -42,6 +42,7 @@ class OpenUBAClient:
             api_url or os.environ.get("OPENUBA_API_URL") or "http://localhost:8000"
         ).rstrip("/")
         self.token = token or os.environ.get("OPENUBA_TOKEN")
+        self.workspace_id = os.environ.get("OPENUBA_WORKSPACE_ID")
 
         # Hub registry (used for list/install — works without a server)
         self.registry_url = (
@@ -264,6 +265,458 @@ class OpenUBAClient:
             return {"status": "success", **result}
         return {"status": "success", "results": result}
 
+    # ─── HTTP helpers ───────────────────────────────────────────────
+
+    def _headers(self):
+        '''get request headers with auth token'''
+        headers = {"Content-Type": "application/json"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        return headers
+
+    def _get(self, path, params=None):
+        '''authenticated GET request'''
+        url = f"{self.api_url}{path}"
+        response = requests.get(url, headers=self._headers(), params=params)
+        response.raise_for_status()
+        return response.json()
+
+    def _post(self, path, body=None):
+        '''authenticated POST request'''
+        url = f"{self.api_url}{path}"
+        response = requests.post(url, headers=self._headers(), json=body)
+        response.raise_for_status()
+        return response.json()
+
+    def _put(self, path, body=None):
+        '''authenticated PUT request'''
+        url = f"{self.api_url}{path}"
+        response = requests.put(url, headers=self._headers(), json=body)
+        response.raise_for_status()
+        return response.json()
+
+    def _patch(self, path, body=None):
+        '''authenticated PATCH request'''
+        url = f"{self.api_url}{path}"
+        response = requests.patch(url, headers=self._headers(), json=body)
+        response.raise_for_status()
+        return response.json()
+
+    def _delete(self, path):
+        '''authenticated DELETE request'''
+        url = f"{self.api_url}{path}"
+        response = requests.delete(url, headers=self._headers())
+        response.raise_for_status()
+        return True
+
+    # ─── Model Registration (SDK-first) ─────────────────────────────
+
+    def register_model(self, name, model=None, framework=None, description=None):
+        '''register a model with the platform, optionally with auto-detection'''
+        body = {"name": name, "description": description or ""}
+        if model is not None:
+            detected = framework or self._detect_framework(model)
+            body["framework"] = detected
+            serialized = self._serialize_model(model, detected)
+            body["model_data"] = serialized
+        elif framework:
+            body["framework"] = framework
+        return self._post("/api/v1/sdk/register-model", body)
+
+    def publish_version(self, model_id, version=None, summary=None):
+        '''publish a new version of a model'''
+        body = {"model_id": str(model_id)}
+        if version:
+            body["version"] = version
+        if summary:
+            body["summary"] = summary
+        return self._post("/api/v1/sdk/publish-version", body)
+
+    def load_model(self, name_or_id, version=None):
+        '''load a model by name or ID'''
+        try:
+            return self._get(f"/api/v1/sdk/models/resolve/{name_or_id}")
+        except Exception:
+            return self._get(f"/api/v1/models/{name_or_id}")
+
+    # ─── Dataset Management ─────────────────────────────────────────
+
+    def list_datasets(self):
+        '''list all datasets'''
+        return self._get("/api/v1/datasets")
+
+    def get_dataset(self, dataset_id):
+        '''get dataset by ID'''
+        return self._get(f"/api/v1/datasets/{dataset_id}")
+
+    def create_dataset(self, name, description=None, source_type="upload", format="csv"):
+        '''create a dataset record'''
+        return self._post("/api/v1/datasets", {
+            "name": name,
+            "description": description,
+            "source_type": source_type,
+            "format": format,
+        })
+
+    # ─── Jobs ───────────────────────────────────────────────────────
+
+    def start_training(self, model_id, dataset_id=None, hardware_tier="cpu-small",
+                       hyperparameters=None, data_source=None, input_data=None,
+                       wait=False, **data_kwargs):
+        '''start a training job
+
+        Args:
+            model_id: model to train
+            dataset_id: optional dataset reference
+            hardware_tier: compute tier (default cpu-small)
+            hyperparameters: dict of hyperparameters
+            data_source: data source type (elasticsearch, spark, local_csv)
+            input_data: full data source config dict (overrides data_source)
+            wait: if True, poll until job completes
+            **data_kwargs: additional data source params (index_name, table_name, etc.)
+        '''
+        body = {
+            "model_id": str(model_id),
+            "job_type": "training",
+            "hardware_tier": hardware_tier,
+        }
+        if dataset_id:
+            body["dataset_id"] = str(dataset_id)
+        if hyperparameters:
+            body["hyperparameters"] = hyperparameters
+        # build input_data for the model runner
+        _input = input_data.copy() if input_data else {}
+        if data_source:
+            _input["data_source"] = data_source
+        _input.update(data_kwargs)
+        if _input:
+            body["input_data"] = _input
+        result = self._post("/api/v1/jobs", body)
+        if wait and result.get("id"):
+            return self.wait_for_job(result["id"])
+        return result
+
+    def start_inference(self, model_id, dataset_id=None, hardware_tier="cpu-small",
+                        data_source=None, input_data=None, wait=False, **data_kwargs):
+        '''start an inference job
+
+        Args:
+            model_id: model to run inference with
+            dataset_id: optional dataset reference
+            hardware_tier: compute tier (default cpu-small)
+            data_source: data source type (elasticsearch, spark, local_csv)
+            input_data: full data source config dict (overrides data_source)
+            wait: if True, poll until job completes
+            **data_kwargs: additional data source params (index_name, table_name, etc.)
+        '''
+        body = {
+            "model_id": str(model_id),
+            "job_type": "inference",
+            "hardware_tier": hardware_tier,
+        }
+        if dataset_id:
+            body["dataset_id"] = str(dataset_id)
+        _input = input_data.copy() if input_data else {}
+        if data_source:
+            _input["data_source"] = data_source
+        _input.update(data_kwargs)
+        if _input:
+            body["input_data"] = _input
+        result = self._post("/api/v1/jobs", body)
+        if wait and result.get("id"):
+            return self.wait_for_job(result["id"])
+        return result
+
+    def get_job(self, job_id):
+        '''get job details'''
+        return self._get(f"/api/v1/jobs/{job_id}")
+
+    def wait_for_job(self, job_id, poll_interval=2, timeout=3600):
+        '''wait for a job to complete'''
+        import time as _time
+        start = _time.time()
+        while _time.time() - start < timeout:
+            job = self.get_job(job_id)
+            status = job.get("status", "unknown")
+            if status in ("completed", "failed", "error"):
+                return job
+            _time.sleep(poll_interval)
+        raise TimeoutError(f"job {job_id} did not complete within {timeout}s")
+
+    def get_logs(self, job_id):
+        '''get job logs'''
+        return self._get(f"/api/v1/jobs/{job_id}/logs")
+
+    def post_log(self, job_id, message, level="info"):
+        '''post a log entry for a job'''
+        return self._post(f"/api/v1/internal/logs/{job_id}", {
+            "message": message,
+            "level": level,
+        })
+
+    # ─── Visualizations ─────────────────────────────────────────────
+
+    def create_visualization(self, name, backend="matplotlib", description=None,
+                              output_type=None, figure=None):
+        '''create a visualization, optionally rendering a figure object automatically'''
+        if output_type is None:
+            output_type_map = {
+                "matplotlib": "svg", "seaborn": "svg", "plotly": "plotly",
+                "bokeh": "bokeh", "altair": "vega-lite", "plotnine": "svg",
+                "datashader": "png", "networkx": "svg", "geopandas": "svg",
+            }
+            output_type = output_type_map.get(backend, "svg")
+
+        rendered_output = None
+        if figure is not None:
+            from openuba.visualization import VisualizationContext
+            rendered_output = VisualizationContext.render(figure, backend=backend)
+
+        body = {
+            "name": name,
+            "backend": backend,
+            "output_type": output_type,
+            "description": description,
+        }
+        if rendered_output is not None:
+            body["rendered_output"] = rendered_output
+        return self._post("/api/v1/visualizations", body)
+
+    def update_visualization(self, viz_id, rendered_output=None, code=None,
+                              data=None, config=None):
+        '''update a visualization with rendered output or other fields'''
+        body = {}
+        if rendered_output is not None:
+            body["rendered_output"] = rendered_output
+        if code is not None:
+            body["code"] = code
+        if data is not None:
+            body["data"] = data
+        if config is not None:
+            body["config"] = config
+        return self._put(f"/api/v1/visualizations/{viz_id}", body)
+
+    def publish_visualization(self, viz_id):
+        '''publish a visualization'''
+        return self._post(f"/api/v1/visualizations/{viz_id}/publish")
+
+    def list_visualizations(self):
+        '''list all visualizations'''
+        return self._get("/api/v1/visualizations")
+
+    # ─── Dashboards ─────────────────────────────────────────────────
+
+    def create_dashboard(self, name, layout=None, description=None):
+        '''create a dashboard'''
+        return self._post("/api/v1/dashboards", {
+            "name": name,
+            "layout": layout or [],
+            "description": description,
+        })
+
+    def update_dashboard(self, dashboard_id, layout=None, name=None):
+        '''update a dashboard'''
+        body = {}
+        if layout is not None:
+            body["layout"] = layout
+        if name is not None:
+            body["name"] = name
+        return self._put(f"/api/v1/dashboards/{dashboard_id}", body)
+
+    def list_dashboards(self):
+        '''list all dashboards'''
+        return self._get("/api/v1/dashboards")
+
+    # ─── Features ───────────────────────────────────────────────────
+
+    def create_features(self, feature_names, group_name, description=None, entity="default"):
+        '''create a feature group with features'''
+        group = self._post("/api/v1/features/groups", {
+            "name": group_name,
+            "description": description,
+            "entity": entity,
+        })
+        group_id = group.get("id")
+        for fname in feature_names:
+            self._post(f"/api/v1/features/groups/{group_id}/features", {
+                "group_id": group_id,
+                "name": fname,
+            })
+        return group
+
+    def load_features(self, group_name):
+        '''load feature group by name'''
+        return self._get(f"/api/v1/features/groups/name/{group_name}")
+
+    # ─── Experiments ────────────────────────────────────────────────
+
+    def create_experiment(self, name, description=None):
+        '''create an experiment'''
+        return self._post("/api/v1/experiments", {
+            "name": name,
+            "description": description,
+        })
+
+    def add_experiment_run(self, experiment_id, job_id=None, model_id=None,
+                           parameters=None, metrics=None):
+        '''add a run to an experiment'''
+        body = {}
+        if job_id:
+            body["job_id"] = str(job_id)
+        if model_id:
+            body["model_id"] = str(model_id)
+        if parameters:
+            body["parameters"] = parameters
+        if metrics:
+            body["metrics"] = metrics
+        return self._post(f"/api/v1/experiments/{experiment_id}/runs", body)
+
+    def compare_experiment_runs(self, experiment_id):
+        '''compare experiment runs'''
+        return self._get(f"/api/v1/experiments/{experiment_id}/compare")
+
+    # ─── Hyperparameters ────────────────────────────────────────────
+
+    def create_hyperparameters(self, name, parameters, model_id=None, description=None):
+        '''create a hyperparameter set'''
+        body = {"name": name, "parameters": parameters}
+        if model_id:
+            body["model_id"] = str(model_id)
+        if description:
+            body["description"] = description
+        return self._post("/api/v1/hyperparameters", body)
+
+    def load_hyperparameters(self, name_or_id):
+        '''load hyperparameter set'''
+        return self._get(f"/api/v1/hyperparameters/{name_or_id}")
+
+    # ─── Pipelines ──────────────────────────────────────────────────
+
+    def create_pipeline(self, name, steps, description=None):
+        '''create a pipeline'''
+        return self._post("/api/v1/pipelines", {
+            "name": name,
+            "steps": steps,
+            "description": description,
+        })
+
+    def run_pipeline(self, pipeline_id, wait=False):
+        '''run a pipeline'''
+        result = self._post(f"/api/v1/pipelines/{pipeline_id}/run")
+        return result
+
+    # ─── UBA-Specific Query Methods ─────────────────────────────────
+
+    def query_anomalies(self, entity_id=None, model_id=None, min_risk=None,
+                        max_risk=None, limit=1000):
+        '''query anomalies from the platform'''
+        params = {"limit": limit}
+        if entity_id:
+            params["entity_id"] = entity_id
+        if model_id:
+            params["model_id"] = str(model_id)
+        if min_risk is not None:
+            params["min_risk_score"] = min_risk
+        if max_risk is not None:
+            params["max_risk_score"] = max_risk
+        return self._get("/api/v1/anomalies", params=params)
+
+    def get_entity_risk(self, entity_id):
+        '''get entity risk profile'''
+        return self._get(f"/api/v1/entities/{entity_id}")
+
+    def query_cases(self, status=None, severity=None, limit=100):
+        '''query security cases'''
+        params = {"limit": limit}
+        if status:
+            params["status"] = status
+        if severity:
+            params["severity"] = severity
+        return self._get("/api/v1/cases", params=params)
+
+    def list_rules(self, enabled=True):
+        '''list detection rules'''
+        return self._get("/api/v1/rules", params={"enabled": enabled})
+
+    # ─── Data Query Methods ─────────────────────────────────────────
+
+    def query_spark(self, query, spark_master=None):
+        '''execute a Spark SQL query and return results as list of dicts'''
+        try:
+            from pyspark.sql import SparkSession
+        except ImportError:
+            raise ImportError("pyspark is required for query_spark(). Install with: pip install pyspark")
+
+        master = spark_master or os.environ.get("SPARK_MASTER", "local[*]")
+        spark = SparkSession.builder \
+            .appName("openuba-sdk") \
+            .master(master) \
+            .getOrCreate()
+
+        df = spark.sql(query)
+        results = [row.asDict() for row in df.collect()]
+        return results
+
+    def query_elasticsearch(self, index, query_body, es_host=None):
+        '''execute an Elasticsearch query and return hits'''
+        try:
+            from elasticsearch import Elasticsearch
+        except ImportError:
+            raise ImportError("elasticsearch is required for query_elasticsearch(). Install with: pip install elasticsearch")
+
+        host = es_host or os.environ.get("ELASTICSEARCH_HOST", "http://localhost:9200")
+        es = Elasticsearch(host)
+        result = es.search(index=index, body=query_body)
+        hits = result.get("hits", {}).get("hits", [])
+        return [hit.get("_source", {}) for hit in hits]
+
+    # ─── Source Code Generation ────────────────────────────────────
+
+    def _generate_source_code(self, model_name, framework=None, template="basic"):
+        '''generate boilerplate MODEL.py source code for a given framework'''
+        fw = framework or "sklearn"
+        templates = {
+            "sklearn": _SKLEARN_TEMPLATE,
+            "pytorch": _PYTORCH_TEMPLATE,
+            "tensorflow": _TENSORFLOW_TEMPLATE,
+        }
+        code = templates.get(fw, _SKLEARN_TEMPLATE)
+        return code.replace("{{MODEL_NAME}}", model_name)
+
+    # ─── Framework Detection ────────────────────────────────────────
+
+    @staticmethod
+    def _detect_framework(model):
+        '''detect ML framework from model object'''
+        module = type(model).__module__
+        if 'sklearn' in module:
+            return 'sklearn'
+        elif 'torch' in module:
+            return 'pytorch'
+        elif 'tensorflow' in module or 'keras' in module:
+            return 'tensorflow'
+        elif 'networkx' in module:
+            return 'networkx'
+        return 'unknown'
+
+    @staticmethod
+    def _serialize_model(model, framework):
+        '''serialize model to base64 string'''
+        import base64
+        import pickle
+        import io
+        buf = io.BytesIO()
+        if framework == 'sklearn':
+            pickle.dump(model, buf)
+        elif framework == 'pytorch':
+            import torch
+            torch.save(model, buf)
+        elif framework == 'tensorflow':
+            pickle.dump(model, buf)
+        else:
+            pickle.dump(model, buf)
+        return base64.b64encode(buf.getvalue()).decode('utf-8')
+
 
 class _ModelContext:
     """Lightweight model execution context for running models locally."""
@@ -303,6 +756,126 @@ class _SimpleLogger:
 
     def error(self, msg: str):
         print(f"[{self._name}] ERROR: {msg}")
+
+
+_SKLEARN_TEMPLATE = '''"""{{MODEL_NAME}} — sklearn-based UBA model."""
+
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+
+
+class Model:
+    def __init__(self):
+        self.clf = IsolationForest(contamination=0.05, random_state=42)
+
+    def train(self, ctx):
+        self.clf.fit(ctx.df)
+        ctx.logger.info("training complete")
+        return {"status": "trained"}
+
+    def infer(self, ctx):
+        predictions = self.clf.predict(ctx.df)
+        ctx.df["anomaly_score"] = self.clf.score_samples(ctx.df)
+        ctx.df["is_anomaly"] = predictions == -1
+        return ctx.df
+'''
+
+_PYTORCH_TEMPLATE = '''"""{{MODEL_NAME}} — PyTorch-based UBA model."""
+
+import torch
+import torch.nn as nn
+import pandas as pd
+import numpy as np
+
+
+class Autoencoder(nn.Module):
+    def __init__(self, input_dim, hidden_dim=32):
+        super().__init__()
+        self.encoder = nn.Sequential(nn.Linear(input_dim, hidden_dim), nn.ReLU())
+        self.decoder = nn.Sequential(nn.Linear(hidden_dim, input_dim), nn.Sigmoid())
+
+    def forward(self, x):
+        return self.decoder(self.encoder(x))
+
+
+class Model:
+    def __init__(self):
+        self.model = None
+        self.threshold = None
+
+    def train(self, ctx):
+        data = torch.FloatTensor(ctx.df.values)
+        self.model = Autoencoder(data.shape[1])
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        criterion = nn.MSELoss()
+
+        for epoch in range(50):
+            output = self.model(data)
+            loss = criterion(output, data)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            ctx.log_metric("loss", loss.item(), epoch=epoch)
+
+        with torch.no_grad():
+            recon = self.model(data)
+            errors = ((recon - data) ** 2).mean(dim=1).numpy()
+            self.threshold = np.percentile(errors, 95)
+
+        ctx.logger.info(f"training complete, threshold={self.threshold:.4f}")
+        return {"status": "trained", "threshold": self.threshold}
+
+    def infer(self, ctx):
+        data = torch.FloatTensor(ctx.df.values)
+        with torch.no_grad():
+            recon = self.model(data)
+            errors = ((recon - data) ** 2).mean(dim=1).numpy()
+        ctx.df["reconstruction_error"] = errors
+        ctx.df["is_anomaly"] = errors > self.threshold
+        return ctx.df
+'''
+
+_TENSORFLOW_TEMPLATE = '''"""{{MODEL_NAME}} — TensorFlow/Keras-based UBA model."""
+
+import numpy as np
+import pandas as pd
+
+
+class Model:
+    def __init__(self):
+        self.model = None
+        self.threshold = None
+
+    def train(self, ctx):
+        import tensorflow as tf
+
+        data = ctx.df.values.astype("float32")
+        input_dim = data.shape[1]
+
+        self.model = tf.keras.Sequential([
+            tf.keras.layers.Dense(32, activation="relu", input_shape=(input_dim,)),
+            tf.keras.layers.Dense(16, activation="relu"),
+            tf.keras.layers.Dense(32, activation="relu"),
+            tf.keras.layers.Dense(input_dim, activation="sigmoid"),
+        ])
+        self.model.compile(optimizer="adam", loss="mse")
+        self.model.fit(data, data, epochs=50, batch_size=32, verbose=0)
+
+        recon = self.model.predict(data)
+        errors = np.mean((recon - data) ** 2, axis=1)
+        self.threshold = np.percentile(errors, 95)
+
+        ctx.logger.info(f"training complete, threshold={self.threshold:.4f}")
+        return {"status": "trained"}
+
+    def infer(self, ctx):
+        data = ctx.df.values.astype("float32")
+        recon = self.model.predict(data)
+        errors = np.mean((recon - data) ** 2, axis=1)
+        ctx.df["reconstruction_error"] = errors
+        ctx.df["is_anomaly"] = errors > self.threshold
+        return ctx.df
+'''
 
 
 def _hash_file(path: Path) -> str:

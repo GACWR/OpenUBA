@@ -22,6 +22,8 @@ COPY interface/tailwind.config.js ./
 COPY interface/postcss.config.js ./
 COPY interface/tsconfig.json ./
 COPY interface/components.json ./
+# bake graphql URL as relative path so browser proxies through Next.js server
+ENV NEXT_PUBLIC_GRAPHQL_URL=/graphql
 RUN npm run build
 
 # production image

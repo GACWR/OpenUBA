@@ -7,7 +7,7 @@ import os
 import logging
 from typing import Optional
 from datetime import datetime, timedelta
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -54,10 +54,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> dict:
     '''
     get current user from jwt token
+    validates that the user still exists in the database (handles stale tokens
+    after database resets)
+    supports token via Authorization header or query param (for SSE/EventSource)
     '''
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -65,21 +69,57 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    if credentials is None:
+    # try bearer token from header first, fall back to query param
+    # query param is needed for SSE (EventSource can't set headers)
+    token = None
+    if credentials:
+        token = credentials.credentials
+    else:
+        token = request.query_params.get("token")
+
+    if not token:
         raise credentials_exception
 
     try:
-        token = credentials.credentials
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
+
+        # verify user still exists in the database (catches stale tokens
+        # from before a cluster/db reset)
+        user_id = payload.get("user_id")
+        if user_id:
+            from core.db import get_db_context
+            try:
+                with get_db_context() as db:
+                    row = db.execute(
+                        text("SELECT id FROM users WHERE id = CAST(:uid AS uuid)"),
+                        {"uid": user_id},
+                    ).fetchone()
+                    if row is None:
+                        logger.warning(f"stale token: user {user_id} not found in database")
+                        raise credentials_exception
+            except HTTPException:
+                raise
+            except Exception as e:
+                err_msg = str(e).lower()
+                # only allow through if the users table doesn't exist yet (during migrations)
+                # all other DB errors (connection refused, timeouts) must reject the request
+                if "relation" in err_msg and "does not exist" in err_msg:
+                    logger.debug(f"user existence check skipped (table missing): {e}")
+                else:
+                    logger.error(f"user existence check failed: {e}")
+                    raise credentials_exception
+
         return {
             "username": username,
-            "user_id": payload.get("user_id"),
+            "user_id": user_id,
             "role": payload.get("role", "analyst"),
             "payload": payload,
         }
+    except HTTPException:
+        raise
     except JWTError:
         raise credentials_exception
 

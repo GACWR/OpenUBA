@@ -3,6 +3,34 @@ import kubernetes
 import yaml
 import os
 import json
+import logging
+
+_logger = logging.getLogger(__name__)
+
+# import workspace handler to register its kopf handlers
+# fails fast in production (OPERATOR_STRICT=1), warns in dev
+_strict = os.getenv("OPERATOR_STRICT", "1") == "1"
+
+try:
+    import workspace_handler  # noqa: F401
+except ImportError:
+    try:
+        import core.operator.workspace_handler  # noqa: F401
+    except ImportError as e:
+        if _strict:
+            raise RuntimeError(f"workspace handler import failed: {e}") from e
+        _logger.warning(f"workspace handler not available: {e}")
+
+# import pipeline handler to register its kopf handlers
+try:
+    import pipeline_handler  # noqa: F401
+except ImportError:
+    try:
+        import core.operator.pipeline_handler  # noqa: F401
+    except ImportError as e:
+        if _strict:
+            raise RuntimeError(f"pipeline handler import failed: {e}") from e
+        _logger.warning(f"pipeline handler not available: {e}")
 
 # Setup K8s client
 if os.getenv("KUBERNETES_SERVICE_HOST"):

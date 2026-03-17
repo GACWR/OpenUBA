@@ -1,0 +1,81 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ubaworkspaces.openuba.io
+spec:
+  group: openuba.io
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [name, created_by]
+              properties:
+                name:
+                  type: string
+                environment:
+                  type: string
+                  default: "default"
+                hardware_tier:
+                  type: string
+                  enum: [cpu-small, cpu-large, gpu-small, gpu-large]
+                  default: cpu-small
+                ide:
+                  type: string
+                  enum: [jupyterlab]
+                  default: jupyterlab
+                created_by:
+                  type: string
+                timeout_hours:
+                  type: integer
+                  default: 24
+                node_port:
+                  type: integer
+                workspace_token:
+                  type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [Pending, Creating, Running, Stopping, Stopped, Failed, Deleting]
+                pod_name:
+                  type: string
+                service_name:
+                  type: string
+                pvc_name:
+                  type: string
+                access_url:
+                  type: string
+                node_port:
+                  type: integer
+                started_at:
+                  type: string
+                message:
+                  type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: URL
+          type: string
+          jsonPath: .status.access_url
+        - name: Tier
+          type: string
+          jsonPath: .spec.hardware_tier
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: ubaworkspaces
+    singular: ubaworkspace
+    kind: UBAWorkspace
+    shortNames: [ubaws]

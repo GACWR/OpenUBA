@@ -1,0 +1,86 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ubapipelines.openuba.io
+spec:
+  group: openuba.io
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [name, steps]
+              properties:
+                name:
+                  type: string
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum: [training, inference, data_processing]
+                      model_id:
+                        type: string
+                      dataset_id:
+                        type: string
+                      hyperparameters:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      hardware_tier:
+                        type: string
+                        enum: [cpu-small, cpu-large, gpu-small, gpu-large]
+                        default: cpu-small
+                created_by:
+                  type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [Pending, Running, Completed, Failed]
+                current_step:
+                  type: integer
+                step_statuses:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      step_index:
+                        type: integer
+                      status:
+                        type: string
+                      job_id:
+                        type: string
+                      message:
+                        type: string
+                started_at:
+                  type: string
+                completed_at:
+                  type: string
+                message:
+                  type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Status
+          type: string
+          jsonPath: .status.phase
+        - name: Step
+          type: integer
+          jsonPath: .status.current_step
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: ubapipelines
+    singular: ubapipeline
+    kind: UBAPipeline
+    shortNames: [ubapipe]

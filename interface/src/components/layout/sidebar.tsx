@@ -15,6 +15,15 @@ import {
   Users,
   Bell,
   Shield,
+  // New icons for workspace features
+  Monitor,
+  BarChart3,
+  LayoutDashboard,
+  FlaskConical,
+  Layers,
+  GitBranch,
+  Cpu,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth-provider'
@@ -40,9 +49,27 @@ const navigationGroups = [
     ]
   },
   {
-    name: 'Management',
+    name: 'Develop',
     items: [
+      { name: 'Workspaces', href: '/workspaces', icon: Monitor, color: 'violet', page: 'workspaces' },
+      { name: 'Visualizations', href: '/visualizations', icon: BarChart3, color: 'rose', page: 'visualizations' },
+      { name: 'Dashboards', href: '/dashboards', icon: LayoutDashboard, color: 'sky', page: 'dashboards' },
+      { name: 'Experiments', href: '/experiments', icon: FlaskConical, color: 'lime', page: 'experiments' },
+      { name: 'Features', href: '/features', icon: Layers, color: 'fuchsia', page: 'features' },
+      { name: 'Pipelines', href: '/pipelines', icon: GitBranch, color: 'yellow', page: 'pipelines' },
+    ]
+  },
+  {
+    name: 'Monitor',
+    items: [
+      { name: 'Jobs', href: '/jobs', icon: Cpu, color: 'teal', page: 'jobs' },
+      { name: 'Datasets', href: '/datasets', icon: FileSpreadsheet, color: 'slate', page: 'data' },
       { name: 'Schedules', href: '/schedules', icon: Calendar, color: 'green', page: 'schedules' },
+    ]
+  },
+  {
+    name: 'Admin',
+    items: [
       { name: 'Users', href: '/users', icon: Shield, color: 'teal', page: 'users' },
       { name: 'Settings', href: '/settings', icon: Settings, color: 'indigo', page: 'settings' },
     ]

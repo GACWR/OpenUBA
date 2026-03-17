@@ -15,6 +15,8 @@ core/model_library/e2e_test_model_*
 core/model_library/test_model_*
 core/model_library/inference/
 core/model_library/*_backup/
+# SDK-registered models (contain model.pkl from register_model)
+core/model_library/**/model.pkl
 core/storage/saved_models/**/model.pkl
 core/storage/saved_models/**/*.pt
 core/storage/saved_models/**/*.pb
@@ -36,12 +38,17 @@ interface/tsconfig.tsbuildinfo
 .vscode/
 *.swp
 
+# E2E test screenshots (generated on each run)
+core/tests/e2e/screenshots/
+interface/core/
+
 # Runtime
 .openuba/
 
 # Build Artifacts
 *.tar
 watch_*
+sdk/dist/
 
 # Deployment & Data
 metastore/

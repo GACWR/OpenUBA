@@ -30,7 +30,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Run ESLint
-        run: npm run lint
+        run: npx next lint --quiet
 
   build:
     name: Build
@@ -55,7 +55,7 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
-          NEXT_PUBLIC_GRAPHQL_URL: http://localhost:5001/graphql
+          NEXT_PUBLIC_GRAPHQL_URL: /graphql
 
   typecheck:
     name: TypeScript check

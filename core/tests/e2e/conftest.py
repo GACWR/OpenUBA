@@ -8,6 +8,7 @@ import pytest
 import subprocess
 import time
 import logging
+import requests as http_requests
 from typing import Generator, Optional
 from playwright.sync_api import Page, Browser, BrowserContext, sync_playwright
 
@@ -112,6 +113,31 @@ def backend_url(deployed_system: dict) -> str:
     backend url fixture
     '''
     return deployed_system["backend_url"]
+
+
+@pytest.fixture(scope="session")
+def auth_headers(deployed_system: dict) -> dict:
+    '''
+    authenticate as default admin user and return headers with bearer token.
+    used by e2e tests that call authenticated API endpoints.
+    '''
+    backend_url = deployed_system["backend_url"]
+    login_data = {"username": "openuba", "password": "password"}
+    try:
+        resp = http_requests.post(
+            f"{backend_url}/api/v1/auth/login",
+            data=login_data,
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        if resp.status_code == 200:
+            token = resp.json().get("access_token")
+            if token:
+                return {"Authorization": f"Bearer {token}"}
+    except Exception as e:
+        logger.warning(f"auth login failed: {e}")
+
+    # fallback: no auth (for environments where auth is disabled)
+    return {}
 
 
 @pytest.fixture(scope="function", autouse=True)
