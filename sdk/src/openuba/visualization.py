@@ -79,9 +79,13 @@ class VisualizationContext:
         elif 'geopandas' in type_name:
             return 'geopandas'
 
-        # check for seaborn axes (which are matplotlib axes)
-        if hasattr(figure, 'get_figure'):
-            return 'seaborn'
+        # check for matplotlib Axes (returned by both matplotlib and seaborn)
+        try:
+            import matplotlib.axes
+            if isinstance(figure, matplotlib.axes.Axes):
+                return 'seaborn'
+        except ImportError:
+            pass
 
         # check for geopandas GeoDataFrame
         if hasattr(figure, 'geometry') and hasattr(figure, 'plot'):

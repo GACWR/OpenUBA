@@ -4,7 +4,7 @@ tests for visualization context module
 '''
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from openuba.visualization import VisualizationContext
 
 
@@ -104,7 +104,6 @@ class TestVisualizationContext:
 
     def test_render_matplotlib(self):
         '''test rendering a matplotlib figure'''
-        import io
         figure = MagicMock()
         figure.__class__.__module__ = 'matplotlib.figure'
 

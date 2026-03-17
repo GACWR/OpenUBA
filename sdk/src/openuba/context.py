@@ -64,6 +64,7 @@ class ModelContext:
                 requests.patch(
                     f"{self.api_url}/api/v1/jobs/{self.job_id}",
                     json={"progress": int(progress)},
+                    timeout=5,
                 )
             except Exception as e:
                 logger.warning(f"failed to update progress: {e}")
@@ -84,6 +85,7 @@ class ModelContext:
                     requests.post(
                         f"{self.api_url}/api/v1/internal/metrics/{self.job_id}",
                         json=metric,
+                        timeout=5,
                     )
                 except Exception as e:
                     logger.warning(f"failed to post metric: {e}")
@@ -97,6 +99,7 @@ class ModelContext:
                     requests.post(
                         f"{self.api_url}/api/v1/internal/logs/{self.job_id}",
                         json=log_entry,
+                        timeout=5,
                     )
                 except Exception as e:
                     logger.warning(f"failed to post log: {e}")
