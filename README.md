@@ -32,6 +32,7 @@ A robust, flexible, and lightweight open source User & Entity Behavior Analytics
 - [Rule Canvas](#rule-canvas)
 - [Model Library](#model-library)
 - [Model Execution Sandbox](#model-execution-sandbox)
+- [Workspaces & SDK](#workspaces--sdk)
 - [Authentication and Access Control](#authentication-and-access-control)
 - [LLM Assistant](#llm-assistant)
 - [Getting Started](#getting-started)
@@ -157,12 +158,20 @@ OpenUBA v0.0.2 is a Kubernetes-native platform with a modular, cloud-native arch
 - Rule-triggered alerts linked to anomalies and cases
 - Alerts can be enabled or disabled per-rule
 
+### Workspaces & SDK
+- Launch managed JupyterLab environments from the UI with configurable hardware tiers
+- Python SDK (`pip install openuba`) for programmatic model registration, job submission, and visualization
+- Register sklearn, PyTorch, TensorFlow, and NetworkX models directly from notebooks
+- Submit training and inference jobs with real-time SSE progress streaming
+- Multi-backend visualization rendering (matplotlib, seaborn, plotly, bokeh, altair, plotnine, datashader, networkx, geopandas)
+- Workspace lifecycle managed by the K8s operator via UBAWorkspace CRDs
+
 ### Dashboard
 - Modern Next.js + shadcn/ui interface with dark mode default
 - Real-time updates via GraphQL subscriptions
 - Global time range selector, command palette, and keyboard navigation
 - Modular components with responsive layout
-- Pages: Home, Models, Anomalies, Cases, Data, Entities, Rules, Alerts, Schedules, Settings, Users
+- Pages: Home, Data, Models, Rules, Alerts, Entities, Anomalies, Cases, Workspaces, Visualizations, Dashboards, Experiments, Features, Pipelines, Jobs, Datasets
 
 ### Security and Access Control
 - JWT authentication with role-based access control (admin, manager, triage, analyst)
@@ -268,6 +277,40 @@ Every model execution runs inside an isolated Docker container or Kubernetes Job
 No long-lived per-model services. Every training and inference run is an ephemeral Job that spins up, executes, writes results, and exits. The only long-lived pieces are the operator, the backend, and the database.
 
 The custom OpenUBA operator watches for `UBATraining` and `UBAInference` custom resources and creates Kubernetes Jobs with the appropriate framework-specific runner image. Input and output data flows through shared Persistent Volumes.
+
+---
+
+## Workspaces & SDK
+
+OpenUBA includes managed JupyterLab workspaces that run as Kubernetes pods, giving analysts and data scientists a full notebook environment connected directly to the platform. From a workspace, you can register models, submit training and inference jobs, query results, and render visualizations -- all through the Python SDK.
+
+```bash
+pip install openuba
+```
+
+```python
+import openuba
+
+# register a trained sklearn model from a notebook
+openuba.register_model("ssh-anomaly-detector", model, runtime="sklearn")
+
+# submit a training job and poll until complete
+openuba.start_training(model_id, dataset_id=dataset_id)
+
+# run inference -- returns anomaly scores
+openuba.start_inference(model_id, dataset_id=dataset_id)
+
+# render a plotly visualization and push to the platform
+openuba.render(fig, viz_id=viz_id)
+```
+
+The SDK supports 9 visualization backends out of the box. Any matplotlib, seaborn, plotly, bokeh, altair, plotnine, datashader, networkx, or geopandas figure can be rendered and pushed to the platform for display in the Visualizations page.
+
+Workspaces are managed by the K8s operator via `UBAWorkspace` custom resources. Hardware tiers (`cpu-small`, `cpu-large`, `gpu-small`, `gpu-large`) control resource allocation. Each workspace gets its own persistent volume, pre-installed SDK, and API token for authenticated access to the platform.
+
+<div align="center">
+  <img src="images/screenshot3.png" width="100%" alt="OpenUBA Workspace and Visualization" />
+</div>
 
 ---
 
