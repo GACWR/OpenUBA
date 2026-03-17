@@ -100,17 +100,25 @@ def create_dataset(name, description=None, source_type="upload", format="csv"):
 
 
 def start_training(model_id, dataset_id=None, hardware_tier="cpu-small",
-                   hyperparameters=None, wait=False):
+                   hyperparameters=None, data_source=None, input_data=None,
+                   wait=False, **data_kwargs):
     """Start a training job."""
     return _get_client().start_training(model_id, dataset_id=dataset_id,
                                         hardware_tier=hardware_tier,
-                                        hyperparameters=hyperparameters, wait=wait)
+                                        hyperparameters=hyperparameters,
+                                        data_source=data_source,
+                                        input_data=input_data,
+                                        wait=wait, **data_kwargs)
 
 
-def start_inference(model_id, dataset_id=None, hardware_tier="cpu-small", wait=False):
+def start_inference(model_id, dataset_id=None, hardware_tier="cpu-small",
+                    data_source=None, input_data=None, wait=False, **data_kwargs):
     """Start an inference job."""
     return _get_client().start_inference(model_id, dataset_id=dataset_id,
-                                         hardware_tier=hardware_tier, wait=wait)
+                                         hardware_tier=hardware_tier,
+                                         data_source=data_source,
+                                         input_data=input_data,
+                                         wait=wait, **data_kwargs)
 
 
 def get_job(job_id):

@@ -29,7 +29,7 @@ class Model(Base):
     framework = Column(Text)
     runtime = Column(String(50), nullable=False, default="python-base")
     interface_version = Column(Integer, default=1)
-    default_version_id = Column(UUID(as_uuid=True), ForeignKey("model_versions.id", ondelete="SET NULL"))
+    default_version_id = Column(UUID(as_uuid=True), ForeignKey("model_versions.id", ondelete="SET NULL", name="fk_models_default_version_id", use_alter=True))
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -500,6 +500,7 @@ class Job(Base):
     name = Column(String(255))
     model_id = Column(UUID(as_uuid=True), ForeignKey("models.id", ondelete="SET NULL"))
     dataset_id = Column(UUID(as_uuid=True), ForeignKey("datasets.id", ondelete="SET NULL"))
+    model_run_id = Column(UUID(as_uuid=True))
     job_type = Column(String(50), nullable=False)
     status = Column(String(50), default="pending")
     cr_name = Column(String(255))
@@ -522,6 +523,7 @@ class Job(Base):
     # relationships
     model = relationship("Model", foreign_keys=[model_id])
     dataset = relationship("Dataset", foreign_keys=[dataset_id])
+    # model_run_id is a soft reference (no FK) so sync is done at read-time in the repository
     creator = relationship("User", foreign_keys=[created_by])
     job_logs = relationship("JobLog", back_populates="job", cascade="all, delete-orphan", order_by="JobLog.created_at")
     training_metrics = relationship("TrainingMetric", back_populates="job", cascade="all, delete-orphan", order_by="TrainingMetric.created_at")

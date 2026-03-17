@@ -13,6 +13,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from core.db import get_db
 from core.repositories.job_repository import JobRepository
+from core.repositories.model_repository import ModelRepository
 from core.api_schemas.jobs import (
     JobCreate, JobUpdate, JobResponse,
     JobLogCreate, JobLogResponse,
@@ -31,8 +32,67 @@ async def create_job(
     current_user: dict = Depends(require_permission("jobs", "write"))
 ):
     '''
-    create a new job
+    create a new job and dispatch execution via the model orchestrator
     '''
+    # verify model exists and is in a runnable state
+    model_repo = ModelRepository(db)
+    model = model_repo.get_by_id(job_data.model_id)
+    if not model:
+        raise HTTPException(status_code=404, detail="model not found")
+    if model.status not in ("installed", "active"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"model must be installed or active to run, current status: {model.status}"
+        )
+
+    # map job_type to orchestrator run_type
+    run_type_map = {"training": "train", "inference": "infer", "evaluation": "infer"}
+    run_type = run_type_map.get(job_data.job_type, "infer")
+
+    # build input_data for the orchestrator
+    input_data = job_data.input_data.copy() if job_data.input_data else {}
+
+    # if dataset_id provided but no explicit data_source, resolve from dataset record
+    if job_data.dataset_id and "data_source" not in input_data:
+        from core.db.models import Dataset
+        dataset = db.query(Dataset).filter(Dataset.id == job_data.dataset_id).first()
+        if dataset and dataset.source_type:
+            if dataset.source_type == "elasticsearch" or dataset.source_type == "es":
+                input_data["data_source"] = "elasticsearch"
+                if dataset.file_path:
+                    input_data["index_name"] = dataset.file_path
+            elif dataset.source_type == "spark":
+                input_data["data_source"] = "spark"
+                if dataset.file_path:
+                    input_data["table_name"] = dataset.file_path
+            elif dataset.source_type in ("local_csv", "upload"):
+                if dataset.file_path:
+                    input_data["data_source"] = "local_csv"
+                    input_data["file_path"] = str(dataset.file_path)
+
+    # merge hyperparameters as params
+    if job_data.hyperparameters:
+        input_data["params"] = job_data.hyperparameters
+
+    # dispatch execution via orchestrator
+    model_run_id = None
+    try:
+        from core.services.model_orchestrator import ModelOrchestrator
+        orchestrator = ModelOrchestrator()
+        model_run_id = orchestrator.execute_model_background(
+            job_data.model_id,
+            input_data=input_data if input_data else None,
+            run_type=run_type,
+        )
+        logger.info(f"job execution dispatched: model_run_id={model_run_id}")
+    except Exception as e:
+        logger.error(f"failed to dispatch job execution: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"failed to dispatch execution: {e}"
+        )
+
+    # create job record linked to the model run
     repo = JobRepository(db)
     job = repo.create(
         name=job_data.name,
@@ -41,9 +101,13 @@ async def create_job(
         created_by=UUID(current_user["user_id"]),
         dataset_id=job_data.dataset_id,
         hardware_tier=job_data.hardware_tier,
-        hyperparameters=job_data.hyperparameters
+        hyperparameters=job_data.hyperparameters,
+        model_run_id=model_run_id,
     )
-    logger.info(f"job created: {job.id}")
+    # set status to running since orchestrator dispatched
+    repo.update(job.id, status="running")
+
+    logger.info(f"job created: {job.id} -> model_run {model_run_id}")
     return job
 
 
@@ -59,6 +123,7 @@ async def list_jobs(
 ):
     '''
     list jobs with optional filters
+    status is synced from linked ModelRun at read time
     '''
     repo = JobRepository(db)
     jobs = repo.list_all(
@@ -78,12 +143,13 @@ async def get_job(
     current_user: dict = Depends(require_permission("jobs", "read"))
 ):
     '''
-    get job by id
+    get job by id, syncs status from linked ModelRun
     '''
     repo = JobRepository(db)
     job = repo.get_by_id(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="job not found")
+    job = repo.sync_from_model_run(job)
     return job
 
 
@@ -119,7 +185,7 @@ async def delete_job(
         raise HTTPException(status_code=404, detail="job not found")
 
 
-@router.get("/jobs/{job_id}/logs", response_model=List[JobLogResponse])
+@router.get("/jobs/{job_id}/logs")
 async def get_job_logs(
     job_id: UUID,
     limit: int = Query(1000, ge=1, le=10000),
@@ -128,13 +194,25 @@ async def get_job_logs(
 ):
     '''
     get logs for a job
+    falls back to model_logs from linked ModelRun if no job_logs exist
     '''
     repo = JobRepository(db)
     job = repo.get_by_id(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="job not found")
     logs = repo.get_logs(job_id, limit=limit)
-    return logs
+    # normalize to a consistent format (ModelLog has model_run_id, JobLog has job_id)
+    result = []
+    for log in logs:
+        result.append({
+            "id": str(log.id),
+            "job_id": str(job_id),
+            "level": log.level,
+            "message": log.message,
+            "logger_name": getattr(log, "logger_name", None),
+            "created_at": str(log.created_at),
+        })
+    return result
 
 
 @router.get("/jobs/{job_id}/metrics", response_model=List[TrainingMetricResponse])
@@ -188,6 +266,7 @@ async def stream_job_metrics(
     '''
     SSE endpoint for streaming job metrics in real-time
     the frontend connects to this and receives metric updates as they happen
+    also syncs status from linked ModelRun
     '''
     import json
 
@@ -221,9 +300,10 @@ async def stream_job_metrics(
                     }
                 last_count = current_count
 
-            # send job status updates only when something changed
+            # sync status from model run and send updates
             job_now = repo.get_by_id(job_id)
             if job_now:
+                job_now = repo.sync_from_model_run(job_now)
                 if job_now.status != last_status or current_count > last_count:
                     yield {
                         "event": "status",

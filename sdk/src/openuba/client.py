@@ -361,8 +361,20 @@ class OpenUBAClient:
     # ─── Jobs ───────────────────────────────────────────────────────
 
     def start_training(self, model_id, dataset_id=None, hardware_tier="cpu-small",
-                       hyperparameters=None, wait=False):
-        '''start a training job'''
+                       hyperparameters=None, data_source=None, input_data=None,
+                       wait=False, **data_kwargs):
+        '''start a training job
+
+        Args:
+            model_id: model to train
+            dataset_id: optional dataset reference
+            hardware_tier: compute tier (default cpu-small)
+            hyperparameters: dict of hyperparameters
+            data_source: data source type (elasticsearch, spark, local_csv)
+            input_data: full data source config dict (overrides data_source)
+            wait: if True, poll until job completes
+            **data_kwargs: additional data source params (index_name, table_name, etc.)
+        '''
         body = {
             "model_id": str(model_id),
             "job_type": "training",
@@ -372,14 +384,31 @@ class OpenUBAClient:
             body["dataset_id"] = str(dataset_id)
         if hyperparameters:
             body["hyperparameters"] = hyperparameters
+        # build input_data for the model runner
+        _input = input_data.copy() if input_data else {}
+        if data_source:
+            _input["data_source"] = data_source
+        _input.update(data_kwargs)
+        if _input:
+            body["input_data"] = _input
         result = self._post("/api/v1/jobs", body)
         if wait and result.get("id"):
             return self.wait_for_job(result["id"])
         return result
 
     def start_inference(self, model_id, dataset_id=None, hardware_tier="cpu-small",
-                        wait=False):
-        '''start an inference job'''
+                        data_source=None, input_data=None, wait=False, **data_kwargs):
+        '''start an inference job
+
+        Args:
+            model_id: model to run inference with
+            dataset_id: optional dataset reference
+            hardware_tier: compute tier (default cpu-small)
+            data_source: data source type (elasticsearch, spark, local_csv)
+            input_data: full data source config dict (overrides data_source)
+            wait: if True, poll until job completes
+            **data_kwargs: additional data source params (index_name, table_name, etc.)
+        '''
         body = {
             "model_id": str(model_id),
             "job_type": "inference",
@@ -387,6 +416,12 @@ class OpenUBAClient:
         }
         if dataset_id:
             body["dataset_id"] = str(dataset_id)
+        _input = input_data.copy() if input_data else {}
+        if data_source:
+            _input["data_source"] = data_source
+        _input.update(data_kwargs)
+        if _input:
+            body["input_data"] = _input
         result = self._post("/api/v1/jobs", body)
         if wait and result.get("id"):
             return self.wait_for_job(result["id"])

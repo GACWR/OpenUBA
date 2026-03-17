@@ -1,0 +1,34 @@
+# prevent SDK-registered models from being baked into Docker images
+core/model_library/**/model.pkl
+
+# python
+__pycache__/
+*.py[cod]
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# frontend (built separately)
+interface/node_modules/
+interface/.next/
+interface/out/
+
+# IDE / OS
+.git/
+.idea/
+.vscode/
+.DS_Store
+
+# local dev
+.openuba/
+metastore/
+spark-warehouse/
+*.log
+*.tar
+
+# sdk build artifacts
+sdk/dist/
+sdk/build/
+
+# test screenshots
+core/tests/e2e/screenshots/

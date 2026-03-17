@@ -15,6 +15,7 @@ class JobCreate(BaseModel):
     job_type: str = Field(..., min_length=1, max_length=50)
     hardware_tier: str = Field(default="cpu-small", max_length=50)
     hyperparameters: Optional[Dict[str, Any]] = None
+    input_data: Optional[Dict[str, Any]] = None
 
     model_config = {'protected_namespaces': ()}
 
@@ -31,6 +32,7 @@ class JobResponse(BaseModel):
     name: Optional[str]
     model_id: Optional[UUID]
     dataset_id: Optional[UUID]
+    model_run_id: Optional[UUID] = None
     job_type: str
     status: str
     cr_name: Optional[str]

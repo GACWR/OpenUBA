@@ -20,10 +20,9 @@ RUN pip install --no-cache-dir \
     networkx \
     geopandas
 
-# install ML frameworks
-RUN pip install --no-cache-dir \
-    scikit-learn \
-    torch --index-url https://download.pytorch.org/whl/cpu
+# install ML frameworks (sklearn pinned to match model-runner for pickle compatibility)
+RUN pip install --no-cache-dir scikit-learn==1.5.2
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
 # install data connectors
 RUN pip install --no-cache-dir \

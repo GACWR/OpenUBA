@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '@/lib/auth-provider'
 import { useRouter } from 'next/navigation'
 import {
@@ -15,6 +15,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-500/20 text-yellow-400',
   running: 'bg-blue-500/20 text-blue-400',
+  succeeded: 'bg-green-500/20 text-green-400',
   completed: 'bg-green-500/20 text-green-400',
   failed: 'bg-red-500/20 text-red-400',
   stopped: 'bg-gray-500/20 text-gray-400',
@@ -26,19 +27,37 @@ const typeColors: Record<string, string> = {
   evaluation: 'bg-orange-500/20 text-orange-400',
 }
 
+const levelColors: Record<string, string> = {
+  error: 'text-red-400',
+  warning: 'text-yellow-400',
+  info: 'text-blue-400',
+}
+
 interface Job {
   id: string
-  type: string
+  name?: string
+  job_type: string
   model?: string
   model_id?: string
+  model_run_id?: string
   status: string
   progress?: number
   hardware_tier?: string
   metrics?: Record<string, number>
-  error?: string
+  error_message?: string
   created_at: string
-  updated_at?: string
+  started_at?: string
   completed_at?: string
+  updated_at?: string
+}
+
+interface LogEntry {
+  id: string
+  job_id: string
+  level: string
+  message: string
+  logger_name?: string
+  created_at: string
 }
 
 interface SSEMetric {
@@ -49,27 +68,86 @@ interface SSEMetric {
   created_at: string
 }
 
+function formatDuration(startedAt?: string, completedAt?: string): string {
+  if (!startedAt) return '-'
+  const start = new Date(startedAt).getTime()
+  const end = completedAt ? new Date(completedAt).getTime() : Date.now()
+  const ms = end - start
+  if (ms < 1000) return `${ms}ms`
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
+  return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`
+}
+
 export default function JobDetailPage({ params }: { params: { id: string } }) {
   const { authFetch } = useAuth()
   const router = useRouter()
   const [job, setJob] = useState<Job | null>(null)
-  const [logs, setLogs] = useState<string>('')
+  const [logs, setLogs] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [logsLoading, setLogsLoading] = useState(true)
   const [sseConnected, setSSEConnected] = useState(false)
   const [sseMetrics, setSSEMetrics] = useState<SSEMetric[]>([])
   const sseRef = useRef<EventSource | null>(null)
 
+  const loadJob = useCallback(async () => {
+    try {
+      const res = await authFetch(`${API_URL}/api/v1/jobs/${params.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setJob(data)
+      }
+    } catch (err) {
+      console.error('failed to load job:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [authFetch, params.id])
+
+  const loadLogs = useCallback(async () => {
+    setLogsLoading(true)
+    try {
+      const res = await authFetch(`${API_URL}/api/v1/jobs/${params.id}/logs`)
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setLogs(data)
+        } else {
+          setLogs([])
+        }
+      }
+    } catch (err) {
+      console.error('failed to load job logs:', err)
+    } finally {
+      setLogsLoading(false)
+    }
+  }, [authFetch, params.id])
+
+  // initial load
   useEffect(() => {
     loadJob()
     loadLogs()
-  }, [params.id])
+  }, [loadJob, loadLogs])
+
+  // auto-poll job status and logs while running
+  useEffect(() => {
+    if (!job) return
+    const isActive = ['pending', 'running'].includes(job.status)
+    if (!isActive) return
+
+    const jobInterval = setInterval(loadJob, 5000)
+    const logsInterval = setInterval(loadLogs, 3000)
+    return () => {
+      clearInterval(jobInterval)
+      clearInterval(logsInterval)
+    }
+  }, [job?.status, loadJob, loadLogs])
 
   // SSE streaming for live metrics
   useEffect(() => {
     if (!job || !['pending', 'running'].includes(job.status)) return
 
-    const url = `${API_URL}/api/v1/jobs/${params.id}/metrics/stream`
+    const token = typeof window !== 'undefined' ? localStorage.getItem('openuba_token') : null
+    const url = `${API_URL}/api/v1/jobs/${params.id}/metrics/stream${token ? `?token=${encodeURIComponent(token)}` : ''}`
     const source = new EventSource(url)
     sseRef.current = source
 
@@ -87,6 +165,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
       source.close()
       setSSEConnected(false)
       loadJob()
+      loadLogs()
     })
 
     source.onopen = () => setSSEConnected(true)
@@ -96,36 +175,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     }
 
     return () => { source.close() }
-  }, [job?.status, params.id])
-
-  const loadJob = async () => {
-    try {
-      const res = await authFetch(`${API_URL}/api/v1/jobs/${params.id}`)
-      if (res.ok) {
-        const data = await res.json()
-        setJob(data)
-      }
-    } catch (err) {
-      console.error('failed to load job:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadLogs = async () => {
-    setLogsLoading(true)
-    try {
-      const res = await authFetch(`${API_URL}/api/v1/jobs/${params.id}/logs`)
-      if (res.ok) {
-        const data = await res.json()
-        setLogs(typeof data === 'string' ? data : data.logs || data.content || JSON.stringify(data, null, 2))
-      }
-    } catch (err) {
-      console.error('failed to load job logs:', err)
-    } finally {
-      setLogsLoading(false)
-    }
-  }
+  }, [job?.status, params.id, loadJob, loadLogs])
 
   if (loading) {
     return <div className="text-center text-muted-foreground py-12">Loading...</div>
@@ -145,7 +195,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     )
   }
 
-  const progress = job.progress ?? (job.status === 'completed' ? 100 : 0)
+  const progress = job.progress ?? (job.status === 'succeeded' || job.status === 'completed' ? 100 : 0)
 
   return (
     <div className="space-y-6">
@@ -160,8 +210,8 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
         <div className="flex items-center gap-3">
           <Cpu className="h-6 w-6 text-teal-400" />
           <h1 className="text-2xl font-bold tracking-tight">Job {job.id.slice(0, 8)}</h1>
-          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeColors[job.type] || 'bg-gray-500/20 text-gray-400'}`}>
-            {job.type}
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeColors[job.job_type] || 'bg-gray-500/20 text-gray-400'}`}>
+            {job.job_type}
           </span>
           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[job.status] || 'bg-gray-500/20 text-gray-400'}`}>
             {job.status}
@@ -178,7 +228,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
         <div className="h-2 w-full rounded-full bg-muted/40 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              job.status === 'completed' ? 'bg-green-500' :
+              job.status === 'succeeded' || job.status === 'completed' ? 'bg-green-500' :
               job.status === 'failed' ? 'bg-red-500' :
               'bg-blue-500'
             }`}
@@ -192,8 +242,8 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Job Details</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <DetailField label="Type">
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeColors[job.type] || 'bg-gray-500/20 text-gray-400'}`}>
-              {job.type}
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeColors[job.job_type] || 'bg-gray-500/20 text-gray-400'}`}>
+              {job.job_type}
             </span>
           </DetailField>
           <DetailField label="Status">
@@ -207,9 +257,17 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           <DetailField label="Hardware Tier">
             <span className="font-mono text-sm">{job.hardware_tier || '-'}</span>
           </DetailField>
+          <DetailField label="Duration">
+            <span className="font-mono text-sm tabular-nums">{formatDuration(job.started_at, job.completed_at)}</span>
+          </DetailField>
           <DetailField label="Created">
             <span className="text-sm">{new Date(job.created_at).toLocaleString()}</span>
           </DetailField>
+          {job.started_at && (
+            <DetailField label="Started">
+              <span className="text-sm">{new Date(job.started_at).toLocaleString()}</span>
+            </DetailField>
+          )}
           {job.completed_at && (
             <DetailField label="Completed">
               <span className="text-sm">{new Date(job.completed_at).toLocaleString()}</span>
@@ -217,11 +275,11 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
           )}
         </div>
 
-        {job.error && (
+        {job.error_message && (
           <div className="mt-4">
             <span className="text-[10px] font-medium uppercase tracking-wide text-red-400">Error</span>
             <pre className="text-xs mt-1 p-3 rounded bg-red-500/10 border border-red-500/20 overflow-x-auto whitespace-pre-wrap text-red-300">
-              {job.error}
+              {job.error_message}
             </pre>
           </div>
         )}
@@ -267,7 +325,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
         </div>
       )}
 
-      {/* Logs */}
+      {/* Structured Logs */}
       <div className="rounded-lg border border-white/10 bg-card p-6 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Logs</h2>
@@ -278,14 +336,34 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
             <RefreshCw className={`h-3 w-3 ${logsLoading ? 'animate-spin' : ''}`} /> Refresh
           </button>
         </div>
-        {logsLoading ? (
+        {logsLoading && logs.length === 0 ? (
           <div className="text-center text-muted-foreground py-6 text-sm">Loading logs...</div>
-        ) : logs ? (
-          <pre className="text-xs p-4 rounded bg-black/40 border border-white/5 overflow-x-auto max-h-96 whitespace-pre-wrap font-mono text-muted-foreground">
-            {logs}
-          </pre>
+        ) : logs.length > 0 ? (
+          <div className="max-h-96 overflow-y-auto rounded bg-black/40 border border-white/5 p-4 space-y-1">
+            {logs.map((log) => (
+              <div key={log.id} className="flex gap-2 py-0.5">
+                <span className="text-[10px] text-muted-foreground font-mono shrink-0 pt-0.5 w-[60px]">
+                  {new Date(log.created_at).toLocaleTimeString()}
+                </span>
+                <span className={`text-[10px] font-mono uppercase shrink-0 pt-0.5 w-[50px] ${levelColors[log.level] || 'text-blue-400'}`}>
+                  {log.level}
+                </span>
+                <span className="text-xs font-mono whitespace-pre-wrap break-all text-muted-foreground">
+                  {log.message}
+                </span>
+              </div>
+            ))}
+            {['pending', 'running'].includes(job.status) && (
+              <div className="flex items-center gap-2 py-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="text-xs text-muted-foreground">listening for new logs...</span>
+              </div>
+            )}
+          </div>
         ) : (
-          <div className="text-center text-muted-foreground py-6 text-sm">No logs available</div>
+          <div className="text-center text-muted-foreground py-6 text-sm">
+            {['pending', 'running'].includes(job.status) ? 'Waiting for logs...' : 'No logs available'}
+          </div>
         )}
       </div>
     </div>

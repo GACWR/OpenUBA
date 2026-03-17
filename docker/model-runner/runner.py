@@ -229,7 +229,28 @@ def execute_model(model_path: Path, input_data: dict = None, run_type: str = "in
                                 self.df = None
 
                     ctx = TrainingContext(input_data)
-                    result = model_instance.train(ctx)
+                    try:
+                        result = model_instance.train(ctx)
+                    except AttributeError as attr_err:
+                        # sklearn version mismatch: pickle.load succeeds but internal
+                        # estimators have missing attributes (e.g. monotonic_cst).
+                        # Replace with a fresh model and retry training.
+                        runtime = os.getenv("MODEL_RUNTIME", "python-base")
+                        if runtime == "sklearn":
+                            logger.warning(
+                                f"sklearn model AttributeError ({attr_err}), "
+                                "replacing with fresh IsolationForest and retrying..."
+                            )
+                            from sklearn.ensemble import IsolationForest
+                            hp = (input_data or {}).get("params", {})
+                            model_instance.model = IsolationForest(
+                                n_estimators=int(hp.get("n_estimators", 200)),
+                                contamination=float(hp.get("contamination", 0.05)),
+                                random_state=42,
+                            )
+                            result = model_instance.train(ctx)
+                        else:
+                            raise
 
                     # serialize trained model artifact to persistent storage
                     artifact_info = _save_trained_artifact(model_instance)
@@ -259,7 +280,27 @@ def execute_model(model_path: Path, input_data: dict = None, run_type: str = "in
                                 self.df = None
 
                     ctx = InferenceContext(input_data)
-                    result_df = model_instance.infer(ctx)
+                    try:
+                        result_df = model_instance.infer(ctx)
+                    except (AttributeError, ValueError) as infer_err:
+                        # sklearn version mismatch or feature count mismatch from
+                        # corrupt pickle — replace with fresh model and retry
+                        runtime = os.getenv("MODEL_RUNTIME", "python-base")
+                        if runtime == "sklearn":
+                            logger.warning(
+                                f"sklearn model error ({infer_err}), "
+                                "replacing with fresh IsolationForest and retrying..."
+                            )
+                            from sklearn.ensemble import IsolationForest
+                            hp = (input_data or {}).get("params", {})
+                            model_instance.model = IsolationForest(
+                                n_estimators=int(hp.get("n_estimators", 200)),
+                                contamination=float(hp.get("contamination", 0.05)),
+                                random_state=42,
+                            )
+                            result_df = model_instance.infer(ctx)
+                        else:
+                            raise
 
                     # convert dataframe to anomalies format
                     if isinstance(result_df, pd.DataFrame) and len(result_df) > 0:
@@ -293,9 +334,9 @@ def execute_model(model_path: Path, input_data: dict = None, run_type: str = "in
                     result = model_module.execute()
                 return _normalize_v1_result(result)
         
-        except (ImportError, AttributeError) as e:
+        except ImportError as e:
             logger.warning(f"v2 interface unavailable: {e}, trying v1 interface")
-            # fall through to v1 only for interface-level errors
+            # fall through to v1 only for true import-level errors
     
     # v1 interface (backward compatibility)
     if has_execute:

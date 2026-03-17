@@ -2,6 +2,6 @@ ARG BASE_IMAGE=openuba-model-runner:base
 FROM ${BASE_IMAGE}
 
 USER root
-RUN pip install --no-cache-dir scikit-learn joblib
+RUN pip install --no-cache-dir scikit-learn==1.5.2 joblib
 
 USER modelrunner
