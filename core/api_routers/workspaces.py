@@ -5,7 +5,7 @@ workspaces api router
 
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -243,7 +243,7 @@ async def stop_workspace(
     workspace = repo.update(
         workspace_id,
         status="stopped",
-        stopped_at=datetime.utcnow()
+        stopped_at=datetime.now(timezone.utc)
     )
     logger.info(f"workspace stopped: {workspace_id}")
     return workspace

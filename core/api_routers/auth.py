@@ -5,7 +5,7 @@ authentication router — login, user management, roles, permissions
 
 import logging
 from typing import Optional, List, Dict
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
@@ -111,7 +111,7 @@ async def login(
 
     # update last login
     try:
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(timezone.utc)
         db.commit()
     except Exception:
         db.rollback()

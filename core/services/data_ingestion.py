@@ -7,7 +7,7 @@ import os
 import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from core.integrations.spark import SparkConnector
 from core.integrations.elasticsearch import ElasticsearchConnector
@@ -143,7 +143,7 @@ class DataIngestionService:
             # add timestamp if not present
             for doc in documents:
                 if "timestamp" not in doc and "@timestamp" not in doc:
-                    doc["@timestamp"] = datetime.utcnow().isoformat()
+                    doc["@timestamp"] = datetime.now(timezone.utc).isoformat()
             
             # create index if needed (overwrite)
             self.es_connector.delete_index(index_name)
