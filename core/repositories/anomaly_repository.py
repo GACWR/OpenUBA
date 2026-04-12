@@ -6,7 +6,7 @@ anomaly repository for database operations
 import logging
 from typing import List, Optional, Dict, Any
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from core.db.models import Anomaly
@@ -44,7 +44,7 @@ class AnomalyRepository:
             risk_score=Decimal(str(risk_score)) if risk_score is not None else None,
             anomaly_type=anomaly_type,
             details=details,
-            timestamp=timestamp or datetime.utcnow()
+            timestamp=timestamp or datetime.now(timezone.utc)
         )
         self.db.add(anomaly)
         self.db.commit()
@@ -103,7 +103,7 @@ class AnomalyRepository:
             return None
         from datetime import datetime
         anomaly.acknowledged = True
-        anomaly.acknowledged_at = datetime.utcnow()
+        anomaly.acknowledged_at = datetime.now(timezone.utc)
         anomaly.acknowledged_by = acknowledged_by
         self.db.commit()
         self.db.refresh(anomaly)

@@ -9,7 +9,7 @@ import kubernetes
 import os
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def create_pipeline(spec, name, meta, status, patch, **kwargs):
     patch.status['phase'] = 'Running'
     patch.status['current_step'] = 0
     patch.status['step_statuses'] = step_statuses
-    patch.status['started_at'] = datetime.utcnow().isoformat()
+    patch.status['started_at'] = datetime.now(timezone.utc).isoformat()
 
     _execute_step(name, meta['namespace'], steps[0], 0, created_by)
 
@@ -188,7 +188,7 @@ def pipeline_job_event(event, body, labels, **kwargs):
                     "status": {
                         "phase": "Completed",
                         "step_statuses": step_statuses,
-                        "completed_at": datetime.utcnow().isoformat(),
+                        "completed_at": datetime.now(timezone.utc).isoformat(),
                     }
                 }
                 api.patch_namespaced_custom_object_status(

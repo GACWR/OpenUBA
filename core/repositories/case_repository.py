@@ -6,7 +6,7 @@ case repository for database operations
 import logging
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from core.db.models import Case, CaseAnomaly
@@ -95,7 +95,7 @@ class CaseRepository:
         if status:
             case.status = status
             if status in ["resolved", "closed"]:
-                case.resolved_at = datetime.utcnow()
+                case.resolved_at = datetime.now(timezone.utc)
         if severity:
             case.severity = severity
         if analyst_notes is not None:
