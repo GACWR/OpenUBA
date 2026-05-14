@@ -1,0 +1,5 @@
+name: ssh-login-anomaly-detector
+version: 1.0.0
+runtime: sklearn
+description: Isolation Forest trained on SSH login behavior features. Detects brute-force attempts, credential stuffing, and unusual access patterns.
+registered_by: sdk

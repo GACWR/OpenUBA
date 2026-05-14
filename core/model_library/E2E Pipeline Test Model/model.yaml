@@ -1,0 +1,5 @@
+name: E2E Pipeline Test Model
+version: 1.0.0
+runtime: sklearn
+description: "E2E test: sklearn IsolationForest for pipeline verification"
+registered_by: sdk

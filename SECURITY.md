@@ -15,7 +15,7 @@ The OpenUBA team takes security seriously. If you discover a security vulnerabil
 
 ### How to Report
 
-1. Email: jovonnipharr@gmail.com
+1. Email: info@gacwr.org
 2. Subject: `[SECURITY] OpenUBA Vulnerability Report`
 3. Include:
    - Description of the vulnerability
