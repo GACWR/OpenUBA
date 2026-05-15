@@ -6,6 +6,7 @@ OpenUBA aims to be the standard open-source User & Entity Behavior Analytics (UE
 
 ## Current State (v0.0.2)
 
+### Core Engine
 - FastAPI backend with REST API
 - Containerized model execution sandbox (Docker-based)
 - Dual data pipelines: Elasticsearch + Apache Spark
@@ -15,40 +16,60 @@ OpenUBA aims to be the standard open-source User & Entity Behavior Analytics (UE
 - Local model library with install/train/infer lifecycle
 - Kind cluster development environment
 
+### Kubernetes-Native Infrastructure
+- Custom Resource Definitions: UBATraining, UBAInference, UBAPipeline, UBAWorkspace
+- Kopf-based operator (core/operator/) with workspace and pipeline handlers
+- Operator deployment, RBAC, and service accounts (k8s/)
+- Full K8s manifests: backend, frontend, Elasticsearch, Spark, Postgres, ingress
+
+### Model Registry & Ecosystem
+- Multi-backend model registry with adapter pattern
+- Adapters: local filesystem, GitHub, HuggingFace, Kubeflow, OpenUBA Hub
+- Model integrity verification via SHA-256 hashing (core/hash.py)
+- Registry service with tests
+
+### Scheduling & Async
+- Model scheduler service (core/services/model_scheduler.py)
+- Schedules API router (core/api_routers/schedules.py)
+- Async inference support in pipeline
+
+### GraphQL
+- PostGraphile deployment (k8s/postgraphile-deployment.yaml)
+- GraphQL endpoint with tests (core/tests/test_graphql.py)
+
+### Workspaces
+- Jupyter notebook workspaces with SDK integration
+- Workspace CRD + operator handler
+- E2E tests for workspace notebooks and JupyterLab SDK
+
 ## Phase 1: Production Hardening (Q3 2026)
 
-- [ ] Kubernetes-native CRDs: `UBAModel`, `UBATraining`, `UBAInference`
-- [ ] OpenUBA Operator for K8s Job orchestration
-- [ ] `KubernetesJobExecutionDriver` (production replacement for `LocalDockerExecutionDriver`)
-- [ ] Model integrity verification (hash checks on install + pre-execution)
-- [ ] Async inference API (POST returns job_id, GET to poll)
-- [ ] Scheduled inference via CronJobs
-- [ ] Full PostgreSQL data model migration (replace JSON file state)
+- [ ] Helm chart packaging and publishing to Artifact Hub
+- [ ] Horizontal pod autoscaling for Spark workers
+- [ ] Multi-tenant isolation (namespace-per-tenant)
+- [ ] Production-grade observability (OpenTelemetry self-instrumentation, Prometheus /metrics endpoint)
+- [ ] Full PostgreSQL migration for all state (eliminate remaining JSON file state)
 
-## Phase 2: Ecosystem & Integration (Q4 2026)
+## Phase 2: CNCF Integration (Q4 2026)
 
-- [ ] Multi-backend model registry (GitHub adapter, HuggingFace adapter, OpenUBA Hub)
 - [ ] Falco integration: consume runtime security events as behavioral data source
-- [ ] OpenTelemetry integration: ingest OTLP traces and logs
-- [ ] Prometheus metrics exporter (`/metrics` endpoint)
+- [ ] OpenTelemetry integration: ingest OTLP traces and logs as behavioral signals
 - [ ] OPA/Kyverno policy trigger: output risk scores as policy inputs
-- [ ] GraphQL API via PostGraphile
-- [ ] Helm chart publishing to Artifact Hub
-
-## Phase 3: Scale & Community (Q1 2027)
-
-- [ ] Horizontal scaling for Spark workers
-- [ ] Multi-tenant support
-- [ ] Visual Rule Builder for non-ML detection logic
-- [ ] LLM-powered investigation assistant
-- [ ] Community model marketplace (OpenUBA Hub)
+- [ ] SPIFFE/SPIRE workload identity for inter-service authentication
 - [ ] CNCF Landscape listing
 - [ ] TAG Security presentation and feedback incorporation
+
+## Phase 3: Community & Scale (Q1 2027)
+
+- [ ] Visual Rule Builder for non-ML detection logic
+- [ ] LLM-powered investigation assistant
+- [ ] Community model marketplace (OpenUBA Hub public instance)
+- [ ] Performance benchmarks published
+- [ ] Contributor diversity (multiple organizations)
 
 ## Phase 4: Incubation Readiness (Q2 2027)
 
 - [ ] Production deployments documented in ADOPTERS.md
 - [ ] Independent security audit
-- [ ] Contributor diversity (multiple organizations)
-- [ ] Comprehensive observability (OpenTelemetry self-instrumentation)
-- [ ] Performance benchmarks published
+- [ ] Comprehensive documentation review
+- [ ] Governance maturity demonstration
