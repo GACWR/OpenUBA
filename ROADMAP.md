@@ -42,6 +42,20 @@ OpenUBA aims to be the standard open-source User & Entity Behavior Analytics (UE
 - Workspace CRD + operator handler
 - E2E tests for workspace notebooks and JupyterLab SDK
 
+### Visual Rule Builder (Rule Canvas)
+- ReactFlow-based drag-and-drop rule editor (664 LOC, flow-canvas.tsx)
+- Custom node types for detection logic (290 LOC, flow-nodes.tsx)
+- Palette with draggable condition/action nodes
+- Rule save, test, severity configuration
+- Integrated with GraphQL model queries
+
+### LLM Investigation Assistant
+- Omnipresent chat window accessible from any page (559 LOC, chat-window.tsx)
+- Multi-provider support: Ollama, OpenAI, Claude, Gemini
+- SSE streaming with thinking block parsing
+- Context-aware: injects current page/entity context into prompts
+- Backend chat API with SSE streaming (app/api/chat/route.ts)
+
 ## Phase 1: Production Hardening (Q3 2026)
 
 - [ ] Helm chart packaging and publishing to Artifact Hub
@@ -61,8 +75,6 @@ OpenUBA aims to be the standard open-source User & Entity Behavior Analytics (UE
 
 ## Phase 3: Community & Scale (Q1 2027)
 
-- [ ] Visual Rule Builder for non-ML detection logic
-- [ ] LLM-powered investigation assistant
 - [ ] Community model marketplace (OpenUBA Hub public instance)
 - [ ] Performance benchmarks published
 - [ ] Contributor diversity (multiple organizations)
