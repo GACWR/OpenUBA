@@ -8,7 +8,7 @@ version = "0.0.2"
 description = "OpenUBA CLI & SDK — install, run, and manage user behavior analytics models"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "GPL-3.0-only"
+license = "Apache-2.0"
 license-files = ["LICEN[CS]E*"]
 authors = [
     { name = "jovonni", email = "jovonnipharr@gmail.com" },
@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
