@@ -82,7 +82,7 @@ class LibraryAPI():
         logging.info("Library API")
 
         # optional: point to a custom repo
-        self.server: str = "http://openuba.gacwr.org"
+        self.server: str = "https://openuba.org"
 
 
     def install(self, model_name: str):
