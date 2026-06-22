@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://pypi.org/project/openuba/"><img src="https://img.shields.io/pypi/v/openuba" alt="PyPI"></a>
   <a href="https://pypi.org/project/openuba/"><img src="https://img.shields.io/pypi/pyversions/openuba" alt="Python"></a>
-  <a href="https://github.com/GACWR/OpenUBA/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License"></a>
+  <a href="https://github.com/GACWR/OpenUBA/blob/HEAD/LICENSE"><img src="https://img.shields.io/badge/license-Apache_2.0-blue" alt="License"></a>
 </p>
 
 # OpenUBA
@@ -73,4 +73,4 @@ openuba.configure(api_url="http://your-server:8000", token="your-token")
 
 ## License
 
-GNU General Public License v3.0 — see [LICENSE](https://github.com/GACWR/OpenUBA/blob/master/LICENSE).
+Apache License 2.0 — see [LICENSE](https://github.com/GACWR/OpenUBA/blob/HEAD/LICENSE).
