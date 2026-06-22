@@ -1,0 +1,5 @@
+name: test-sklearn-compat
+version: 1.0.0
+runtime: sklearn
+description: Test for sklearn version compat
+registered_by: sdk

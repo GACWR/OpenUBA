@@ -1,0 +1,5 @@
+name: SSH Anomaly Detector E2E Test
+version: 1.0.0
+runtime: sklearn
+description: E2E test model simulating notebook 9
+registered_by: sdk
