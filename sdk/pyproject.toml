@@ -9,7 +9,7 @@ description = "OpenUBA CLI & SDK — install, run, and manage user behavior anal
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
-license-files = ["LICEN[CS]E*"]
+license-files = ["LICEN[CS]E*", "NOTICE*"]
 authors = [
     { name = "jovonni", email = "jovonnipharr@gmail.com" },
 ]
