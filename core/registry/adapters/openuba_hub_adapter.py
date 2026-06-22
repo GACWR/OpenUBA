@@ -21,7 +21,7 @@ class OpenUBAHubAdapter(BaseRegistryAdapter):
     def __init__(self, hub_url: Optional[str] = None):
         self.hub_url = hub_url or os.getenv(
             "OPENUBA_HUB_URL",
-            "http://openuba.gacwr.org"
+            "https://openuba.org"
         )
 
     def list_models(self, query: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -83,4 +83,3 @@ class OpenUBAHubAdapter(BaseRegistryAdapter):
 
     def get_source_type(self) -> str:
         return "openuba_hub"
-

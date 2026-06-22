@@ -71,7 +71,7 @@ Honest list of items the Current State touches but does not fully deliver, with 
 - `/metrics` endpoint at `core/api_routers/data.py:201` emits domain JSON (Spark/ES counters), not Prometheus exposition format. No `opentelemetry-*` or `prometheus_client` in `requirements.txt`; no OpenTelemetry SDK init in `core/`.
 - `core/hash.py` `HashLargeFile` references undefined `filename` / `hashlib` and is not wired into any install-time integrity flow. Scaffold only.
 - `core/tests/test_graphql.py` is a 24-LOC smoke test (GETs `/`, checks for an `endpoints` key) — does not exercise a GraphQL query, schema introspection, or PostGraphile.
-- `core/registry/adapters/openuba_hub_adapter.py` defaults to the legacy `http://openuba.gacwr.org` (dead host); live Hub is at `https://openuba.org`. Two-line fix pending. The live Hub also serves a static Next.js catalog rather than the `/ml/` JSON contract the adapter expects — Hub-side JSON endpoint needs publishing.
+- `core/registry/adapters/openuba_hub_adapter.py` now defaults to `https://openuba.org`, but the live Hub serves a static Next.js catalog rather than the `/ml/` JSON contract the adapter expects — Hub-side JSON endpoint needs publishing.
 - `k8s/postgres.yaml` is a vanilla single-replica Deployment + PVC, not CloudNativePG. HA Postgres moved to Phase 1.
 
 ## Phase 1: Production Hardening (Q3 2026)
