@@ -22,7 +22,7 @@ alembic==1.12.1
 docker==6.1.3
 kubernetes==28.1.0
 # http requests
-requests==2.31.0
+requests==2.33.0
 # yaml
 pyyaml==6.0.1
 # authentication
