@@ -394,6 +394,58 @@ def _load_data_for_model(input_data: dict):
             else:
                 raise ValueError(f"elasticsearch query failed ({resp.status_code}): {resp.text[:500]}")
 
+        elif data_source == "splunk":
+            search = input_data.get("splunk_search") or input_data.get("search")
+            if not search:
+                raise ValueError("splunk_search required for splunk data source")
+            host = (input_data.get("host") or os.getenv("SPLUNK_HOST", "")).rstrip("/")
+            if not host:
+                raise ValueError("SPLUNK_HOST not configured")
+            token = os.getenv("SPLUNK_TOKEN", "")
+            username = os.getenv("SPLUNK_USERNAME", "")
+            password = os.getenv("SPLUNK_PASSWORD", "")
+            verify_ssl = os.getenv("SPLUNK_VERIFY_SSL", "true").lower() in ("1", "true", "yes", "on")
+
+            q = search.strip()
+            if not (q.startswith("|") or q.lower().startswith("search ")):
+                q = "search " + q
+            headers = {"Content-Type": "application/x-www-form-urlencoded"}
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+            auth = (username, password) if (not token and username) else None
+            payload = {
+                "search": q,
+                "output_mode": "json",
+                "earliest_time": input_data.get("earliest_time", "-24h"),
+                "latest_time": input_data.get("latest_time", "now"),
+                "count": input_data.get("size", 10000),
+            }
+            url = f"{host}/services/search/jobs/export"
+            logger.info(f"querying splunk: {url}")
+            resp = requests.post(url, data=payload, headers=headers, auth=auth,
+                                 verify=verify_ssl, timeout=120)
+            if resp.status_code != 200:
+                raise ValueError(f"splunk search failed ({resp.status_code}): {resp.text[:500]}")
+            rows = []
+            for line in resp.text.splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                r = obj.get("result")
+                if isinstance(r, dict):
+                    rows.append(r)
+            df = pd.DataFrame(rows)
+            for col in df.columns:
+                converted = pd.to_numeric(df[col], errors="coerce")
+                if converted.notna().mean() > 0.5:
+                    df[col] = converted
+            logger.info(f"loaded {len(df)} rows from splunk search")
+            return df
+
         elif data_source == "spark":
             table_name = input_data.get("table_name")
             if not table_name:

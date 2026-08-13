@@ -174,6 +174,9 @@ class ModelOrchestrator:
                             logger.warning(traceback.format_exc())
                     db.commit()
 
+                # optional: forward anomalies to Splunk (HEC) if configured
+                self._forward_anomalies_to_splunk(result["anomalies"])
+
             # evaluate flow rules after inference
             # NO hardcoded pre-filtering — the rule engine's flow graph conditions
             # decide what triggers. we just identify anomalies from this run.
@@ -327,6 +330,36 @@ class ModelOrchestrator:
                 log.error_traceback = traceback.format_exc()
                 db.commit()
             logger.error(f"model execution failed: {e}")
+
+    def _forward_anomalies_to_splunk(self, anomalies) -> None:
+        '''
+        best-effort: forward this run's anomalies to Splunk via HEC when the
+        'splunk' integration is enabled and has forward_anomalies set. Reuses
+        the shared SplunkConnector; never raises into the execution path.
+        '''
+        if not anomalies:
+            return
+        try:
+            from sqlalchemy import text
+            with get_db_context() as db:
+                row = db.execute(text(
+                    "SELECT config, enabled FROM integration_settings "
+                    "WHERE integration_type = 'splunk'"
+                )).fetchone()
+            if not row or not row[1]:
+                return
+            config = dict(row[0]) if row[0] else {}
+            if not config.get("forward_anomalies"):
+                return
+
+            from core.integrations.splunk import SplunkConnector
+            connector = SplunkConnector.from_config(config)
+            sent = connector.send_anomalies(
+                list(anomalies), index=config.get("anomaly_index")
+            )
+            logger.info(f"forwarded {sent}/{len(anomalies)} anomalies to splunk")
+        except Exception as e:
+            logger.warning(f"splunk anomaly forwarding failed: {e}")
 
     def execute_model_background(
         self,

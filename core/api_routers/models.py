@@ -26,6 +26,8 @@ class TrainRequest(BaseModel):
     file_path: Optional[str] = None
     file_name: Optional[str] = None
     source_group_slug: Optional[str] = None
+    splunk_search: Optional[str] = None
+    splunk_index: Optional[str] = None
     query: Optional[Dict[str, Any]] = None
     version_id: Optional[str] = None
 
@@ -37,6 +39,8 @@ class ExecuteRequest(BaseModel):
     file_path: Optional[str] = None
     file_name: Optional[str] = None
     source_group_slug: Optional[str] = None
+    splunk_search: Optional[str] = None
+    splunk_index: Optional[str] = None
     query: Optional[Dict[str, Any]] = None
     version_id: Optional[str] = None
     artifact_id: Optional[str] = None
@@ -311,6 +315,8 @@ async def train_model(
     file_path: Optional[str] = Query(None, description="local file path"),
     file_name: Optional[str] = Query(None, description="local file name"),
     source_group_slug: Optional[str] = Query(None, description="source group slug"),
+    splunk_search: Optional[str] = Query(None, description="splunk search query (SPL)"),
+    splunk_index: Optional[str] = Query(None, description="splunk index to search"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("models", "write"))
 ):
@@ -328,6 +334,8 @@ async def train_model(
     _file_path = (body.file_path if body else None) or file_path
     _file_name = (body.file_name if body else None) or file_name
     _source_group_slug = (body.source_group_slug if body else None) or source_group_slug
+    _splunk_search = (body.splunk_search if body else None) or splunk_search
+    _splunk_index = (body.splunk_index if body else None) or splunk_index
     _query = (body.query if body else None) or {"match_all": {}}
     _version_id = None
     if body and body.version_id:
@@ -362,6 +370,10 @@ async def train_model(
             input_data["file_name"] = _file_name
         elif _data_source == "source_group" and _source_group_slug:
             input_data["source_group_slug"] = _source_group_slug
+        elif _data_source == "splunk" and _splunk_search:
+            input_data["splunk_search"] = _splunk_search
+            if _splunk_index:
+                input_data["splunk_index"] = _splunk_index
 
     try:
         orchestrator = ModelOrchestrator()
@@ -410,6 +422,8 @@ async def execute_model(
     file_path: Optional[str] = Query(None, description="local file path"),
     file_name: Optional[str] = Query(None, description="local file name"),
     source_group_slug: Optional[str] = Query(None, description="source group slug"),
+    splunk_search: Optional[str] = Query(None, description="splunk search query (SPL)"),
+    splunk_index: Optional[str] = Query(None, description="splunk index to search"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_permission("models", "write"))
 ):
@@ -427,6 +441,8 @@ async def execute_model(
     _file_path = (body.file_path if body else None) or file_path
     _file_name = (body.file_name if body else None) or file_name
     _source_group_slug = (body.source_group_slug if body else None) or source_group_slug
+    _splunk_search = (body.splunk_search if body else None) or splunk_search
+    _splunk_index = (body.splunk_index if body else None) or splunk_index
     _query = (body.query if body else None) or {"match_all": {}}
     _version_id = None
     if body and body.version_id:
@@ -466,6 +482,10 @@ async def execute_model(
             input_data["file_name"] = _file_name
         elif _data_source == "source_group" and _source_group_slug:
             input_data["source_group_slug"] = _source_group_slug
+        elif _data_source == "splunk" and _splunk_search:
+            input_data["splunk_search"] = _splunk_search
+            if _splunk_index:
+                input_data["splunk_index"] = _splunk_index
 
     try:
         orchestrator = ModelOrchestrator()
