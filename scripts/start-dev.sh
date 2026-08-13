@@ -39,14 +39,23 @@ make deploy-k8s
 
 echo "✅ Infrastructure Ready!"
 
-# Step 2: Kill stale port-forwards, then start fresh ones in a new Terminal window.
-# Using `open -a Terminal.app` which reliably opens a new window on macOS
-# without requiring accessibility permissions (unlike osascript keystroke approach).
+# Step 2: Kill stale port-forwards, then start fresh ones.
+# On macOS we open a dedicated Terminal window (via `open -a Terminal.app`,
+# which needs no accessibility permissions). On Linux — including headless
+# servers where there is no `open`/Terminal.app — we run the port-forwards in
+# the background and tee their output to port-forward.log instead.
 echo "🔌 Starting port-forwards..."
 pkill -f "kubectl.*port-forward.*openuba" 2>/dev/null || true
 sleep 1
 
-open -a Terminal.app "$PROJECT_ROOT/scripts/port-forward.sh"
+if [ "$(uname)" = "Darwin" ]; then
+    open -a Terminal.app "$PROJECT_ROOT/scripts/port-forward.sh"
+    PF_LOCATION="separate Terminal window"
+else
+    nohup bash "$PROJECT_ROOT/scripts/port-forward.sh" \
+        > "$PROJECT_ROOT/port-forward.log" 2>&1 &
+    PF_LOCATION="background (logs: port-forward.log)"
+fi
 
 # Wait for port-forwards to establish
 echo "   Waiting for services..."
@@ -71,5 +80,5 @@ echo "  Backend:       http://localhost:8000"
 echo "  PostGraphile:  http://localhost:5001/graphql"
 echo "  Spark UI:      http://localhost:8080"
 echo ""
-echo "  Port-forwards running in separate Terminal window."
-echo "  Close that window or run: pkill -f 'kubectl.*port-forward.*openuba'"
+echo "  Port-forwards running in ${PF_LOCATION}."
+echo "  Stop them with: pkill -f 'kubectl.*port-forward.*openuba'"
