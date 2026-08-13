@@ -354,8 +354,10 @@ The assistant is context-aware -- it sees the current route, selected entities, 
 | kubectl | 1.25+ |
 | Kind | 0.20+ |
 | Node.js | 18+ |
-| Python | 3.10+ |
+| Python | 3.9+ |
 | Make | any |
+
+> **Running on a Linux server?** See the [Ubuntu Server install guide](docs/INSTALL_UBUNTU.md) for a one-command installer (`scripts/install-ubuntu.sh`), SSH-tunnel remote access, and reboot-safe port-forwards.
 
 ### Full Reset (Recommended)
 
@@ -365,7 +367,7 @@ The single command to build everything from scratch -- creates a Kind cluster, b
 make reset-dev
 ```
 
-This is the go-to command for development. It tears down any existing cluster and stands up a clean environment end-to-end. Once complete, three terminal tabs will open automatically:
+This is the go-to command for development. It tears down any existing cluster and stands up a clean environment end-to-end. On macOS, once complete, three terminal tabs will open automatically (on Linux the port-forwards run in the background, logged to `port-forward.log`):
 
 | Tab | Purpose | URL |
 | --- | --- | --- |
