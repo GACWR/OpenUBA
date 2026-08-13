@@ -638,6 +638,33 @@ class OpenUBAClient:
         '''list detection rules'''
         return self._get("/api/v1/rules", params={"enabled": enabled})
 
+    def send_alert(self, message, severity="medium", entity_id=None,
+                   entity_type="user", rule_id=None, context=None,
+                   notify=False, recipients=None):
+        '''
+        raise an alert from a model.
+
+        Set notify=True to also deliver realtime notifications (SMTP email +
+        in-app). `recipients` (list or comma-separated string) overrides the
+        SMTP default recipient list configured in Settings. Requires the
+        configured token to have rules:write permission.
+        '''
+        payload = {
+            "message": message,
+            "severity": severity,
+            "entity_type": entity_type,
+            "notify": notify,
+        }
+        if entity_id is not None:
+            payload["entity_id"] = entity_id
+        if rule_id is not None:
+            payload["rule_id"] = rule_id
+        if context is not None:
+            payload["context"] = context
+        if recipients is not None:
+            payload["recipients"] = recipients
+        return self._post("/api/v1/alerts", payload)
+
     # ─── Data Query Methods ─────────────────────────────────────────
 
     def query_spark(self, query, spark_master=None):

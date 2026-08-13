@@ -15,6 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from core.db.models import Alert, Rule
+from core.services.notification_service import AlertNotifier
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +213,7 @@ class RuleEngine:
                     action=alert_data.get("action", "fire_alert"),
                     anomaly_data=anomaly_data,
                     db=db,
+                    recipients=alert_data.get("recipients"),
                 )
                 if created:
                     fired += 1
@@ -373,10 +375,14 @@ class RuleEngine:
         action: str,
         anomaly_data: Dict[str, Any],
         db: Session,
+        recipients: Any = None,
     ) -> bool:
         """
         Create an alert record. Returns True if alert was created,
         False if deduplicated (same rule+entity+severity within 1 hour).
+
+        When the alert node's action is a notify action, realtime
+        notifications (SMTP email + in-app) are dispatched best-effort.
         """
         entity_id = str(anomaly_data.get("entity_id", "unknown"))
         entity_type = anomaly_data.get("entity_type", "user")
@@ -433,4 +439,22 @@ class RuleEngine:
             f"alert fired: rule={rule.name} entity={entity_id} "
             f"severity={severity} action={action}"
         )
+
+        # realtime notification delivery (best-effort, never blocks alerting)
+        if AlertNotifier.should_notify(action):
+            try:
+                AlertNotifier().notify(
+                    db,
+                    rule_name=rule.name,
+                    severity=severity,
+                    message=message,
+                    entity_id=entity_id,
+                    entity_type=entity_type,
+                    alert_id=str(alert.id),
+                    recipients=recipients,
+                    context=context,
+                )
+            except Exception as e:
+                logger.error(f"alert notification dispatch failed: {e}")
+
         return True
