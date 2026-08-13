@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Trash2, Edit2, X, Loader2, CheckCircle2, XCircle, Zap, Brain, Bot, Sparkles, Database, Cpu, Save, Shield } from "lucide-react"
+import { Plus, Trash2, Edit2, X, Loader2, CheckCircle2, XCircle, Zap, Brain, Bot, Sparkles, Database, Cpu, Save, Shield, Search } from "lucide-react"
 import { useAuth } from '@/lib/auth-provider'
 import { useUIStore } from '@/lib/state/ui-store'
 
@@ -22,7 +22,7 @@ function getAuthHeaders(): Record<string, string> {
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-type IntegrationType = 'ollama' | 'openai' | 'claude' | 'gemini' | 'elasticsearch' | 'spark'
+type IntegrationType = 'ollama' | 'openai' | 'claude' | 'gemini' | 'elasticsearch' | 'spark' | 'splunk'
 
 interface IntegrationDef {
     type: IntegrationType
@@ -140,6 +140,25 @@ const INTEGRATION_DEFS: IntegrationDef[] = [
                     { value: 'cluster', label: 'Cluster' },
                 ],
             },
+        ],
+    },
+    {
+        type: 'splunk',
+        name: 'Splunk',
+        description: 'Search Splunk as a data source and forward anomalies via HEC',
+        category: 'data',
+        icon: <Search className="h-5 w-5" />,
+        color: 'text-lime-500 bg-lime-500/10',
+        fields: [
+            { key: 'host', label: 'Management URL', type: 'text', placeholder: 'https://splunk:8089' },
+            { key: 'token', label: 'REST Token', type: 'password', placeholder: 'Bearer token (or use username/password)' },
+            { key: 'username', label: 'Username', type: 'text', placeholder: 'admin' },
+            { key: 'password', label: 'Password', type: 'password', placeholder: '' },
+            { key: 'hec_url', label: 'HEC URL', type: 'text', placeholder: 'https://splunk:8088' },
+            { key: 'hec_token', label: 'HEC Token', type: 'password', placeholder: '' },
+            { key: 'anomaly_index', label: 'Anomaly Index (output)', type: 'text', placeholder: 'openuba' },
+            { key: 'forward_anomalies', label: 'Forward anomalies to Splunk', type: 'toggle' },
+            { key: 'verify_ssl', label: 'Verify SSL', type: 'toggle' },
         ],
     },
 ]
