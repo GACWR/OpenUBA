@@ -3,6 +3,7 @@ Copyright 2019-Present The OpenUBA Platform Authors
 fastapi application entry point
 '''
 
+import asyncio
 import logging
 import os
 from fastapi import FastAPI
@@ -155,8 +156,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             if attempt < max_retries - 1:
                 logger.warning(f"database initialization failed (attempt {attempt + 1}/{max_retries}): {e}, retrying in {retry_delay}s...")
-                import time
-                time.sleep(retry_delay)
+                await asyncio.sleep(retry_delay)
             else:
                 logger.error(f"database initialization failed after {max_retries} attempts: {e}")
     
