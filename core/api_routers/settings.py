@@ -17,7 +17,7 @@ from core.auth import require_permission
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-VALID_INTEGRATION_TYPES = {"ollama", "openai", "claude", "gemini", "elasticsearch", "spark"}
+VALID_INTEGRATION_TYPES = {"ollama", "openai", "claude", "gemini", "elasticsearch", "spark", "smtp"}
 
 
 class IntegrationConfigUpdate(BaseModel):
@@ -183,6 +183,8 @@ async def test_integration(
             return await _test_elasticsearch(config)
         elif integration_type == "spark":
             return await _test_spark(config)
+        elif integration_type == "smtp":
+            return await _test_smtp(config)
     except Exception as e:
         logger.error(f"test {integration_type} failed: {e}")
         return {"status": "error", "message": str(e)}
@@ -283,10 +285,42 @@ async def _test_spark(config: dict) -> dict:
         return {"status": "error", "message": f"HTTP {resp.status_code}"}
 
 
+async def _test_smtp(config: dict) -> dict:
+    '''verify SMTP connectivity + auth by opening a session and issuing NOOP'''
+    import smtplib
+    import ssl
+
+    host = config.get("host", "")
+    if not host:
+        return {"status": "error", "message": "host not configured"}
+    port = int(config.get("port") or 587)
+    use_ssl = bool(config.get("use_ssl", False))
+    use_tls = bool(config.get("use_tls", True))
+    username = config.get("username", "")
+    password = config.get("password", "")
+
+    try:
+        if use_ssl:
+            server: smtplib.SMTP = smtplib.SMTP_SSL(
+                host, port, timeout=10, context=ssl.create_default_context()
+            )
+        else:
+            server = smtplib.SMTP(host, port, timeout=10)
+            if use_tls:
+                server.starttls(context=ssl.create_default_context())
+        with server:
+            if username and password:
+                server.login(username, password)
+            server.noop()
+        return {"status": "connected"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 def _mask_sensitive_fields(config: dict) -> dict:
-    '''mask api keys in config for safe display'''
+    '''mask api keys / passwords in config for safe display'''
     masked = dict(config)
-    for key in ("api_key",):
+    for key in ("api_key", "password"):
         if key in masked and masked[key]:
             val = str(masked[key])
             if len(val) > 8:

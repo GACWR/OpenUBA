@@ -289,6 +289,15 @@ def list_rules(enabled=True):
     return _get_client().list_rules(enabled=enabled)
 
 
+def send_alert(message, severity="medium", entity_id=None, entity_type="user",
+               rule_id=None, context=None, notify=False, recipients=None):
+    """Raise an alert from a model (set notify=True to also send email + in-app)."""
+    return _get_client().send_alert(
+        message, severity=severity, entity_id=entity_id, entity_type=entity_type,
+        rule_id=rule_id, context=context, notify=notify, recipients=recipients,
+    )
+
+
 __all__ = [
     # Core classes
     "OpenUBAClient",
@@ -349,4 +358,5 @@ __all__ = [
     "get_entity_risk",
     "query_cases",
     "list_rules",
+    "send_alert",
 ]

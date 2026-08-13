@@ -250,8 +250,17 @@ export const AlertOutputNode = memo((props: NodeProps) => {
           <SelectItem value="open_case">open case</SelectItem>
           <SelectItem value="fire_alert_and_open_case">fire alert + open case</SelectItem>
           <SelectItem value="notify">send notification</SelectItem>
+          <SelectItem value="fire_alert_and_notify">fire alert + notify</SelectItem>
         </SelectContent>
       </Select>
+      {['notify', 'fire_alert_and_notify', 'notify_and_open_case'].includes(d.action) && (
+        <Input
+          className="h-7 text-xs"
+          placeholder="email recipients (comma-separated, optional)"
+          value={d.recipients ?? ''}
+          onChange={(e) => d.onChange?.(id, 'recipients', e.target.value)}
+        />
+      )}
     </NodeShell>
   )
 })
