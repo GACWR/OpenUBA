@@ -623,6 +623,24 @@ class OpenUBAClient:
             params["max_risk_score"] = max_risk
         return self._get("/api/v1/anomalies", params=params)
 
+    def evaluate_run(self, run_id, malicious_entities, all_entities=None,
+                     threshold=50.0, scenarios=None):
+        '''
+        score a model run's detections against a ground-truth set of malicious
+        entities. Returns precision / recall / f1 / false_positive_rate (+ per-
+        scenario recall) — the shape you can store in an experiment run's metrics.
+        '''
+        payload = {
+            "run_id": str(run_id),
+            "malicious_entities": list(malicious_entities),
+            "threshold": threshold,
+        }
+        if all_entities is not None:
+            payload["all_entities"] = list(all_entities)
+        if scenarios is not None:
+            payload["scenarios"] = {k: list(v) for k, v in scenarios.items()}
+        return self._post("/api/v1/evaluate/run", payload)
+
     def get_entity_risk(self, entity_id):
         '''get entity risk profile'''
         return self._get(f"/api/v1/entities/{entity_id}")
