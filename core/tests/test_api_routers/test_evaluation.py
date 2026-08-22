@@ -6,7 +6,19 @@ end-to-end through the API: seed a run + anomalies, POST /evaluate/run, and
 check the detection metrics come back correct.
 '''
 
+import pytest
 from fastapi.testclient import TestClient
+
+from core.fastapi_app import app
+from core.auth import get_current_user
+
+
+@pytest.fixture
+def admin_auth():
+    '''inject an admin caller so require_permission passes (admin bypasses checks)'''
+    app.dependency_overrides[get_current_user] = lambda: {"role": "admin", "username": "tester"}
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
 
 
 def _seed_run_with_anomalies(db_session):
@@ -15,7 +27,8 @@ def _seed_run_with_anomalies(db_session):
     from core.db.models import ModelVersion, ModelRun
 
     model = ModelRepository(db_session).create(
-        name="eval_api_model", version="1.0.0", source_type="local_fs")
+        name="eval_api_model", version="1.0.0", source_type="local_fs",
+        slug="eval-api-model")
     ver = ModelVersion(model_id=model.id, version="1.0.0", status="registered")
     db_session.add(ver)
     db_session.flush()
@@ -29,7 +42,7 @@ def _seed_run_with_anomalies(db_session):
     return run
 
 
-def test_evaluate_run_scores_detections(test_client: TestClient, db_session):
+def test_evaluate_run_scores_detections(test_client: TestClient, db_session, admin_auth):
     run = _seed_run_with_anomalies(db_session)
 
     resp = test_client.post("/api/v1/evaluate/run", json={
@@ -50,7 +63,7 @@ def test_evaluate_run_scores_detections(test_client: TestClient, db_session):
         assert k in m
 
 
-def test_evaluate_run_empty_run_is_safe(test_client: TestClient, db_session):
+def test_evaluate_run_empty_run_is_safe(test_client: TestClient, db_session, admin_auth):
     run = _seed_run_with_anomalies(db_session)
     # a run_id with no matching anomalies → zero metrics, no error
     from uuid import uuid4

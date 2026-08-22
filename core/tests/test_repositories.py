@@ -75,7 +75,8 @@ def test_anomaly_repository_run_id_filter(db_session):
     from core.db.models import ModelVersion, ModelRun
 
     model_repo = ModelRepository(db_session)
-    model = model_repo.create(name="run_filter_model", version="1.0.0", source_type="local_fs")
+    model = model_repo.create(name="run_filter_model", version="1.0.0",
+                              source_type="local_fs", slug="run-filter-model")
 
     version = ModelVersion(model_id=model.id, version="1.0.0", status="registered")
     db_session.add(version)
