@@ -2,6 +2,11 @@ FROM jupyter/scipy-notebook:python-3.11
 
 USER root
 
+# ensure modern build tooling so sdist-only deps (e.g. pyspark) can generate
+# metadata in an isolated build env (fixes "setuptools is not available in the
+# build environment" during the data-connector install below)
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+
 # install openuba SDK
 COPY sdk/src/openuba /tmp/openuba-sdk/src/openuba
 COPY sdk/pyproject.toml /tmp/openuba-sdk/

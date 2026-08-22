@@ -62,6 +62,7 @@ class AnomalyRepository:
         self,
         model_id: Optional[UUID] = None,
         entity_id: Optional[str] = None,
+        run_id: Optional[UUID] = None,
         acknowledged: Optional[bool] = None,
         min_risk_score: Optional[float] = None,
         max_risk_score: Optional[float] = None,
@@ -78,6 +79,8 @@ class AnomalyRepository:
             query = query.filter(Anomaly.model_id == model_id)
         if entity_id:
             query = query.filter(Anomaly.entity_id == entity_id)
+        if run_id:
+            query = query.filter(Anomaly.run_id == run_id)
         if acknowledged is not None:
             query = query.filter(Anomaly.acknowledged == acknowledged)
         if min_risk_score is not None:

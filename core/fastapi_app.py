@@ -271,6 +271,7 @@ app.include_router(system.router, tags=["system"])
 # workspace & platform enhancement routers
 from core.api_routers import workspaces, jobs, visualizations, dashboards
 from core.api_routers import features, experiments, hyperparameters, pipelines, datasets, sdk
+from core.api_routers import evaluation
 app.include_router(workspaces.router, prefix="/api/v1", tags=["workspaces"])
 app.include_router(jobs.router, prefix="/api/v1", tags=["jobs"])
 app.include_router(visualizations.router, prefix="/api/v1", tags=["visualizations"])
@@ -281,6 +282,7 @@ app.include_router(hyperparameters.router, prefix="/api/v1", tags=["hyperparamet
 app.include_router(pipelines.router, prefix="/api/v1", tags=["pipelines"])
 app.include_router(datasets.router, prefix="/api/v1", tags=["datasets"])
 app.include_router(sdk.router, prefix="/api/v1", tags=["sdk"])
+app.include_router(evaluation.router, prefix="/api/v1", tags=["evaluation"])
 
 
 @app.get("/")
