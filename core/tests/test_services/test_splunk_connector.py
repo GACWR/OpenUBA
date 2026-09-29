@@ -186,3 +186,42 @@ def test_test_connection_error_status():
 def test_test_connection_unconfigured():
     result = SplunkConnector().test_connection()
     assert result["status"] == "error"
+
+
+# ─── SSRF guard (#145) ───────────────────────────────────────────────────────
+
+def test_assert_safe_endpoint_rejects_non_http_scheme():
+    with pytest.raises(ValueError):
+        splunk_mod._assert_safe_endpoint("file:///etc/passwd")
+    with pytest.raises(ValueError):
+        splunk_mod._assert_safe_endpoint("gopher://splunk:8088/x")
+
+
+def test_assert_safe_endpoint_rejects_link_local_metadata():
+    # cloud instance-metadata endpoint — the classic SSRF exfil target
+    with pytest.raises(ValueError):
+        splunk_mod._assert_safe_endpoint("http://169.254.169.254/latest/meta-data/")
+
+
+def test_assert_safe_endpoint_allows_internal_private_host():
+    # internal/private Splunk is the normal deployment — must NOT be blocked.
+    # numeric IPs resolve without DNS, so this is deterministic offline.
+    splunk_mod._assert_safe_endpoint("https://10.0.0.5:8088/services/collector/event")
+    splunk_mod._assert_safe_endpoint("https://127.0.0.1:8088/services/collector/event")
+
+
+def test_send_event_refuses_link_local_target():
+    # a hec_url pointed at instance metadata must be refused (returns False,
+    # never fires the request)
+    c = SplunkConnector(hec_url="http://169.254.169.254", hec_token="t")
+    with patch("core.integrations.splunk.requests.post") as post:
+        assert c.send_event({"entity_id": "u1"}) is False
+        post.assert_not_called()
+
+
+def test_search_refuses_link_local_host():
+    c = SplunkConnector(host="http://169.254.169.254:8089", token="t")
+    with patch("core.integrations.splunk.requests.post") as post:
+        with pytest.raises(ValueError):
+            c.search("index=main")
+        post.assert_not_called()

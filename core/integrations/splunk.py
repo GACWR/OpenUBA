@@ -12,10 +12,13 @@ plain `requests`, so it also works unchanged inside the self-contained model
 runner container.
 '''
 
+import ipaddress
 import json
 import logging
 import os
+import socket
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import requests
 
@@ -27,6 +30,50 @@ def _env_flag(name: str, default: bool) -> bool:
     if val is None:
         return default
     return val.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _assert_safe_endpoint(url: str) -> None:
+    '''
+    SSRF guard for admin/input-controlled Splunk endpoints (host / hec_url).
+
+    the host and hec_url come from integration_settings / model input_data,
+    which are reachable by models:write holders — a wider audience than the
+    admin who normally owns integrations. refuse to fire outbound requests at
+    anything that isn't a real http(s) Splunk endpoint:
+      * scheme must be http/https (blocks file://, gopher://, etc.)
+      * the host must not resolve to a link-local address (169.254.0.0/16,
+        fe80::/10) — this is the cloud instance-metadata range (169.254.169.254)
+        and the classic SSRF exfiltration target.
+
+    internal/private and loopback Splunk hosts are intentionally allowed: that
+    is the normal deployment (e.g. `https://splunk:8088`), so we do NOT block
+    RFC-1918 space. DNS-resolution failures are left to the request layer to
+    surface rather than hard-failing here.
+    '''
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(
+            f"splunk endpoint scheme must be http/https, got '{parsed.scheme or 'none'}'"
+        )
+    host = parsed.hostname
+    if not host:
+        raise ValueError("splunk endpoint has no host")
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or None)
+    except Exception:
+        # can't resolve — let requests surface the connection error naturally
+        return
+    for info in infos:
+        addr = info[4][0]
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            continue
+        if ip.is_link_local:
+            raise ValueError(
+                f"splunk endpoint host '{host}' resolves to blocked "
+                f"link-local address {ip} (possible SSRF to instance metadata)"
+            )
 
 
 class SplunkConnector:
@@ -116,6 +163,7 @@ class SplunkConnector:
             raise ValueError("splunk host not configured")
 
         url = f"{self.host}/services/search/jobs/export"
+        _assert_safe_endpoint(url)
         payload = {
             "search": self._normalize_query(query),
             "output_mode": "json",
@@ -168,6 +216,11 @@ class SplunkConnector:
             return False
 
         url = f"{self.hec_url}/services/collector/event"
+        try:
+            _assert_safe_endpoint(url)
+        except ValueError as e:
+            logger.error(f"splunk HEC endpoint rejected: {e}")
+            return False
         body: Dict[str, Any] = {
             "event": event,
             "sourcetype": sourcetype,
@@ -209,6 +262,7 @@ class SplunkConnector:
         '''probe the REST management endpoint (or HEC if only that is set)'''
         try:
             if self.host:
+                _assert_safe_endpoint(f"{self.host}/services/server/info")
                 resp = requests.get(
                     f"{self.host}/services/server/info",
                     params={"output_mode": "json"},
@@ -229,6 +283,7 @@ class SplunkConnector:
                 return {"status": "error", "message": f"HTTP {resp.status_code}"}
 
             if self.hec_url and self.hec_token:
+                _assert_safe_endpoint(f"{self.hec_url}/services/collector/health")
                 resp = requests.get(
                     f"{self.hec_url}/services/collector/health",
                     headers={"Authorization": f"Splunk {self.hec_token}"},

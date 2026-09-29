@@ -107,3 +107,56 @@ def test_forward_never_raises_on_error():
     with patch.object(orch_mod, "get_db_context", boom):
         # must not raise
         orch._forward_anomalies_to_splunk([{"a": 1}])
+
+
+# ─── k8s-mode forwarding: re-read anomalies by run_id (#145) ─────────────────
+
+def test_k8s_forward_reads_by_run_id_and_sends():
+    orch = ModelOrchestrator()
+    config_db = MagicMock()
+    config_db.execute.return_value.fetchone.return_value = (
+        {"forward_anomalies": True, "hec_url": "https://s:8088",
+         "hec_token": "t", "anomaly_index": "openuba"}, True,
+    )
+    anomaly_db = MagicMock()
+    anomaly_db.execute.return_value.fetchall.return_value = [
+        ("u1", "user", 90.0, "behavioral", {}),
+        ("u2", "user", 80.0, "behavioral", {}),
+    ]
+    dbs = [config_db, anomaly_db]
+
+    @contextmanager
+    def ctx():
+        yield dbs.pop(0)
+
+    with patch.object(orch_mod, "get_db_context", ctx), \
+         patch("core.integrations.splunk.SplunkConnector") as conn_cls:
+        conn_cls.from_config.return_value.send_anomalies.return_value = 2
+        orch._forward_run_anomalies_to_splunk_k8s("run-123")
+
+    send = conn_cls.from_config.return_value.send_anomalies
+    assert send.called
+    args, kwargs = send.call_args
+    assert kwargs.get("index") == "openuba"
+    assert [a["entity_id"] for a in args[0]] == ["u1", "u2"]
+
+
+def test_k8s_forward_skips_when_disabled():
+    orch = ModelOrchestrator()
+    ctx = _patch_db_with_splunk_row({"forward_anomalies": False}, enabled=True)
+    with patch.object(orch_mod, "get_db_context", ctx), \
+         patch("core.integrations.splunk.SplunkConnector") as conn_cls:
+        orch._forward_run_anomalies_to_splunk_k8s("run-123")
+    conn_cls.from_config.assert_not_called()
+
+
+def test_k8s_forward_never_raises_on_error():
+    orch = ModelOrchestrator()
+
+    @contextmanager
+    def boom():
+        raise RuntimeError("db down")
+        yield  # pragma: no cover
+
+    with patch.object(orch_mod, "get_db_context", boom):
+        orch._forward_run_anomalies_to_splunk_k8s("run-123")  # must not raise
