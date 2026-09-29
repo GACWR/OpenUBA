@@ -55,6 +55,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (True, False), "visualizations": (True, False),
         "dashboards": (True, False), "experiments": (True, False),
         "features": (True, False), "jobs": (True, False), "pipelines": (True, False),
+        "source_groups": (True, False),
     },
     "triage": {
         "home": (True, False), "data": (False, False), "models": (False, False),
@@ -64,6 +65,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (False, False), "visualizations": (True, False),
         "dashboards": (True, False), "experiments": (False, False),
         "features": (False, False), "jobs": (False, False), "pipelines": (False, False),
+        "source_groups": (False, False),
     },
     "analyst": {
         "home": (True, False), "data": (True, False), "models": (True, True),
@@ -73,6 +75,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (True, True), "visualizations": (True, True),
         "dashboards": (True, True), "experiments": (True, True),
         "features": (True, True), "jobs": (True, True), "pipelines": (True, True),
+        "source_groups": (True, False),
     },
 }
 
