@@ -5,7 +5,8 @@ security regression tests for JWT auth hardening (issue #149)
 proves:
   (a) a token forged with the OLD committed literal secret is rejected
   (b) a token with role:admin but no user_id cannot reach admin routes
-  (c) a token with a user_id that fails DB validation is rejected
+  (c) a well-formed token whose DB user-validation does not succeed
+      (row missing OR the DB is unreachable) is rejected — fail closed
   (d) no token is rejected (fail closed)
   (e) a validated admin caller can still use the admin route
   (f) the config accessor is required (raises when unset / insecure / weak)
@@ -74,9 +75,13 @@ def test_admin_role_without_user_id_is_rejected(test_client: TestClient):
     assert resp.status_code in (401, 403), resp.text
 
 
-# --- (c) correct key + role:admin + user_id that fails DB validation is rejected ---
+# --- (c) correct key + role:admin + a user_id whose DB validation does not
+#         succeed (unknown row, or DB unreachable) is rejected — fail closed ---
 
 def test_admin_role_with_invalid_user_id_is_rejected(test_client: TestClient):
+    # a random user_id that will not validate against the DB; whether the users
+    # row is simply absent or the DB is unreachable, get_current_user must reject
+    # (only a literal "relation does not exist" during first-boot is allowed through).
     forged = create_access_token(
         {"sub": "attacker", "user_id": str(uuid.uuid4()), "role": "admin"}
     )
