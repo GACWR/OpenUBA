@@ -26,6 +26,9 @@ services:
       - "5000:5000"
     environment:
       DATABASE_URL: postgresql://openuba:openuba@postgres:5432/openuba
+      # required: signing key for JWT auth. override with a strong value in real
+      # deployments (e.g. `openssl rand -hex 32`); the app refuses to start if unset. (issue #149)
+      JWT_SECRET_KEY: "${JWT_SECRET_KEY:-dev-only-insecure-change-me-0123456789abcdef}"
       ENABLE_GRAPHQL: "true"
       POSTGRAPHILE_HOST: "0.0.0.0"
       POSTGRAPHILE_PORT: "5000"

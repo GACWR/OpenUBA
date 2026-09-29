@@ -5,6 +5,14 @@ uses testcontainers for real services (no mocks)
 '''
 
 import os
+
+# ensure a valid JWT signing key exists BEFORE importing anything under `core`,
+# because core.auth loads and validates JWT_SECRET_KEY at import time (issue #149).
+# setdefault so a real env value (e.g. in CI) is never overwritten.
+os.environ.setdefault(
+    "JWT_SECRET_KEY", "test-secret-key-0123456789abcdef-not-for-production"
+)
+
 import pytest
 import asyncio
 from typing import Generator
