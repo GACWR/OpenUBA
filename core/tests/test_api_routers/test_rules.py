@@ -6,6 +6,29 @@ rules api router tests
 import pytest
 from uuid import uuid4
 from fastapi.testclient import TestClient
+from core.fastapi_app import app
+from core.auth import get_current_user
+from core.db.connection import get_db
+
+
+@pytest.fixture(autouse=True)
+def _as_admin():
+    '''authenticate every request in this module as an admin (bypasses require_permission)'''
+    app.dependency_overrides[get_current_user] = lambda: {
+        "username": "admin", "user_id": str(uuid4()), "role": "admin", "payload": {},
+    }
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture
+def unauthenticated_client(_as_admin):
+    '''client with NO auth override → protected routes must 401'''
+    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides[get_db] = lambda: object()
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.pop(get_db, None)
 
 
 def test_create_rule(test_client: TestClient):
@@ -76,4 +99,42 @@ def test_get_rule(test_client: TestClient):
     data = response.json()
     assert data["id"] == rule_id
     assert data["name"] == "get test rule"
+
+
+def test_create_alert(test_client: TestClient):
+    '''
+    raise an alert directly via the api (the OpenUBA SDK path). with no
+    rule_id, create_alert get-or-creates the synthetic SDK rule.
+    '''
+    payload = {
+        "severity": "high",
+        "message": "suspicious login burst",
+        "entity_id": "user42",
+        "entity_type": "user",
+        "notify": False,
+    }
+    response = test_client.post("/api/v1/alerts", json=payload)
+    assert response.status_code == 201, response.text
+    data = response.json()
+    assert data["severity"] == "high"
+    assert "id" in data
+
+
+def test_create_alert_with_unknown_rule_id_is_404(test_client: TestClient):
+    '''an explicit but non-existent rule_id must 404, not silently create'''
+    payload = {"message": "x", "severity": "low", "rule_id": str(uuid4())}
+    response = test_client.post("/api/v1/alerts", json=payload)
+    assert response.status_code == 404
+
+
+def test_create_alert_requires_authentication(unauthenticated_client: TestClient):
+    '''
+    POST /alerts must reject unauthenticated callers. it is guarded by
+    anomalies:write (raising a detection event), NOT rules:write — creating
+    alerts should not require rule-definition privileges.
+    '''
+    resp = unauthenticated_client.post(
+        "/api/v1/alerts", json={"message": "unauth", "severity": "low"}
+    )
+    assert resp.status_code == 401
 
