@@ -79,7 +79,10 @@ def test_client(db_session: Session) -> TestClient:
     app.dependency_overrides[get_db] = override_get_db
     client = TestClient(app)
     yield client
-    app.dependency_overrides.clear()
+    # remove only the override this fixture added — don't clear() the whole
+    # map, which would also wipe overrides owned by other (e.g. autouse)
+    # fixtures and silently couple unrelated tests.
+    app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture(scope="session")

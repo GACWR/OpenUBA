@@ -25,7 +25,7 @@ class SourceGroupRead(SourceGroupBase):
     updated_at: Any
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 @router.get("/", response_model=List[SourceGroupRead])
 def list_source_groups(

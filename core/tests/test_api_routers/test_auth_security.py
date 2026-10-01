@@ -93,6 +93,37 @@ def test_admin_role_with_invalid_user_id_is_rejected(test_client: TestClient):
     assert resp.status_code in (401, 403), resp.text
 
 
+# --- (c2) genuine unknown-user rejection via the real DB-validation path ---
+
+def test_unknown_user_id_is_rejected_by_db_validation(test_client, db_session, monkeypatch):
+    '''
+    a validly-signed token whose user_id is ABSENT from the users table is
+    rejected by the real `row is None` DB-validation branch — not merely
+    because the DB is unreachable. wires get_current_user's own
+    get_db_context to the testcontainer session (users table present, empty),
+    so this distinguishes "unknown user" from "DB down" (both must 401).
+    '''
+    from contextlib import contextmanager
+    import core.db as core_db
+
+    @contextmanager
+    def _test_db_ctx():
+        yield db_session
+
+    monkeypatch.setattr(core_db, "get_db_context", _test_db_ctx)
+    app.dependency_overrides.pop(get_current_user, None)  # exercise the real one
+
+    token = create_access_token(
+        {"sub": "ghost", "user_id": str(uuid.uuid4()), "role": "admin"}
+    )
+    resp = test_client.post(
+        "/api/v1/auth/register",
+        json=_register_payload(),
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 401, resp.text
+
+
 # --- (d) no token is rejected (fail closed) ---
 
 def test_no_token_is_rejected(test_client: TestClient):

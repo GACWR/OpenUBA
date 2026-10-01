@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 VALID_ROLES = ["admin", "manager", "triage", "analyst"]
-ALL_PAGES = ["home", "data", "models", "rules", "alerts", "entities", "anomalies", "cases", "schedules", "settings", "users"]
+ALL_PAGES = ["home", "data", "models", "rules", "alerts", "entities", "anomalies", "cases", "schedules", "settings", "users", "source_groups"]
 
 
 # --- pydantic models ---
