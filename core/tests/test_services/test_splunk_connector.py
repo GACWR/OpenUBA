@@ -225,3 +225,55 @@ def test_search_refuses_link_local_host():
         with pytest.raises(ValueError):
             c.search("index=main")
         post.assert_not_called()
+
+
+# ─── SSRF guard: resolved-address bypasses (#145 adversarial follow-up) ──────
+
+def test_assert_safe_endpoint_rejects_ipv4_mapped_ipv6(monkeypatch):
+    # a hostname resolving to ::ffff:169.254.169.254 must still be blocked
+    # (is_link_local is False on the mapped form unless we unwrap it)
+    monkeypatch.setattr(
+        splunk_mod.socket, "getaddrinfo",
+        lambda host, port, *a, **k: [(10, 1, 6, "", ("::ffff:169.254.169.254", port or 0, 0, 0))],
+    )
+    with pytest.raises(ValueError):
+        splunk_mod._assert_safe_endpoint("https://evil.example.com:8088/services/collector/event")
+
+
+def test_assert_safe_endpoint_rejects_unspecified(monkeypatch):
+    monkeypatch.setattr(
+        splunk_mod.socket, "getaddrinfo",
+        lambda host, port, *a, **k: [(2, 1, 6, "", ("0.0.0.0", port or 0))],
+    )
+    with pytest.raises(ValueError):
+        splunk_mod._assert_safe_endpoint("http://whatever:8088/x")
+
+
+def test_hostname_resolving_to_metadata_is_blocked(monkeypatch):
+    # the real attack: an innocent-looking NAME that resolves to metadata
+    monkeypatch.setattr(
+        splunk_mod.socket, "getaddrinfo",
+        lambda host, port, *a, **k: [(2, 1, 6, "", ("169.254.169.254", port or 0))],
+    )
+    c = SplunkConnector(hec_url="https://innocent.example.com:8088", hec_token="t")
+    with patch("core.integrations.splunk.requests.post") as post:
+        assert c.send_event({"entity_id": "u1"}) is False
+        post.assert_not_called()
+
+
+def test_send_anomalies_validates_endpoint_once(monkeypatch):
+    # perf regression guard: validation (DNS resolution) must be memoized, not
+    # run once per anomaly — a 195k-anomaly run must not do 195k getaddrinfo.
+    calls = {"n": 0}
+
+    def counting_getaddrinfo(host, port, *a, **k):
+        calls["n"] += 1
+        return [(2, 1, 6, "", ("10.0.0.9", port or 0))]
+
+    monkeypatch.setattr(splunk_mod.socket, "getaddrinfo", counting_getaddrinfo)
+    c = SplunkConnector(hec_url="https://splunk.internal:8088", hec_token="t")
+    with patch("core.integrations.splunk.requests.post") as post:
+        post.return_value.status_code = 200
+        sent = c.send_anomalies([{"entity_id": f"u{i}"} for i in range(50)], index="idx")
+    assert sent == 50
+    assert calls["n"] == 1  # resolved exactly once across 50 sends

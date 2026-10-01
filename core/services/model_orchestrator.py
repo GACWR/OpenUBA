@@ -279,7 +279,7 @@ class ModelOrchestrator:
             # kubernetes mode's anomalies live only in the DB (runner-persisted),
             # so re-read them by run_id here. otherwise forwarding is dead in
             # prod/k8s — the mode the feature is actually meant for. (#145)
-            if self.execution_mode == "kubernetes":
+            if self.execution_mode == "kubernetes" and run_type == "infer":
                 self._forward_run_anomalies_to_splunk_k8s(run_id)
 
             # build a lightweight summary (strip bulky anomalies list)

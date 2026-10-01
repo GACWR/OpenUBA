@@ -47,8 +47,12 @@ def _assert_safe_endpoint(url: str) -> None:
 
     internal/private and loopback Splunk hosts are intentionally allowed: that
     is the normal deployment (e.g. `https://splunk:8088`), so we do NOT block
-    RFC-1918 space. DNS-resolution failures are left to the request layer to
-    surface rather than hard-failing here.
+    RFC-1918 space.
+
+    Fail-open ONLY on unresolvable hosts (the connection would fail anyway and
+    hard-failing would break legitimately-transient DNS for a best-effort
+    egress); any host that DOES resolve to a blocked range is always refused.
+    Residual DNS-rebinding risk should be contained by network egress policy.
     '''
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
@@ -69,10 +73,15 @@ def _assert_safe_endpoint(url: str) -> None:
             ip = ipaddress.ip_address(addr)
         except ValueError:
             continue
-        if ip.is_link_local:
+        # unwrap IPv4-mapped IPv6 (e.g. ::ffff:169.254.169.254) before
+        # classifying, otherwise is_link_local is False and metadata leaks.
+        mapped = getattr(ip, "ipv4_mapped", None)
+        if mapped is not None:
+            ip = mapped
+        if ip.is_link_local or ip.is_unspecified:
             raise ValueError(
-                f"splunk endpoint host '{host}' resolves to blocked "
-                f"link-local address {ip} (possible SSRF to instance metadata)"
+                f"splunk endpoint host '{host}' resolves to blocked address "
+                f"{ip} (link-local/metadata or unspecified; possible SSRF)"
             )
 
 
@@ -107,7 +116,22 @@ class SplunkConnector:
         if verify_ssl is None:
             verify_ssl = _env_flag("SPLUNK_VERIFY_SSL", True)
         self.verify_ssl = verify_ssl
+        if not self.verify_ssl:
+            logger.warning(
+                "splunk connector: TLS certificate verification is DISABLED "
+                "(verify_ssl=false) — connection is vulnerable to MITM"
+            )
         self.timeout = timeout
+        # endpoints validated by _ensure_safe_endpoint are cached so a large
+        # anomaly batch does not re-resolve DNS once per event (see #145).
+        self._validated_endpoints: set = set()
+
+    def _ensure_safe_endpoint(self, url: str) -> None:
+        '''SSRF-validate an endpoint at most once per unique URL (memoized).'''
+        if url in self._validated_endpoints:
+            return
+        _assert_safe_endpoint(url)
+        self._validated_endpoints.add(url)
 
     @classmethod
     def from_config(cls, config: Dict[str, Any]) -> "SplunkConnector":
@@ -163,7 +187,7 @@ class SplunkConnector:
             raise ValueError("splunk host not configured")
 
         url = f"{self.host}/services/search/jobs/export"
-        _assert_safe_endpoint(url)
+        self._ensure_safe_endpoint(url)
         payload = {
             "search": self._normalize_query(query),
             "output_mode": "json",
@@ -179,6 +203,7 @@ class SplunkConnector:
             auth=self._rest_auth(),
             verify=self.verify_ssl,
             timeout=self.timeout,
+            allow_redirects=False,
         )
         if resp.status_code != 200:
             raise ValueError(
@@ -217,7 +242,7 @@ class SplunkConnector:
 
         url = f"{self.hec_url}/services/collector/event"
         try:
-            _assert_safe_endpoint(url)
+            self._ensure_safe_endpoint(url)
         except ValueError as e:
             logger.error(f"splunk HEC endpoint rejected: {e}")
             return False
@@ -235,6 +260,7 @@ class SplunkConnector:
                 headers={"Authorization": f"Splunk {self.hec_token}"},
                 verify=self.verify_ssl,
                 timeout=self.timeout,
+                allow_redirects=False,
             )
             if resp.status_code == 200:
                 return True
@@ -262,7 +288,7 @@ class SplunkConnector:
         '''probe the REST management endpoint (or HEC if only that is set)'''
         try:
             if self.host:
-                _assert_safe_endpoint(f"{self.host}/services/server/info")
+                self._ensure_safe_endpoint(f"{self.host}/services/server/info")
                 resp = requests.get(
                     f"{self.host}/services/server/info",
                     params={"output_mode": "json"},
@@ -270,6 +296,7 @@ class SplunkConnector:
                     auth=self._rest_auth(),
                     verify=self.verify_ssl,
                     timeout=10,
+                    allow_redirects=False,
                 )
                 if resp.status_code == 200:
                     version = ""
@@ -283,12 +310,13 @@ class SplunkConnector:
                 return {"status": "error", "message": f"HTTP {resp.status_code}"}
 
             if self.hec_url and self.hec_token:
-                _assert_safe_endpoint(f"{self.hec_url}/services/collector/health")
+                self._ensure_safe_endpoint(f"{self.hec_url}/services/collector/health")
                 resp = requests.get(
                     f"{self.hec_url}/services/collector/health",
                     headers={"Authorization": f"Splunk {self.hec_token}"},
                     verify=self.verify_ssl,
                     timeout=10,
+                    allow_redirects=False,
                 )
                 if resp.status_code == 200:
                     return {"status": "connected", "channel": "hec"}

@@ -20,6 +20,46 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def _assert_safe_url(url: str) -> None:
+    '''
+    SSRF guard for model-input-controlled egress (elasticsearch/splunk `host`).
+
+    `host` comes from input_data (models:write reach), so refuse non-http(s)
+    schemes and hosts resolving to link-local/metadata (169.254.0.0/16,
+    fe80::/10, incl. IPv4-mapped) or the unspecified address. Internal/private
+    Splunk/ES hosts are allowed (the normal deployment). Mirrors
+    core.integrations.splunk._assert_safe_endpoint, inlined because the runner
+    container does not import `core`. (#145)
+    '''
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"egress scheme must be http/https, got '{parsed.scheme or 'none'}'")
+    host = parsed.hostname
+    if not host:
+        raise ValueError("egress url has no host")
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or None)
+    except Exception:
+        return  # unresolvable — the request will fail naturally
+    for info in infos:
+        try:
+            ip = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            continue
+        mapped = getattr(ip, "ipv4_mapped", None)
+        if mapped is not None:
+            ip = mapped
+        if ip.is_link_local or ip.is_unspecified:
+            raise ValueError(
+                f"egress host '{host}' resolves to blocked address {ip} "
+                f"(link-local/metadata or unspecified; possible SSRF)"
+            )
+
+
 class ModelLogHandler(logging.Handler):
     '''
     custom logging handler that captures log records and flushes them
@@ -378,9 +418,11 @@ def _load_data_for_model(input_data: dict):
                 url = f"{host.rstrip('/')}/{index_name}/_search"
             else:
                 url = host
+            _assert_safe_url(url)
             payload = {"query": query, "size": input_data.get("size", 10000)}
             logger.info(f"querying elasticsearch: {url}")
-            resp = requests.get(url, json=payload, headers={"content-type": "application/json"}, timeout=60)
+            resp = requests.get(url, json=payload, headers={"content-type": "application/json"},
+                                timeout=60, allow_redirects=False)
             if resp.status_code == 200:
                 hits = resp.json().get("hits", {}).get("hits", [])
                 docs = [h["_source"] for h in hits]
@@ -421,9 +463,10 @@ def _load_data_for_model(input_data: dict):
                 "count": input_data.get("size", 10000),
             }
             url = f"{host}/services/search/jobs/export"
+            _assert_safe_url(url)
             logger.info(f"querying splunk: {url}")
             resp = requests.post(url, data=payload, headers=headers, auth=auth,
-                                 verify=verify_ssl, timeout=120)
+                                 verify=verify_ssl, timeout=120, allow_redirects=False)
             if resp.status_code != 200:
                 raise ValueError(f"splunk search failed ({resp.status_code}): {resp.text[:500]}")
             rows = []
