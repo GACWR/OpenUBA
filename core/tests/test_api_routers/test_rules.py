@@ -128,13 +128,67 @@ def test_create_alert_with_unknown_rule_id_is_404(test_client: TestClient):
 
 
 def test_create_alert_requires_authentication(unauthenticated_client: TestClient):
-    '''
-    POST /alerts must reject unauthenticated callers. it is guarded by
-    anomalies:write (raising a detection event), NOT rules:write — creating
-    alerts should not require rule-definition privileges.
-    '''
+    '''POST /alerts must reject unauthenticated callers (401 before any DB).'''
     resp = unauthenticated_client.post(
         "/api/v1/alerts", json={"message": "unauth", "severity": "low"}
     )
     assert resp.status_code == 401
+
+
+def _patch_permission_db(monkeypatch, db_session):
+    '''route require_permission's own get_db_context at the testcontainer so a
+    real (role, page) permission lookup is exercised (admin bypasses it, so the
+    page gate can only be proven with a non-admin role + seeded rows).'''
+    from contextlib import contextmanager
+    import core.db as core_db
+
+    @contextmanager
+    def _ctx():
+        yield db_session
+
+    monkeypatch.setattr(core_db, "get_db_context", _ctx)
+
+
+def test_create_alert_is_gated_on_alerts_write_not_anomalies_write(
+    test_client: TestClient, db_session, monkeypatch
+):
+    '''
+    the headline #144 change: POST /alerts is gated on alerts:write, NOT
+    anomalies:write. prove it DISCRIMINATES — an analyst that HAS anomalies:write
+    but LACKS alerts:write must be denied (403). if the guard were still
+    anomalies:write this would wrongly return 201.
+    '''
+    from core.db.models import RolePermission
+    db_session.add(RolePermission(role="analyst", page="anomalies", can_read=True, can_write=True))
+    db_session.add(RolePermission(role="analyst", page="alerts", can_read=True, can_write=False))
+    db_session.flush()
+    _patch_permission_db(monkeypatch, db_session)
+
+    app.dependency_overrides[get_current_user] = lambda: {
+        "username": "ana", "user_id": str(uuid4()), "role": "analyst", "payload": {},
+    }
+    try:
+        resp = test_client.post("/api/v1/alerts", json={"message": "x", "severity": "low"})
+        assert resp.status_code == 403, resp.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_create_alert_allowed_with_alerts_write(
+    test_client: TestClient, db_session, monkeypatch
+):
+    '''a non-admin role explicitly granted alerts:write CAN create an alert.'''
+    from core.db.models import RolePermission
+    db_session.add(RolePermission(role="analyst", page="alerts", can_read=True, can_write=True))
+    db_session.flush()
+    _patch_permission_db(monkeypatch, db_session)
+
+    app.dependency_overrides[get_current_user] = lambda: {
+        "username": "ana", "user_id": str(uuid4()), "role": "analyst", "payload": {},
+    }
+    try:
+        resp = test_client.post("/api/v1/alerts", json={"message": "ok", "severity": "low"})
+        assert resp.status_code == 201, resp.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
 

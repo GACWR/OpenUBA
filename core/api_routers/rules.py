@@ -145,7 +145,7 @@ async def delete_rule(
 async def create_alert(
     alert_data: AlertCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_permission("anomalies", "write"))
+    current_user: dict = Depends(require_permission("alerts", "write"))
 ):
     '''
     raise an alert directly (e.g. from a model via the OpenUBA SDK).

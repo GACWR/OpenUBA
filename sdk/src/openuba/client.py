@@ -647,7 +647,7 @@ class OpenUBAClient:
         Set notify=True to also deliver realtime notifications (SMTP email +
         in-app). `recipients` (list or comma-separated string) overrides the
         SMTP default recipient list configured in Settings. Requires the
-        configured token to have rules:write permission.
+        configured token to have alerts:write permission.
         '''
         payload = {
             "message": message,
