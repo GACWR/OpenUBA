@@ -29,6 +29,25 @@ The model-runner container reads the same values from the environment when it
 executes a search: `SPLUNK_HOST`, `SPLUNK_TOKEN`, `SPLUNK_USERNAME`,
 `SPLUNK_PASSWORD`, `SPLUNK_VERIFY_SSL`.
 
+### Credentials and execution mode
+
+Splunk-as-a-data-source needs those credentials *in the runner*:
+
+- **Docker mode** — the backend injects the UI-configured Splunk credentials
+  (from the `splunk` integration settings) into the runner container as
+  ephemeral `SPLUNK_*` environment variables at dispatch. UI config "just
+  works"; nothing is persisted to the run record.
+- **Kubernetes mode** — the runner pod is created by the `UBAInference` /
+  `UBATraining` operator, which does **not** read the integration settings.
+  You must provide the `SPLUNK_*` values to the runner yourself — e.g. a k8s
+  `Secret` referenced via `envFrom`/`secretKeyRef` on the model-runner pod
+  template. Without them the runner's Splunk search fails loudly (a Splunk
+  `401`/connection error surfaced as a failed run), never silently. Wiring the
+  operator to sync these from the integration settings is a planned follow-up.
+
+> Note: anomaly **forwarding to Splunk (HEC)** runs on the backend and works in
+> both docker and kubernetes modes — it does not depend on runner credentials.
+
 ## Using Splunk as a data source
 
 Select `splunk` as the data source when training or running a model and pass a
