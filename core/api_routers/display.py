@@ -12,6 +12,7 @@ from sqlalchemy import func
 from core.db import get_db
 from core.db.models import Anomaly, Model, Case
 from core.api import API, APIType
+from core.auth import require_permission
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -20,12 +21,16 @@ logger = logging.getLogger(__name__)
 @router.get("/display/{display_type}")
 async def get_display(
     display_type: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("home", "read"))
 ):
     '''
     endpoint to get varied display information
     migrated from flask /display/<display_type>/
     supports: get_all_entities, get_all_users, get_home_summary, get_system_log
+
+    requires authentication (home:read) — this proxy exposes entity/user/system
+    data and must never be reachable unauthenticated. (audit: close auth gap)
     '''
     try:
         # use existing api logic for compatibility
@@ -38,7 +43,8 @@ async def get_display(
 
 @router.get("/display/home/summary")
 async def get_home_summary(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("home", "read"))
 ):
     '''
     get home dashboard summary statistics
