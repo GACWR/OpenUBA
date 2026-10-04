@@ -210,3 +210,29 @@ def test_sdk_rule_get_or_create_is_idempotent(db_session):
     assert r1.id == r2.id == SDK_ALERT_RULE_ID
     assert db_session.query(Rule).filter(Rule.name == SDK_ALERT_RULE_NAME).count() == 1
 
+
+def test_sdk_rule_recovers_from_pk_conflict(db_session):
+    '''
+    exercise the IntegrityError RECOVERY branch: if the fixed id is already
+    occupied (a concurrent winner inserted it after our initial lookup), the
+    create flush conflicts on the PK inside the SAVEPOINT, and we re-read the
+    occupant by id instead of raising or inserting a duplicate.
+    '''
+    from core.api_routers.rules import _get_or_create_sdk_rule, SDK_ALERT_RULE_ID
+    from core.db.models import Rule
+
+    # occupy the fixed id under a name the initial name-lookup won't match,
+    # so the function takes the create path and hits the PK conflict.
+    db_session.add(Rule(
+        id=SDK_ALERT_RULE_ID, name="concurrent-winner",
+        rule_type="single-fire", condition="sdk", enabled=True, severity="medium",
+    ))
+    db_session.flush()
+
+    rule = _get_or_create_sdk_rule(db_session)
+
+    assert rule is not None  # recovered via the except branch, did not raise
+    assert rule.id == SDK_ALERT_RULE_ID
+    # no duplicate row created for the fixed id
+    assert db_session.query(Rule).filter(Rule.id == SDK_ALERT_RULE_ID).count() == 1
+

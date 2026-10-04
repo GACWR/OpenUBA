@@ -50,8 +50,9 @@ def _get_or_create_sdk_rule(db: Session) -> Rule:
             db.add(rule)
             db.flush()
     except IntegrityError:
-        # another request won the race — reuse the row it created
-        return db.query(Rule).filter(Rule.name == SDK_ALERT_RULE_NAME).first()
+        # another request won the PK race — reuse the row occupying the fixed
+        # id (re-read by id, since the conflict is on the primary key)
+        return db.query(Rule).filter(Rule.id == SDK_ALERT_RULE_ID).first()
     return rule
 
 router = APIRouter()
