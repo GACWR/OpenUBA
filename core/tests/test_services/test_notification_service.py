@@ -233,3 +233,21 @@ def test_notify_still_creates_in_app_when_no_email_recipients():
     email.send.assert_not_called()
     assert summary["email_sent"] is False
     assert summary["in_app_created"] == 2
+
+
+def test_notify_caps_in_app_fanout(monkeypatch):
+    '''one alert must not fan out unboundedly many in-app rows (audit #144).'''
+    monkeypatch.setenv("OPENUBA_MAX_INAPP_NOTIFICATIONS", "2")
+    email = MagicMock(spec=EmailService)
+    email.default_recipients.return_value = []
+    # query fetches cap+1 (=3) to detect truncation; emulate the DB returning them
+    db = _fake_db_with_users(3)
+
+    summary = AlertNotifier(email_service=email).notify(
+        db, rule_name="r", severity="high", message="m",
+        entity_id="e", entity_type="user",
+    )
+
+    assert summary["in_app_created"] == 2
+    assert summary["in_app_truncated"] is True
+    assert db.add.call_count == 2

@@ -23,6 +23,18 @@ from core.db.models import Notification
 
 logger = logging.getLogger(__name__)
 
+# default cap on how many in-app notification rows a single alert fans out to.
+# bounds synchronous DB writes in the request path; override via env.
+_DEFAULT_MAX_INAPP_FANOUT = 500
+
+
+def _max_inapp_fanout() -> int:
+    '''resolve the in-app fan-out cap from env, clamped to a sane minimum.'''
+    try:
+        return max(1, int(os.getenv("OPENUBA_MAX_INAPP_NOTIFICATIONS", _DEFAULT_MAX_INAPP_FANOUT)))
+    except (TypeError, ValueError):
+        return _DEFAULT_MAX_INAPP_FANOUT
+
 # actions (from the rule-canvas alert node) that should send notifications
 NOTIFY_ACTIONS = {"notify", "fire_alert_and_notify", "notify_and_open_case"}
 
@@ -197,13 +209,17 @@ class AlertNotifier:
         if to:
             summary["email_sent"] = self.email.send(to, subject, body_text)
 
-        # 2) in-app notifications for every active user (reuses the notifications
-        #    center already wired into the frontend + notifications router)
+        # 2) in-app notifications for active users (reuses the notifications
+        #    center already wired into the frontend + notifications router).
+        #    bounded: one alert must not synchronously write unboundedly many
+        #    rows in the request path on a large tenant. (audit #144)
         try:
+            cap = _max_inapp_fanout()
             user_rows = db.execute(text(
-                "SELECT id FROM users WHERE is_active = true"
-            )).fetchall()
-            for (user_id,) in user_rows:
+                "SELECT id FROM users WHERE is_active = true LIMIT :cap"
+            ), {"cap": cap + 1}).fetchall()
+            truncated = len(user_rows) > cap
+            for (user_id,) in user_rows[:cap]:
                 db.add(Notification(
                     user_id=user_id,
                     title=subject,
@@ -211,7 +227,13 @@ class AlertNotifier:
                     type="alert",
                     link="/alerts",
                 ))
-            summary["in_app_created"] = len(user_rows)
+            summary["in_app_created"] = min(len(user_rows), cap)
+            summary["in_app_truncated"] = truncated
+            if truncated:
+                logger.warning(
+                    f"in-app notification fan-out capped at {cap} users for "
+                    f"alert '{subject}' (set OPENUBA_MAX_INAPP_NOTIFICATIONS to adjust)"
+                )
         except Exception as e:
             logger.error(f"failed to create in-app notifications: {e}")
 

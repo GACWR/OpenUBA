@@ -192,3 +192,21 @@ def test_create_alert_allowed_with_alerts_write(
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
+
+def test_sdk_rule_get_or_create_is_idempotent(db_session):
+    '''
+    the synthetic SDK rule is created once with a deterministic id and reused —
+    no duplicate "SDK Alerts" rows accumulate (audit #144 race fix). two calls
+    return the same row and leave exactly one in the table.
+    '''
+    from core.api_routers.rules import (
+        _get_or_create_sdk_rule, SDK_ALERT_RULE_ID, SDK_ALERT_RULE_NAME,
+    )
+    from core.db.models import Rule
+
+    r1 = _get_or_create_sdk_rule(db_session)
+    r2 = _get_or_create_sdk_rule(db_session)
+
+    assert r1.id == r2.id == SDK_ALERT_RULE_ID
+    assert db_session.query(Rule).filter(Rule.name == SDK_ALERT_RULE_NAME).count() == 1
+

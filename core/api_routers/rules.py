@@ -9,6 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 
 from core.db import get_db
 from core.db.models import Rule, Alert
@@ -19,22 +20,38 @@ from core.auth import require_permission
 from core.services.notification_service import AlertNotifier
 
 SDK_ALERT_RULE_NAME = "SDK Alerts"
+# deterministic id for the synthetic SDK rule so two concurrent first-time
+# callers collide on the PRIMARY KEY (already unique) instead of racing to
+# INSERT duplicate "SDK Alerts" rows. (audit #144)
+SDK_ALERT_RULE_ID = UUID("00000000-0000-0000-0000-00000000a1e7")
 
 
 def _get_or_create_sdk_rule(db: Session) -> Rule:
-    '''owning rule for alerts raised directly via the SDK (alerts.rule_id is required)'''
+    '''
+    owning rule for alerts raised directly via the SDK (alerts.rule_id is
+    required). race-safe: the INSERT uses a fixed primary key inside a
+    SAVEPOINT, so a concurrent create loses the PK race, is caught, and
+    re-reads the winner — no duplicate synthetic rules accumulate.
+    '''
     rule = db.query(Rule).filter(Rule.name == SDK_ALERT_RULE_NAME).first()
-    if rule is None:
-        rule = Rule(
-            name=SDK_ALERT_RULE_NAME,
-            description="System rule for alerts raised directly through the OpenUBA SDK.",
-            rule_type="single-fire",
-            condition="sdk",
-            enabled=True,
-            severity="medium",
-        )
-        db.add(rule)
-        db.flush()
+    if rule is not None:
+        return rule
+    rule = Rule(
+        id=SDK_ALERT_RULE_ID,
+        name=SDK_ALERT_RULE_NAME,
+        description="System rule for alerts raised directly through the OpenUBA SDK.",
+        rule_type="single-fire",
+        condition="sdk",
+        enabled=True,
+        severity="medium",
+    )
+    try:
+        with db.begin_nested():  # SAVEPOINT — only this INSERT is rolled back on conflict
+            db.add(rule)
+            db.flush()
+    except IntegrityError:
+        # another request won the race — reuse the row it created
+        return db.query(Rule).filter(Rule.name == SDK_ALERT_RULE_NAME).first()
     return rule
 
 router = APIRouter()
