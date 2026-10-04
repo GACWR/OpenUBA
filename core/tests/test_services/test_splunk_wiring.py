@@ -160,3 +160,27 @@ def test_k8s_forward_never_raises_on_error():
 
     with patch.object(orch_mod, "get_db_context", boom):
         orch._forward_run_anomalies_to_splunk_k8s("run-123")  # must not raise
+
+
+# ─── runner credential env bridging (#145 deferred fix) ──────────────────────
+
+def test_splunk_runner_env_collects_creds():
+    orch = ModelOrchestrator()
+    ctx = _patch_db_with_splunk_row({
+        "host": "https://s:8089", "token": "tok", "hec_url": "https://s:8088",
+        "hec_token": "hectok", "verify_ssl": False,
+    }, enabled=True)
+    with patch.object(orch_mod, "get_db_context", ctx):
+        env = orch._splunk_runner_env()
+    assert env["SPLUNK_HOST"] == "https://s:8089"
+    assert env["SPLUNK_TOKEN"] == "tok"
+    assert env["SPLUNK_HEC_URL"] == "https://s:8088"
+    assert env["SPLUNK_HEC_TOKEN"] == "hectok"
+    assert env["SPLUNK_VERIFY_SSL"] == "false"
+
+
+def test_splunk_runner_env_empty_when_disabled():
+    orch = ModelOrchestrator()
+    ctx = _patch_db_with_splunk_row({"host": "x"}, enabled=False)
+    with patch.object(orch_mod, "get_db_context", ctx):
+        assert orch._splunk_runner_env() == {}

@@ -65,7 +65,15 @@ def _assert_safe_endpoint(url: str) -> None:
     try:
         infos = socket.getaddrinfo(host, parsed.port or None)
     except Exception:
-        # can't resolve — let requests surface the connection error naturally
+        # can't resolve. default: let requests surface the connection error
+        # (fail-open on UNRESOLVABLE only — best-effort egress). set
+        # SPLUNK_SSRF_STRICT=true to fail closed instead (refuse anything the
+        # guard can't verify), for security-conscious deployments.
+        if _env_flag("SPLUNK_SSRF_STRICT", False):
+            raise ValueError(
+                f"splunk endpoint host '{host}' could not be resolved for SSRF "
+                f"validation (SPLUNK_SSRF_STRICT enabled)"
+            )
         return
     for info in infos:
         addr = info[4][0]

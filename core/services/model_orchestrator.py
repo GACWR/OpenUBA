@@ -361,6 +361,45 @@ class ModelOrchestrator:
         from core.integrations.splunk import SplunkConnector
         return SplunkConnector.from_config(config), config.get("anomaly_index")
 
+    def _splunk_runner_env(self) -> Dict[str, str]:
+        '''
+        collect SPLUNK_* credential env from the enabled 'splunk'
+        integration_settings so a runner CONTAINER can authenticate to
+        UI-configured Splunk (the runner reads SPLUNK_* from its env). returns
+        {} when splunk is not configured/enabled.
+
+        passed as EPHEMERAL container environment at dispatch — never written
+        into input_data / the persisted ModelRun, so creds are not stored in
+        the DB. (#145: previously the runner only saw process env, so
+        UI-configured Splunk did not authenticate.)
+        '''
+        try:
+            from sqlalchemy import text
+            with get_db_context() as db:
+                row = db.execute(text(
+                    "SELECT config, enabled FROM integration_settings "
+                    "WHERE integration_type = 'splunk'"
+                )).fetchone()
+            if not row or not row[1]:
+                return {}
+            config = dict(row[0]) if row[0] else {}
+            mapping = {
+                "host": "SPLUNK_HOST", "token": "SPLUNK_TOKEN",
+                "username": "SPLUNK_USERNAME", "password": "SPLUNK_PASSWORD",
+                "hec_url": "SPLUNK_HEC_URL", "hec_token": "SPLUNK_HEC_TOKEN",
+            }
+            env: Dict[str, str] = {}
+            for key, env_name in mapping.items():
+                val = config.get(key)
+                if val:
+                    env[env_name] = str(val)
+            if "verify_ssl" in config:
+                env["SPLUNK_VERIFY_SSL"] = "true" if config.get("verify_ssl") else "false"
+            return env
+        except Exception as e:
+            logger.warning(f"could not load splunk runner env: {e}")
+            return {}
+
     def _forward_anomalies_to_splunk(self, anomalies) -> None:
         '''
         best-effort (docker mode): forward this run's in-memory anomalies to
@@ -595,6 +634,12 @@ class ModelOrchestrator:
             # For inference, pass artifact path so runner can load trained model
             if artifact_path_env:
                 env_vars["ARTIFACT_PATH"] = artifact_path_env
+
+            # for splunk-source runs, pass UI-configured Splunk creds as
+            # ephemeral container env so the runner can authenticate (#145).
+            _ds = (input_data or {}).get("data_source") or (input_data or {}).get("type")
+            if _ds == "splunk":
+                env_vars.update(self._splunk_runner_env())
 
             container = client.containers.run(
                 image=image_name,

@@ -277,3 +277,17 @@ def test_send_anomalies_validates_endpoint_once(monkeypatch):
         sent = c.send_anomalies([{"entity_id": f"u{i}"} for i in range(50)], index="idx")
     assert sent == 50
     assert calls["n"] == 1  # resolved exactly once across 50 sends
+
+
+def test_assert_safe_endpoint_strict_mode_fails_closed_on_unresolvable(monkeypatch):
+    # default (fail-open): an unresolvable host is let through for requests to
+    # surface; strict mode refuses it.
+    def _boom(host, port, *a, **k):
+        raise OSError("name resolution failed")
+
+    monkeypatch.setattr(splunk_mod.socket, "getaddrinfo", _boom)
+    splunk_mod._assert_safe_endpoint("https://unresolvable.invalid:8088/x")  # fail-open: no raise
+
+    monkeypatch.setenv("SPLUNK_SSRF_STRICT", "true")
+    with pytest.raises(ValueError):
+        splunk_mod._assert_safe_endpoint("https://unresolvable.invalid:8088/x")
