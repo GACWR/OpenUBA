@@ -50,10 +50,12 @@ async def submit_feedback(
 @router.get("/feedback", response_model=List[FeedbackResponse])
 async def list_feedback(
     anomaly_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
     '''
-    get feedback for an anomaly
+    get feedback for an anomaly — requires authentication, mirroring the
+    guarded POST (was an unauthenticated read-vs-write asymmetry). (audit)
     '''
     feedback_list = db.query(UserFeedback).filter(
         UserFeedback.anomaly_id == anomaly_id

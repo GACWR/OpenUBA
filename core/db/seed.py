@@ -51,7 +51,7 @@ DEFAULT_PERMISSIONS = [
     {"role": "analyst", "page": "entities", "can_read": True, "can_write": False},
     {"role": "analyst", "page": "cases", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "rules", "can_read": True, "can_write": False},
-    {"role": "analyst", "page": "alerts", "can_read": True, "can_write": True},
+    {"role": "analyst", "page": "alerts", "can_read": True, "can_write": False},
     {"role": "analyst", "page": "workspaces", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "data", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "jobs", "can_read": True, "can_write": True},
@@ -69,6 +69,26 @@ DEFAULT_PERMISSIONS = [
     {"role": "triage", "page": "alerts", "can_read": True, "can_write": True},
     {"role": "triage", "page": "entities", "can_read": True, "can_write": False},
     {"role": "triage", "page": "source_groups", "can_read": False, "can_write": False},
+    # manager - read-only across pages (mirrors fastapi_app.seed_defaults).
+    # without these, a DB seeded via this CLI would 403 every manager user on
+    # every guarded page under the fail-closed require_permission. (audit)
+    {"role": "manager", "page": "models", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "anomalies", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "entities", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "cases", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "rules", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "alerts", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "settings", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "workspaces", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "data", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "jobs", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "visualizations", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "dashboards", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "features", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "experiments", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "pipelines", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "schedules", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "source_groups", "can_read": True, "can_write": False},
 ]
 
 # default environments

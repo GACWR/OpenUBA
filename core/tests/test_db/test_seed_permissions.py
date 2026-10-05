@@ -26,7 +26,7 @@ def test_seed_permissions_backfills_new_page_without_duplicating(db_session):
     _seed_permissions(db_session)
 
     sg = db_session.query(RolePermission).filter_by(page="source_groups").count()
-    assert sg == 3  # admin, analyst, triage
+    assert sg == 4  # admin, analyst, triage, manager
     # nothing duplicated: total == the full default set, exactly once each
     assert db_session.query(RolePermission).count() == len(DEFAULT_PERMISSIONS)
 

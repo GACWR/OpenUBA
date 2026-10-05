@@ -7,9 +7,11 @@ import json
 import logging
 from typing import List, Optional, Dict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+from core.auth import require_permission
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -33,11 +35,18 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(
+    request: ChatRequest,
+    current_user: dict = Depends(require_permission("home", "read")),
+):
     '''
     stream LLM assistant responses via server-sent events.
     each SSE data line contains {"token": "..."}.
     final line is [DONE].
+
+    requires authentication (home:read): this proxies a (billable) LLM
+    provider and accepts page context, so it must never be callable
+    unauthenticated. (audit: close auth gap)
     '''
     from core.services.chat_service import ChatService
 
