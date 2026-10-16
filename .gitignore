@@ -56,3 +56,7 @@ spark-warehouse/
 derby.log
 k8s_metrics.json
 dashboard_token.txt
+
+# local python virtualenv (not part of the repo)
+.venv/
+port-forward.log
