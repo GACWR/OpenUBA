@@ -82,5 +82,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Verify core module imports
+        env:
+          # the app now fails fast at import if JWT_SECRET_KEY is unset/weak
+          # (issue #149); provide a throwaway CI value, as compose/k8s do.
+          JWT_SECRET_KEY: ci-import-check-not-a-real-secret-0123456789
         run: |
           python -c "from core.fastapi_app import app; print('FastAPI app imports OK')"
