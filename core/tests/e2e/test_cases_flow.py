@@ -13,7 +13,7 @@ from core.tests.e2e.db_utils import DBTestUtils
 
 
 @pytest.fixture
-def test_model_and_anomaly(backend_url: str):
+def test_model_and_anomaly(backend_url: str, auth_headers: dict):
     '''
     create test model and anomaly for case tests
     '''
@@ -27,9 +27,11 @@ def test_model_and_anomaly(backend_url: str):
         "manifest": {},
         "enabled": True
     }
-    model_response = requests.post(f"{backend_url}/api/v1/models", json=model_data)
+    model_response = requests.post(
+        f"{backend_url}/api/v1/models", json=model_data, headers=auth_headers
+    )
     model = model_response.json()
-    
+
     # create anomaly
     entity_id = f"e2e_test_user_{uuid4().hex[:8]}"
     anomaly_data = {
@@ -42,10 +44,11 @@ def test_model_and_anomaly(backend_url: str):
     }
     anomaly_response = requests.post(
         f"{backend_url}/api/v1/anomalies",
-        json=anomaly_data
+        json=anomaly_data,
+        headers=auth_headers
     )
     anomaly = anomaly_response.json()
-    
+
     return {"model": model, "anomaly": anomaly}
 
 
@@ -55,14 +58,15 @@ def test_cases_page_loads(page: Page, frontend_url: str):
     '''
     page.goto(f"{frontend_url}/cases")
     page.wait_for_load_state("networkidle")
-    
+
     # check page has cases content
     assert "Cases" in page.title() or "cases" in page.content().lower()
 
 
 def test_create_case_via_api_and_verify(
     backend_url: str,
-    db_utils: DBTestUtils
+    db_utils: DBTestUtils,
+    auth_headers: dict
 ):
     '''
     test creating case via api and verifying in database
@@ -74,12 +78,14 @@ def test_create_case_via_api_and_verify(
         "severity": "high",
         "analyst_notes": "initial notes"
     }
-    
-    response = requests.post(f"{backend_url}/api/v1/cases", json=case_data)
+
+    response = requests.post(
+        f"{backend_url}/api/v1/cases", json=case_data, headers=auth_headers
+    )
     assert response.status_code == 201
     case = response.json()
     case_id = case["id"]
-    
+
     # verify in database
     db_case = db_utils.query_case(case_id)
     assert db_case is not None
@@ -88,7 +94,7 @@ def test_create_case_via_api_and_verify(
     assert db_case["severity"] == "high"
 
 
-def test_list_cases_via_api(backend_url: str):
+def test_list_cases_via_api(backend_url: str, auth_headers: dict):
     '''
     test listing cases via api
     '''
@@ -99,10 +105,10 @@ def test_list_cases_via_api(backend_url: str):
         "description": "test",
         "severity": "medium"
     }
-    requests.post(f"{backend_url}/api/v1/cases", json=case_data)
-    
+    requests.post(f"{backend_url}/api/v1/cases", json=case_data, headers=auth_headers)
+
     # list cases
-    response = requests.get(f"{backend_url}/api/v1/cases")
+    response = requests.get(f"{backend_url}/api/v1/cases", headers=auth_headers)
     assert response.status_code == 200
     cases = response.json()
     assert isinstance(cases, list)
@@ -112,7 +118,8 @@ def test_list_cases_via_api(backend_url: str):
 def test_link_anomaly_to_case_via_api(
     backend_url: str,
     db_utils: DBTestUtils,
-    test_model_and_anomaly: dict
+    test_model_and_anomaly: dict,
+    auth_headers: dict
 ):
     '''
     test linking anomaly to case via api
@@ -124,16 +131,19 @@ def test_link_anomaly_to_case_via_api(
         "description": "test case",
         "severity": "high"
     }
-    case_response = requests.post(f"{backend_url}/api/v1/cases", json=case_data)
+    case_response = requests.post(
+        f"{backend_url}/api/v1/cases", json=case_data, headers=auth_headers
+    )
     case_id = case_response.json()["id"]
-    
+
     # link anomaly
     anomaly_id = test_model_and_anomaly["anomaly"]["id"]
     link_response = requests.post(
-        f"{backend_url}/api/v1/cases/{case_id}/anomalies/{anomaly_id}"
+        f"{backend_url}/api/v1/cases/{case_id}/anomalies/{anomaly_id}",
+        headers=auth_headers
     )
     assert link_response.status_code == 200
-    
+
     # verify in database
     linked_anomalies = db_utils.get_case_anomalies(case_id)
     assert len(linked_anomalies) > 0
@@ -144,7 +154,8 @@ def test_link_anomaly_to_case_via_api(
 
 def test_update_case_via_api(
     backend_url: str,
-    db_utils: DBTestUtils
+    db_utils: DBTestUtils,
+    auth_headers: dict
 ):
     '''
     test updating case via api
@@ -156,9 +167,11 @@ def test_update_case_via_api(
         "description": "initial description",
         "severity": "medium"
     }
-    create_response = requests.post(f"{backend_url}/api/v1/cases", json=case_data)
+    create_response = requests.post(
+        f"{backend_url}/api/v1/cases", json=case_data, headers=auth_headers
+    )
     case_id = create_response.json()["id"]
-    
+
     # update case
     update_data = {
         "status": "investigating",
@@ -166,12 +179,13 @@ def test_update_case_via_api(
     }
     update_response = requests.patch(
         f"{backend_url}/api/v1/cases/{case_id}",
-        json=update_data
+        json=update_data,
+        headers=auth_headers
     )
     assert update_response.status_code == 200
     updated_case = update_response.json()
     assert updated_case["status"] == "investigating"
-    
+
     # verify in database
     db_case = db_utils.query_case(case_id)
     assert db_case["status"] == "investigating"
@@ -180,7 +194,8 @@ def test_update_case_via_api(
 def test_case_appears_in_ui(
     page: Page,
     frontend_url: str,
-    backend_url: str
+    backend_url: str,
+    auth_headers: dict
 ):
     '''
     test that case created via api appears in ui
@@ -192,12 +207,11 @@ def test_case_appears_in_ui(
         "description": "test case",
         "severity": "high"
     }
-    requests.post(f"{backend_url}/api/v1/cases", json=case_data)
-    
+    requests.post(f"{backend_url}/api/v1/cases", json=case_data, headers=auth_headers)
+
     # check in ui
     page.goto(f"{frontend_url}/cases")
     page.wait_for_load_state("networkidle")
-    
+
     # check case appears
     assert page.locator(f"text={case_title}").is_visible()
-

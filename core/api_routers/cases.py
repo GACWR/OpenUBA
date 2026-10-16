@@ -46,7 +46,8 @@ async def list_cases(
     assigned_to: Optional[str] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("cases", "read"))
 ):
     '''
     list or search cases
@@ -65,7 +66,8 @@ async def list_cases(
 @router.get("/cases/{case_id}", response_model=CaseResponse)
 async def get_case(
     case_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("cases", "read"))
 ):
     '''
     get case by id

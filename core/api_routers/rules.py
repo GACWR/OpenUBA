@@ -92,7 +92,8 @@ async def list_rules(
     rule_type: Optional[str] = Query(None, pattern="^(single-fire|deviation|flow)$"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("rules", "read"))
 ):
     '''
     get or list detection rules
@@ -109,7 +110,8 @@ async def list_rules(
 @router.get("/rules/{rule_id}", response_model=RuleResponse)
 async def get_rule(
     rule_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("rules", "read"))
 ):
     '''
     get rule by id
@@ -222,7 +224,8 @@ async def list_alerts(
     rule_id: Optional[UUID] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("alerts", "read"))
 ):
     '''
     list alerts with optional filters

@@ -7,6 +7,29 @@ import pytest
 from uuid import uuid4
 from datetime import datetime
 from fastapi.testclient import TestClient
+from core.fastapi_app import app
+from core.auth import get_current_user
+from core.db.connection import get_db
+
+
+@pytest.fixture(autouse=True)
+def _as_admin():
+    '''authenticate every request in this module as an admin (bypasses require_permission)'''
+    app.dependency_overrides[get_current_user] = lambda: {
+        "username": "admin", "user_id": str(uuid4()), "role": "admin", "payload": {},
+    }
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture
+def unauthenticated_client(_as_admin):
+    '''client with NO auth override → protected routes must 401'''
+    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides[get_db] = lambda: object()
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.pop(get_db, None)
 
 
 def test_create_anomaly(test_client: TestClient):
@@ -148,4 +171,12 @@ def test_acknowledge_anomaly(test_client: TestClient):
     data = response.json()
     assert data["acknowledged"] == True
     assert data["acknowledged_by"] == "test_user"
+
+
+@pytest.mark.parametrize(
+    "path", ["/api/v1/anomalies", f"/api/v1/anomalies/{uuid4()}"]
+)
+def test_anomaly_reads_require_authentication(unauthenticated_client: TestClient, path: str):
+    '''GET anomaly reads must reject unauthenticated callers'''
+    assert unauthenticated_client.get(path).status_code == 401
 

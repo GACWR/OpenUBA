@@ -236,3 +236,11 @@ def test_sdk_rule_recovers_from_pk_conflict(db_session):
     # no duplicate row created for the fixed id
     assert db_session.query(Rule).filter(Rule.id == SDK_ALERT_RULE_ID).count() == 1
 
+
+@pytest.mark.parametrize(
+    "path", ["/api/v1/rules", f"/api/v1/rules/{uuid4()}", "/api/v1/alerts"]
+)
+def test_rule_reads_require_authentication(unauthenticated_client: TestClient, path: str):
+    '''GET rules/alerts reads must reject unauthenticated callers'''
+    assert unauthenticated_client.get(path).status_code == 401
+

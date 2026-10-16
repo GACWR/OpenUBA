@@ -56,6 +56,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (True, False), "visualizations": (True, False),
         "dashboards": (True, False), "experiments": (True, False),
         "features": (True, False), "jobs": (True, False), "pipelines": (True, False),
+        "source_groups": (True, False),
     },
     "triage": {
         "home": (True, False), "data": (False, False), "models": (False, False),
@@ -65,6 +66,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (False, False), "visualizations": (True, False),
         "dashboards": (True, False), "experiments": (False, False),
         "features": (False, False), "jobs": (False, False), "pipelines": (False, False),
+        "source_groups": (False, False),
     },
     "analyst": {
         "home": (True, False), "data": (True, False), "models": (True, True),
@@ -74,6 +76,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (True, True), "visualizations": (True, True),
         "dashboards": (True, True), "experiments": (True, True),
         "features": (True, True), "jobs": (True, True), "pipelines": (True, True),
+        "source_groups": (True, False),
     },
 }
 
@@ -107,19 +110,29 @@ def seed_defaults():
             ))
             db.commit()
 
-        # seed default role permissions
-        existing_count = db.query(RolePermission).count()
-        if existing_count == 0:
-            for role, pages in DEFAULT_PERMISSIONS.items():
-                for page, (can_read, can_write) in pages.items():
+        # seed default role permissions — idempotent PER (role, page) so that
+        # pages introduced in a later release (e.g. source_groups) are
+        # backfilled on upgrade, not only on a first-ever boot. an all-or-
+        # nothing `count() == 0` gate would leave existing deployments without
+        # the new page's rows → non-admin roles would 403 on it. existing
+        # (possibly admin-edited) rows are never overwritten.
+        seeded = 0
+        for role, pages in DEFAULT_PERMISSIONS.items():
+            for page, (can_read, can_write) in pages.items():
+                exists = db.query(RolePermission).filter_by(
+                    role=role, page=page
+                ).first()
+                if exists is None:
                     db.add(RolePermission(
                         role=role,
                         page=page,
                         can_read=can_read,
                         can_write=can_write,
                     ))
+                    seeded += 1
+        if seeded:
             db.commit()
-            logger.info("seeded default role permissions")
+            logger.info(f"seeded {seeded} default role permission(s)")
     except Exception as e:
         db.rollback()
         logger.warning(f"failed to seed defaults: {e}")

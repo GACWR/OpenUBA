@@ -91,7 +91,8 @@ async def list_models(
     enabled: Optional[bool] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("models", "read"))
 ):
     '''
     list installed models with optional filters
@@ -121,7 +122,8 @@ async def search_models(
     query: Optional[str] = Query(None, description="search query"),
     source_type: Optional[str] = Query(None, description="filter by source type"),
     registry_type: str = Query("all", description="search 'code', 'weights', or 'all' registries"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("models", "read"))
 ):
     '''
     unified search for models across all registries
@@ -181,7 +183,8 @@ async def search_models(
 @router.get("/models/{model_id}", response_model=ModelResponse)
 async def get_model(
     model_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("models", "read"))
 ):
     '''
     get model by id

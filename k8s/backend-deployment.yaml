@@ -51,6 +51,11 @@ spec:
                     secretKeyRef:
                       name: backend-secret
                       key: database-url
+                - name: JWT_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: backend-secret
+                      key: jwt-secret-key
                 - name: GRAPHQL_URL
                   value: "http://postgraphile:5000/graphql"
                 - name: MODEL_STORAGE_PATH

@@ -51,7 +51,7 @@ DEFAULT_PERMISSIONS = [
     {"role": "analyst", "page": "entities", "can_read": True, "can_write": False},
     {"role": "analyst", "page": "cases", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "rules", "can_read": True, "can_write": False},
-    {"role": "analyst", "page": "alerts", "can_read": True, "can_write": True},
+    {"role": "analyst", "page": "alerts", "can_read": True, "can_write": False},
     {"role": "analyst", "page": "workspaces", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "data", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "jobs", "can_read": True, "can_write": True},
@@ -61,11 +61,34 @@ DEFAULT_PERMISSIONS = [
     {"role": "analyst", "page": "experiments", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "pipelines", "can_read": True, "can_write": True},
     {"role": "analyst", "page": "schedules", "can_read": True, "can_write": True},
+    {"role": "admin", "page": "source_groups", "can_read": True, "can_write": True},
+    {"role": "analyst", "page": "source_groups", "can_read": True, "can_write": False},
     # triage - read only
     {"role": "triage", "page": "anomalies", "can_read": True, "can_write": False},
     {"role": "triage", "page": "cases", "can_read": True, "can_write": True},
     {"role": "triage", "page": "alerts", "can_read": True, "can_write": True},
     {"role": "triage", "page": "entities", "can_read": True, "can_write": False},
+    {"role": "triage", "page": "source_groups", "can_read": False, "can_write": False},
+    # manager - read-only across pages (mirrors fastapi_app.seed_defaults).
+    # without these, a DB seeded via this CLI would 403 every manager user on
+    # every guarded page under the fail-closed require_permission. (audit)
+    {"role": "manager", "page": "models", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "anomalies", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "entities", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "cases", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "rules", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "alerts", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "settings", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "workspaces", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "data", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "jobs", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "visualizations", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "dashboards", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "features", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "experiments", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "pipelines", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "schedules", "can_read": True, "can_write": False},
+    {"role": "manager", "page": "source_groups", "can_read": True, "can_write": False},
 ]
 
 # default environments
@@ -139,16 +162,27 @@ def _seed_admin_user(db: Session):
 
 
 def _seed_permissions(db: Session):
-    '''create default role permissions if not exist'''
-    existing_count = db.query(RolePermission).count()
-    if existing_count > 0:
-        logger.debug(f"role permissions already exist ({existing_count})")
-        return
+    '''
+    create default role permissions, idempotent per (role, page).
 
+    seeding each (role, page) individually (instead of an all-or-nothing
+    count() gate) means pages added in a later release are backfilled on
+    upgrade rather than silently missing for already-seeded deployments.
+    existing rows are left untouched.
+    '''
+    created = 0
     for perm in DEFAULT_PERMISSIONS:
-        db.add(RolePermission(id=uuid.uuid4(), **perm))
+        exists = db.query(RolePermission).filter_by(
+            role=perm["role"], page=perm["page"]
+        ).first()
+        if exists is None:
+            db.add(RolePermission(id=uuid.uuid4(), **perm))
+            created += 1
     db.flush()
-    logger.info(f"created {len(DEFAULT_PERMISSIONS)} role permissions")
+    if created:
+        logger.info(f"created {created} role permission(s)")
+    else:
+        logger.debug("role permissions already present")
 
 
 def _seed_environments(db: Session):
