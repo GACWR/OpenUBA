@@ -417,10 +417,18 @@ class DataIngestionService:
             for item in adjusted_path.iterdir():
                 if item.is_dir() and not item.name.startswith("."):
                     dataset_name = item.name
-                    
-                    # STRICT WHITELIST: only allow toy_1 (user request)
-                    if dataset_name != "toy_1":
-                        logger.warning(f"skipping invalid dataset: {dataset_name} (only 'toy_1' is allowed per user rule)")
+
+                    # Ingest any directory that looks like a dataset, i.e. it holds
+                    # at least one log-type subdirectory (proxy/dns/ssh/...). This
+                    # keeps toy_1 working while allowing additional datasets to be
+                    # added under test_datasets/ without a code change, and safely
+                    # skips stray/non-dataset directories.
+                    has_log_types = any(
+                        sub.is_dir() and not sub.name.startswith(".")
+                        for sub in item.iterdir()
+                    )
+                    if not has_log_types:
+                        logger.debug(f"skipping {dataset_name}: no log-type subdirectories")
                         continue
 
                     logger.info(f"found dataset: {dataset_name}")
