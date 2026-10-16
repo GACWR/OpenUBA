@@ -1,0 +1,335 @@
+'''
+Copyright 2019-Present The OpenUBA Platform Authors
+splunk integration
+
+Two directions:
+  * INPUT  — run a Splunk search and return events (via the REST export API)
+  * OUTPUT — forward anomalies/events to Splunk (via the HTTP Event Collector)
+
+Config comes from constructor args with SPLUNK_* env fallbacks, matching the
+ElasticsearchConnector pattern. Nothing here is Splunk-SDK-dependent — it uses
+plain `requests`, so it also works unchanged inside the self-contained model
+runner container.
+'''
+
+import ipaddress
+import json
+import logging
+import os
+import socket
+from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
+
+import requests
+
+logger = logging.getLogger(__name__)
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _assert_safe_endpoint(url: str) -> None:
+    '''
+    SSRF guard for admin/input-controlled Splunk endpoints (host / hec_url).
+
+    the host and hec_url come from integration_settings / model input_data,
+    which are reachable by models:write holders — a wider audience than the
+    admin who normally owns integrations. refuse to fire outbound requests at
+    anything that isn't a real http(s) Splunk endpoint:
+      * scheme must be http/https (blocks file://, gopher://, etc.)
+      * the host must not resolve to a link-local address (169.254.0.0/16,
+        fe80::/10) — this is the cloud instance-metadata range (169.254.169.254)
+        and the classic SSRF exfiltration target.
+
+    internal/private and loopback Splunk hosts are intentionally allowed: that
+    is the normal deployment (e.g. `https://splunk:8088`), so we do NOT block
+    RFC-1918 space.
+
+    Fail-open ONLY on unresolvable hosts (the connection would fail anyway and
+    hard-failing would break legitimately-transient DNS for a best-effort
+    egress); any host that DOES resolve to a blocked range is always refused.
+    Residual DNS-rebinding risk should be contained by network egress policy.
+    '''
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(
+            f"splunk endpoint scheme must be http/https, got '{parsed.scheme or 'none'}'"
+        )
+    host = parsed.hostname
+    if not host:
+        raise ValueError("splunk endpoint has no host")
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or None)
+    except Exception:
+        # can't resolve. default: let requests surface the connection error
+        # (fail-open on UNRESOLVABLE only — best-effort egress). set
+        # SPLUNK_SSRF_STRICT=true to fail closed instead (refuse anything the
+        # guard can't verify), for security-conscious deployments.
+        if _env_flag("SPLUNK_SSRF_STRICT", False):
+            raise ValueError(
+                f"splunk endpoint host '{host}' could not be resolved for SSRF "
+                f"validation (SPLUNK_SSRF_STRICT enabled)"
+            )
+        return
+    for info in infos:
+        addr = info[4][0]
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            continue
+        # unwrap IPv4-mapped IPv6 (e.g. ::ffff:169.254.169.254) before
+        # classifying, otherwise is_link_local is False and metadata leaks.
+        mapped = getattr(ip, "ipv4_mapped", None)
+        if mapped is not None:
+            ip = mapped
+        if ip.is_link_local or ip.is_unspecified:
+            raise ValueError(
+                f"splunk endpoint host '{host}' resolves to blocked address "
+                f"{ip} (link-local/metadata or unspecified; possible SSRF)"
+            )
+
+
+class SplunkConnector:
+    '''
+    connector for Splunk Enterprise / Cloud.
+
+    host      — management REST endpoint, e.g. https://splunk:8089 (for search)
+    token     — bearer token for the REST API (preferred), OR
+    username/password — basic auth for the REST API
+    hec_url   — HTTP Event Collector base, e.g. https://splunk:8088 (for output)
+    hec_token — HEC token
+    '''
+
+    def __init__(
+        self,
+        host: Optional[str] = None,
+        token: Optional[str] = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        hec_url: Optional[str] = None,
+        hec_token: Optional[str] = None,
+        verify_ssl: Optional[bool] = None,
+        timeout: int = 60,
+    ):
+        self.host = (host or os.getenv("SPLUNK_HOST", "")).rstrip("/")
+        self.token = token or os.getenv("SPLUNK_TOKEN", "")
+        self.username = username or os.getenv("SPLUNK_USERNAME", "")
+        self.password = password or os.getenv("SPLUNK_PASSWORD", "")
+        self.hec_url = (hec_url or os.getenv("SPLUNK_HEC_URL", "")).rstrip("/")
+        self.hec_token = hec_token or os.getenv("SPLUNK_HEC_TOKEN", "")
+        if verify_ssl is None:
+            verify_ssl = _env_flag("SPLUNK_VERIFY_SSL", True)
+        self.verify_ssl = verify_ssl
+        if not self.verify_ssl:
+            logger.warning(
+                "splunk connector: TLS certificate verification is DISABLED "
+                "(verify_ssl=false) — connection is vulnerable to MITM"
+            )
+        self.timeout = timeout
+        # endpoints validated by _ensure_safe_endpoint are cached so a large
+        # anomaly batch does not re-resolve DNS once per event (see #145).
+        self._validated_endpoints: set = set()
+
+    def _ensure_safe_endpoint(self, url: str) -> None:
+        '''SSRF-validate an endpoint at most once per unique URL (memoized).'''
+        if url in self._validated_endpoints:
+            return
+        _assert_safe_endpoint(url)
+        self._validated_endpoints.add(url)
+
+    @classmethod
+    def from_config(cls, config: Dict[str, Any]) -> "SplunkConnector":
+        '''build a connector from an integration_settings config dict'''
+        return cls(
+            host=config.get("host"),
+            token=config.get("token"),
+            username=config.get("username"),
+            password=config.get("password"),
+            hec_url=config.get("hec_url"),
+            hec_token=config.get("hec_token"),
+            verify_ssl=config.get("verify_ssl", True),
+        )
+
+    # ── auth ─────────────────────────────────────────────────────────
+
+    def _rest_headers(self) -> Dict[str, str]:
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        return headers
+
+    def _rest_auth(self):
+        '''basic auth tuple when no bearer token is configured'''
+        if not self.token and self.username:
+            return (self.username, self.password)
+        return None
+
+    # ── INPUT: search ────────────────────────────────────────────────
+
+    @staticmethod
+    def _normalize_query(query: str) -> str:
+        '''Splunk searches must start with `search` or a generating command (`|`)'''
+        q = (query or "").strip()
+        if not q:
+            raise ValueError("splunk search query is empty")
+        if q.startswith("|") or q.lower().startswith("search "):
+            return q
+        return f"search {q}"
+
+    def search(
+        self,
+        query: str,
+        earliest_time: str = "-24h",
+        latest_time: str = "now",
+        max_count: int = 1000,
+    ) -> List[Dict[str, Any]]:
+        '''
+        run a blocking Splunk search via the export endpoint and return the
+        list of result rows (each a flat dict of field → value).
+        '''
+        if not self.host:
+            raise ValueError("splunk host not configured")
+
+        url = f"{self.host}/services/search/jobs/export"
+        self._ensure_safe_endpoint(url)
+        payload = {
+            "search": self._normalize_query(query),
+            "output_mode": "json",
+            "earliest_time": earliest_time,
+            "latest_time": latest_time,
+            "count": max_count,
+        }
+        logger.info(f"running splunk search on {self.host} (count<={max_count})")
+        resp = requests.post(
+            url,
+            data=payload,
+            headers=self._rest_headers(),
+            auth=self._rest_auth(),
+            verify=self.verify_ssl,
+            timeout=self.timeout,
+            allow_redirects=False,
+        )
+        if resp.status_code != 200:
+            raise ValueError(
+                f"splunk search failed ({resp.status_code}): {resp.text[:500]}"
+            )
+
+        results: List[Dict[str, Any]] = []
+        # the export endpoint streams newline-delimited JSON objects
+        for line in resp.text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            row = obj.get("result")
+            if isinstance(row, dict):
+                results.append(row)
+        logger.info(f"splunk search returned {len(results)} rows")
+        return results
+
+    # ── OUTPUT: HTTP Event Collector ─────────────────────────────────
+
+    def send_event(
+        self,
+        event: Dict[str, Any],
+        sourcetype: str = "openuba",
+        source: str = "openuba",
+        index: Optional[str] = None,
+    ) -> bool:
+        '''forward a single event to Splunk via HEC. returns True on success.'''
+        if not self.hec_url or not self.hec_token:
+            logger.debug("splunk HEC not configured — skipping event forward")
+            return False
+
+        url = f"{self.hec_url}/services/collector/event"
+        try:
+            self._ensure_safe_endpoint(url)
+        except ValueError as e:
+            logger.error(f"splunk HEC endpoint rejected: {e}")
+            return False
+        body: Dict[str, Any] = {
+            "event": event,
+            "sourcetype": sourcetype,
+            "source": source,
+        }
+        if index:
+            body["index"] = index
+        try:
+            resp = requests.post(
+                url,
+                data=json.dumps(body),
+                headers={"Authorization": f"Splunk {self.hec_token}"},
+                verify=self.verify_ssl,
+                timeout=self.timeout,
+                allow_redirects=False,
+            )
+            if resp.status_code == 200:
+                return True
+            logger.error(f"splunk HEC send failed ({resp.status_code}): {resp.text[:300]}")
+            return False
+        except Exception as e:
+            logger.error(f"splunk HEC send error: {e}")
+            return False
+
+    def send_anomaly(self, anomaly: Dict[str, Any], index: Optional[str] = None) -> bool:
+        '''forward an OpenUBA anomaly to Splunk as an openuba:anomaly event'''
+        return self.send_event(anomaly, sourcetype="openuba:anomaly", index=index)
+
+    def send_anomalies(self, anomalies: List[Dict[str, Any]], index: Optional[str] = None) -> int:
+        '''forward a batch of anomalies; returns the count successfully sent'''
+        sent = 0
+        for a in anomalies:
+            if self.send_anomaly(a, index=index):
+                sent += 1
+        return sent
+
+    # ── connectivity ─────────────────────────────────────────────────
+
+    def test_connection(self) -> Dict[str, Any]:
+        '''probe the REST management endpoint (or HEC if only that is set)'''
+        try:
+            if self.host:
+                self._ensure_safe_endpoint(f"{self.host}/services/server/info")
+                resp = requests.get(
+                    f"{self.host}/services/server/info",
+                    params={"output_mode": "json"},
+                    headers=self._rest_headers(),
+                    auth=self._rest_auth(),
+                    verify=self.verify_ssl,
+                    timeout=10,
+                    allow_redirects=False,
+                )
+                if resp.status_code == 200:
+                    version = ""
+                    try:
+                        entries = resp.json().get("entry", [])
+                        if entries:
+                            version = entries[0].get("content", {}).get("version", "")
+                    except Exception:
+                        pass
+                    return {"status": "connected", "version": version}
+                return {"status": "error", "message": f"HTTP {resp.status_code}"}
+
+            if self.hec_url and self.hec_token:
+                self._ensure_safe_endpoint(f"{self.hec_url}/services/collector/health")
+                resp = requests.get(
+                    f"{self.hec_url}/services/collector/health",
+                    headers={"Authorization": f"Splunk {self.hec_token}"},
+                    verify=self.verify_ssl,
+                    timeout=10,
+                    allow_redirects=False,
+                )
+                if resp.status_code == 200:
+                    return {"status": "connected", "channel": "hec"}
+                return {"status": "error", "message": f"HEC HTTP {resp.status_code}"}
+
+            return {"status": "error", "message": "host or hec_url not configured"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}

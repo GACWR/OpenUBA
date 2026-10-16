@@ -17,7 +17,7 @@ from core.auth import require_permission
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-VALID_INTEGRATION_TYPES = {"ollama", "openai", "claude", "gemini", "elasticsearch", "spark", "smtp"}
+VALID_INTEGRATION_TYPES = {"ollama", "openai", "claude", "gemini", "elasticsearch", "spark", "smtp", "splunk"}
 
 
 class IntegrationConfigUpdate(BaseModel):
@@ -185,6 +185,8 @@ async def test_integration(
             return await _test_spark(config)
         elif integration_type == "smtp":
             return await _test_smtp(config)
+        elif integration_type == "splunk":
+            return await _test_splunk(config)
     except Exception as e:
         logger.error(f"test {integration_type} failed: {e}")
         return {"status": "error", "message": str(e)}
@@ -317,10 +319,16 @@ async def _test_smtp(config: dict) -> dict:
         return {"status": "error", "message": str(e)}
 
 
+async def _test_splunk(config: dict) -> dict:
+    '''verify Splunk connectivity via the shared SplunkConnector'''
+    from core.integrations.splunk import SplunkConnector
+    return SplunkConnector.from_config(config).test_connection()
+
+
 def _mask_sensitive_fields(config: dict) -> dict:
-    '''mask api keys / passwords in config for safe display'''
+    '''mask api keys / tokens / passwords in config for safe display'''
     masked = dict(config)
-    for key in ("api_key", "password"):
+    for key in ("api_key", "token", "hec_token", "password"):
         if key in masked and masked[key]:
             val = str(masked[key])
             if len(val) > 8:
