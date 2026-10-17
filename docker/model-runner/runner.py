@@ -5,6 +5,7 @@ model runner script for containerized execution
 '''
 
 import os
+import re
 import sys
 import json
 import logging
@@ -71,8 +72,13 @@ def _build_splunk_query(search: str, splunk_index: str = None) -> str:
         raise ValueError("splunk_search required for splunk data source")
     if not (q.startswith("|") or q.lower().startswith("search ")):
         q = "search " + q
-    if splunk_index and q.lower().startswith("search ") and "index=" not in q.lower():
-        q = f"search index={splunk_index} " + q[len("search "):]
+    if splunk_index:
+        # splunk_index is user-controlled; restrict to real index-name chars so
+        # it can't inject extra SPL (e.g. "foo | delete") when interpolated
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", splunk_index):
+            raise ValueError(f"invalid splunk_index: {splunk_index!r}")
+        if q.lower().startswith("search ") and "index=" not in q.lower():
+            q = f"search index={splunk_index} " + q[len("search "):]
     return q
 
 

@@ -70,3 +70,15 @@ def test_build_splunk_query_leaves_generating_command():
 
 def test_build_splunk_query_no_index():
     assert runner._build_splunk_query("foo=bar") == "search foo=bar"
+
+
+def test_build_splunk_query_rejects_index_injection():
+    # splunk_index is user-controlled (models:write); it must not inject SPL
+    for bad in ("foo | delete", "* | eval x=1", "a OR index=secret", "a b", "idx;drop", 'x"y'):
+        with pytest.raises(ValueError):
+            runner._build_splunk_query("sourcetype=access", bad)
+
+
+def test_build_splunk_query_accepts_valid_index():
+    assert runner._build_splunk_query("sourcetype=access", "proxy_logs-1") == \
+        "search index=proxy_logs-1 sourcetype=access"
