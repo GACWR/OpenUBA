@@ -1,5 +1,10 @@
 # Installation
 
+> **On a Linux server?** This guide targets a macOS/Linux development laptop.
+> For headless **Ubuntu Server** — including a one-command installer, remote
+> access, and reboot-safe port-forwards — see
+> [INSTALL_UBUNTU.md](INSTALL_UBUNTU.md).
+
 ## Prerequisites
 
 | Tool | Version | Purpose |

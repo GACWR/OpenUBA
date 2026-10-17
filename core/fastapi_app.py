@@ -3,6 +3,7 @@ Copyright 2019-Present The OpenUBA Platform Authors
 fastapi application entry point
 '''
 
+import asyncio
 import logging
 import os
 from fastapi import FastAPI
@@ -55,6 +56,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (True, False), "visualizations": (True, False),
         "dashboards": (True, False), "experiments": (True, False),
         "features": (True, False), "jobs": (True, False), "pipelines": (True, False),
+        "source_groups": (True, False),
     },
     "triage": {
         "home": (True, False), "data": (False, False), "models": (False, False),
@@ -64,6 +66,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (False, False), "visualizations": (True, False),
         "dashboards": (True, False), "experiments": (False, False),
         "features": (False, False), "jobs": (False, False), "pipelines": (False, False),
+        "source_groups": (False, False),
     },
     "analyst": {
         "home": (True, False), "data": (True, False), "models": (True, True),
@@ -73,6 +76,7 @@ DEFAULT_PERMISSIONS = {
         "workspaces": (True, True), "visualizations": (True, True),
         "dashboards": (True, True), "experiments": (True, True),
         "features": (True, True), "jobs": (True, True), "pipelines": (True, True),
+        "source_groups": (True, False),
     },
 }
 
@@ -106,19 +110,29 @@ def seed_defaults():
             ))
             db.commit()
 
-        # seed default role permissions
-        existing_count = db.query(RolePermission).count()
-        if existing_count == 0:
-            for role, pages in DEFAULT_PERMISSIONS.items():
-                for page, (can_read, can_write) in pages.items():
+        # seed default role permissions — idempotent PER (role, page) so that
+        # pages introduced in a later release (e.g. source_groups) are
+        # backfilled on upgrade, not only on a first-ever boot. an all-or-
+        # nothing `count() == 0` gate would leave existing deployments without
+        # the new page's rows → non-admin roles would 403 on it. existing
+        # (possibly admin-edited) rows are never overwritten.
+        seeded = 0
+        for role, pages in DEFAULT_PERMISSIONS.items():
+            for page, (can_read, can_write) in pages.items():
+                exists = db.query(RolePermission).filter_by(
+                    role=role, page=page
+                ).first()
+                if exists is None:
                     db.add(RolePermission(
                         role=role,
                         page=page,
                         can_read=can_read,
                         can_write=can_write,
                     ))
+                    seeded += 1
+        if seeded:
             db.commit()
-            logger.info("seeded default role permissions")
+            logger.info(f"seeded {seeded} default role permission(s)")
     except Exception as e:
         db.rollback()
         logger.warning(f"failed to seed defaults: {e}")
@@ -155,8 +169,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             if attempt < max_retries - 1:
                 logger.warning(f"database initialization failed (attempt {attempt + 1}/{max_retries}): {e}, retrying in {retry_delay}s...")
-                import time
-                time.sleep(retry_delay)
+                await asyncio.sleep(retry_delay)
             else:
                 logger.error(f"database initialization failed after {max_retries} attempts: {e}")
     
@@ -271,6 +284,7 @@ app.include_router(system.router, tags=["system"])
 # workspace & platform enhancement routers
 from core.api_routers import workspaces, jobs, visualizations, dashboards
 from core.api_routers import features, experiments, hyperparameters, pipelines, datasets, sdk
+from core.api_routers import evaluation
 app.include_router(workspaces.router, prefix="/api/v1", tags=["workspaces"])
 app.include_router(jobs.router, prefix="/api/v1", tags=["jobs"])
 app.include_router(visualizations.router, prefix="/api/v1", tags=["visualizations"])
@@ -281,6 +295,7 @@ app.include_router(hyperparameters.router, prefix="/api/v1", tags=["hyperparamet
 app.include_router(pipelines.router, prefix="/api/v1", tags=["pipelines"])
 app.include_router(datasets.router, prefix="/api/v1", tags=["datasets"])
 app.include_router(sdk.router, prefix="/api/v1", tags=["sdk"])
+app.include_router(evaluation.router, prefix="/api/v1", tags=["evaluation"])
 
 
 @app.get("/")

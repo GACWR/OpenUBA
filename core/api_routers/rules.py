@@ -9,11 +9,51 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 
 from core.db import get_db
 from core.db.models import Rule, Alert
-from core.api_schemas.rules import RuleCreate, RuleUpdate, RuleResponse, AlertResponse
+from core.api_schemas.rules import (
+    RuleCreate, RuleUpdate, RuleResponse, AlertCreate, AlertResponse,
+)
 from core.auth import require_permission
+from core.services.notification_service import AlertNotifier
+
+SDK_ALERT_RULE_NAME = "SDK Alerts"
+# deterministic id for the synthetic SDK rule so two concurrent first-time
+# callers collide on the PRIMARY KEY (already unique) instead of racing to
+# INSERT duplicate "SDK Alerts" rows. (audit #144)
+SDK_ALERT_RULE_ID = UUID("00000000-0000-0000-0000-00000000a1e7")
+
+
+def _get_or_create_sdk_rule(db: Session) -> Rule:
+    '''
+    owning rule for alerts raised directly via the SDK (alerts.rule_id is
+    required). race-safe: the INSERT uses a fixed primary key inside a
+    SAVEPOINT, so a concurrent create loses the PK race, is caught, and
+    re-reads the winner — no duplicate synthetic rules accumulate.
+    '''
+    rule = db.query(Rule).filter(Rule.name == SDK_ALERT_RULE_NAME).first()
+    if rule is not None:
+        return rule
+    rule = Rule(
+        id=SDK_ALERT_RULE_ID,
+        name=SDK_ALERT_RULE_NAME,
+        description="System rule for alerts raised directly through the OpenUBA SDK.",
+        rule_type="single-fire",
+        condition="sdk",
+        enabled=True,
+        severity="medium",
+    )
+    try:
+        with db.begin_nested():  # SAVEPOINT — only this INSERT is rolled back on conflict
+            db.add(rule)
+            db.flush()
+    except IntegrityError:
+        # another request won the PK race — reuse the row occupying the fixed
+        # id (re-read by id, since the conflict is on the primary key)
+        return db.query(Rule).filter(Rule.id == SDK_ALERT_RULE_ID).first()
+    return rule
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -52,7 +92,8 @@ async def list_rules(
     rule_type: Optional[str] = Query(None, pattern="^(single-fire|deviation|flow)$"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("rules", "read"))
 ):
     '''
     get or list detection rules
@@ -69,7 +110,8 @@ async def list_rules(
 @router.get("/rules/{rule_id}", response_model=RuleResponse)
 async def get_rule(
     rule_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("rules", "read"))
 ):
     '''
     get rule by id
@@ -119,6 +161,62 @@ async def delete_rule(
     logger.info(f"deleted rule: {rule_id}")
 
 
+@router.post("/alerts", response_model=AlertResponse, status_code=201)
+async def create_alert(
+    alert_data: AlertCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("alerts", "write"))
+):
+    '''
+    raise an alert directly (e.g. from a model via the OpenUBA SDK).
+
+    if `notify` is set, realtime notifications (SMTP email + in-app) are
+    dispatched best-effort, reusing the same delivery path as rule-fired alerts.
+    '''
+    if alert_data.rule_id is not None:
+        rule = db.query(Rule).filter(Rule.id == alert_data.rule_id).first()
+        if rule is None:
+            raise HTTPException(status_code=404, detail="rule not found")
+    else:
+        rule = _get_or_create_sdk_rule(db)
+
+    context = dict(alert_data.context or {})
+    context.setdefault("source", "sdk")
+
+    alert = Alert(
+        rule_id=rule.id,
+        severity=alert_data.severity,
+        message=alert_data.message,
+        entity_id=alert_data.entity_id,
+        entity_type=alert_data.entity_type or "user",
+        alert_context=context,
+        acknowledged=False,
+    )
+    db.add(alert)
+    db.flush()
+
+    if alert_data.notify:
+        try:
+            AlertNotifier().notify(
+                db,
+                rule_name=rule.name,
+                severity=alert.severity,
+                message=alert.message,
+                entity_id=alert.entity_id or "unknown",
+                entity_type=alert.entity_type or "user",
+                alert_id=str(alert.id),
+                recipients=alert_data.recipients,
+                context=context,
+            )
+        except Exception as e:
+            logger.error(f"alert notification dispatch failed: {e}")
+
+    db.commit()
+    db.refresh(alert)
+    logger.info(f"alert created via api: rule={rule.name} severity={alert.severity}")
+    return alert
+
+
 @router.get("/alerts", response_model=List[AlertResponse])
 async def list_alerts(
     severity: Optional[str] = Query(None, pattern="^(critical|high|medium|low)$"),
@@ -126,7 +224,8 @@ async def list_alerts(
     rule_id: Optional[UUID] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("alerts", "read"))
 ):
     '''
     list alerts with optional filters

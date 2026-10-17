@@ -46,6 +46,7 @@ async def create_anomaly(
 async def list_anomalies(
     model_id: Optional[UUID] = Query(None),
     entity_id: Optional[str] = Query(None),
+    run_id: Optional[UUID] = Query(None, description="filter to a single model run's anomalies"),
     acknowledged: Optional[bool] = Query(None),
     min_risk_score: Optional[float] = Query(None, ge=0.0, le=100.0),
     max_risk_score: Optional[float] = Query(None, ge=0.0, le=100.0),
@@ -53,7 +54,8 @@ async def list_anomalies(
     end_time: Optional[datetime] = Query(None),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("anomalies", "read"))
 ):
     '''
     list anomalies with pagination and filters
@@ -62,6 +64,7 @@ async def list_anomalies(
     anomalies = repo.list_all(
         model_id=model_id,
         entity_id=entity_id,
+        run_id=run_id,
         acknowledged=acknowledged,
         min_risk_score=min_risk_score,
         max_risk_score=max_risk_score,
@@ -83,7 +86,8 @@ async def list_anomalies(
 @router.get("/anomalies/{anomaly_id}", response_model=AnomalyResponse)
 async def get_anomaly(
     anomaly_id: UUID,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_permission("anomalies", "read"))
 ):
     '''
     get anomaly by id

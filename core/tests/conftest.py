@@ -5,6 +5,14 @@ uses testcontainers for real services (no mocks)
 '''
 
 import os
+
+# ensure a valid JWT signing key exists BEFORE importing anything under `core`,
+# because core.auth loads and validates JWT_SECRET_KEY at import time (issue #149).
+# setdefault so a real env value (e.g. in CI) is never overwritten.
+os.environ.setdefault(
+    "JWT_SECRET_KEY", "test-secret-key-0123456789abcdef-not-for-production"
+)
+
 import pytest
 import asyncio
 from typing import Generator
@@ -71,7 +79,10 @@ def test_client(db_session: Session) -> TestClient:
     app.dependency_overrides[get_db] = override_get_db
     client = TestClient(app)
     yield client
-    app.dependency_overrides.clear()
+    # remove only the override this fixture added — don't clear() the whole
+    # map, which would also wipe overrides owned by other (e.g. autouse)
+    # fixtures and silently couple unrelated tests.
+    app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture(scope="session")

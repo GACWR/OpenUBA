@@ -2,13 +2,13 @@ name: CI - Workspace Image
 
 on:
   push:
-    branches: [master, dev/workspaces]
+    branches: [master, develop, dev/workspaces]
     paths:
       - 'docker/workspace/**'
       - 'sdk/**'
       - 'workspace/**'
   pull_request:
-    branches: [master]
+    branches: [master, develop]
     paths:
       - 'docker/workspace/**'
       - 'sdk/**'

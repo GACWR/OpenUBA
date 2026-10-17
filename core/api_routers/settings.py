@@ -17,7 +17,7 @@ from core.auth import require_permission
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-VALID_INTEGRATION_TYPES = {"ollama", "openai", "claude", "gemini", "elasticsearch", "spark"}
+VALID_INTEGRATION_TYPES = {"ollama", "openai", "claude", "gemini", "elasticsearch", "spark", "smtp", "splunk"}
 
 
 class IntegrationConfigUpdate(BaseModel):
@@ -119,6 +119,14 @@ async def update_integration(
         raise HTTPException(status_code=400, detail=f"invalid integration type: {integration_type}")
 
     with get_db_context() as db:
+        # read the stored config first so masked secrets echoed back from the UI
+        # don't overwrite the real token/password (GET returns them masked). (#145)
+        existing = db.execute(text(
+            "SELECT config FROM integration_settings WHERE integration_type = :t"
+        ), {"t": integration_type}).fetchone()
+        stored_config = dict(existing[0]) if (existing and existing[0]) else {}
+        merged_config = _merge_preserving_secrets(body.config, stored_config)
+
         # upsert
         db.execute(text(
             "INSERT INTO integration_settings (integration_type, enabled, config) "
@@ -129,7 +137,7 @@ async def update_integration(
         ), {
             "t": integration_type,
             "e": body.enabled,
-            "c": _serialize_config(body.config),
+            "c": _serialize_config(merged_config),
         })
         db.commit()
 
@@ -183,6 +191,10 @@ async def test_integration(
             return await _test_elasticsearch(config)
         elif integration_type == "spark":
             return await _test_spark(config)
+        elif integration_type == "smtp":
+            return await _test_smtp(config)
+        elif integration_type == "splunk":
+            return await _test_splunk(config)
     except Exception as e:
         logger.error(f"test {integration_type} failed: {e}")
         return {"status": "error", "message": str(e)}
@@ -283,10 +295,51 @@ async def _test_spark(config: dict) -> dict:
         return {"status": "error", "message": f"HTTP {resp.status_code}"}
 
 
+async def _test_smtp(config: dict) -> dict:
+    '''verify SMTP connectivity + auth by opening a session and issuing NOOP'''
+    import smtplib
+    import ssl
+
+    host = config.get("host", "")
+    if not host:
+        return {"status": "error", "message": "host not configured"}
+    port = int(config.get("port") or 587)
+    use_ssl = bool(config.get("use_ssl", False))
+    use_tls = bool(config.get("use_tls", True))
+    username = config.get("username", "")
+    password = config.get("password", "")
+
+    try:
+        if use_ssl:
+            server: smtplib.SMTP = smtplib.SMTP_SSL(
+                host, port, timeout=10, context=ssl.create_default_context()
+            )
+        else:
+            server = smtplib.SMTP(host, port, timeout=10)
+            if use_tls:
+                server.starttls(context=ssl.create_default_context())
+        with server:
+            if username and password:
+                server.login(username, password)
+            server.noop()
+        return {"status": "connected"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+async def _test_splunk(config: dict) -> dict:
+    '''verify Splunk connectivity via the shared SplunkConnector'''
+    from core.integrations.splunk import SplunkConnector
+    return SplunkConnector.from_config(config).test_connection()
+
+
+_SENSITIVE_KEYS = ("api_key", "token", "hec_token", "password")
+
+
 def _mask_sensitive_fields(config: dict) -> dict:
-    '''mask api keys in config for safe display'''
+    '''mask api keys / tokens / passwords in config for safe display'''
     masked = dict(config)
-    for key in ("api_key",):
+    for key in _SENSITIVE_KEYS:
         if key in masked and masked[key]:
             val = str(masked[key])
             if len(val) > 8:
@@ -294,6 +347,22 @@ def _mask_sensitive_fields(config: dict) -> dict:
             else:
                 masked[key] = "****"
     return masked
+
+
+def _merge_preserving_secrets(incoming: dict, stored: dict) -> dict:
+    '''
+    GET returns secrets masked, so the UI sends the mask back on save. if an
+    incoming secret field still equals the masked form of the stored value, the
+    user didn't change it — keep the real stored value instead of persisting the
+    placeholder (which would corrupt the token/password). (#145)
+    '''
+    merged = dict(incoming or {})
+    stored = stored or {}
+    masked_stored = _mask_sensitive_fields(stored)
+    for key in _SENSITIVE_KEYS:
+        if key in merged and key in stored and merged[key] == masked_stored.get(key):
+            merged[key] = stored[key]
+    return merged
 
 
 def _serialize_config(config: dict) -> str:

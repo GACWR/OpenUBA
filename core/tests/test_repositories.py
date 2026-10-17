@@ -67,6 +67,38 @@ def test_anomaly_repository_create(db_session):
     assert anomaly.risk_score == 75.5
 
 
+def test_anomaly_repository_run_id_filter(db_session):
+    '''
+    anomalies can be listed scoped to a single model run — the read path detection
+    evaluation uses to score one run's output (issue #35).
+    '''
+    from core.db.models import ModelVersion, ModelRun
+
+    model_repo = ModelRepository(db_session)
+    model = model_repo.create(name="run_filter_model", version="1.0.0",
+                              source_type="local_fs", slug="run-filter-model")
+
+    version = ModelVersion(model_id=model.id, version="1.0.0", status="registered")
+    db_session.add(version)
+    db_session.flush()
+
+    run1 = ModelRun(model_version_id=version.id, run_type="infer", status="succeeded")
+    run2 = ModelRun(model_version_id=version.id, run_type="infer", status="succeeded")
+    db_session.add_all([run1, run2])
+    db_session.flush()
+
+    anomaly_repo = AnomalyRepository(db_session)
+    anomaly_repo.create(model_id=model.id, entity_id="e1", risk_score=90, run_id=run1.id)
+    anomaly_repo.create(model_id=model.id, entity_id="e2", risk_score=80, run_id=run1.id)
+    anomaly_repo.create(model_id=model.id, entity_id="e3", risk_score=70, run_id=run2.id)
+
+    assert {a.entity_id for a in anomaly_repo.list_all(run_id=run1.id)} == {"e1", "e2"}
+    assert {a.entity_id for a in anomaly_repo.list_all(run_id=run2.id)} == {"e3"}
+    # unfiltered still returns everything
+    all_ids = {a.entity_id for a in anomaly_repo.list_all()}
+    assert {"e1", "e2", "e3"}.issubset(all_ids)
+
+
 def test_case_repository_create(db_session):
     '''
     test creating a case

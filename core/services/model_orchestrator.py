@@ -174,6 +174,9 @@ class ModelOrchestrator:
                             logger.warning(traceback.format_exc())
                     db.commit()
 
+                # optional: forward anomalies to Splunk (HEC) if configured
+                self._forward_anomalies_to_splunk(result["anomalies"])
+
             # evaluate flow rules after inference
             # NO hardcoded pre-filtering — the rule engine's flow graph conditions
             # decide what triggers. we just identify anomalies from this run.
@@ -271,6 +274,14 @@ class ModelOrchestrator:
                     import traceback
                     logger.warning(traceback.format_exc())
 
+            # forward this run's anomalies to Splunk (HEC) if configured.
+            # docker mode already forwarded from the in-memory result dict above;
+            # kubernetes mode's anomalies live only in the DB (runner-persisted),
+            # so re-read them by run_id here. otherwise forwarding is dead in
+            # prod/k8s — the mode the feature is actually meant for. (#145)
+            if self.execution_mode == "kubernetes" and run_type == "infer":
+                self._forward_run_anomalies_to_splunk_k8s(run_id)
+
             # build a lightweight summary (strip bulky anomalies list)
             result_summary = {
                 k: v for k, v in (result or {}).items()
@@ -327,6 +338,133 @@ class ModelOrchestrator:
                 log.error_traceback = traceback.format_exc()
                 db.commit()
             logger.error(f"model execution failed: {e}")
+
+    def _splunk_forward_target(self):
+        '''
+        return (connector, anomaly_index) if the 'splunk' integration is
+        enabled AND has forward_anomalies set, else None. reads
+        integration_settings once. shared by the docker (in-memory) and
+        kubernetes (re-read by run_id) forwarding paths.
+        '''
+        from sqlalchemy import text
+        with get_db_context() as db:
+            row = db.execute(text(
+                "SELECT config, enabled FROM integration_settings "
+                "WHERE integration_type = 'splunk'"
+            )).fetchone()
+        if not row or not row[1]:
+            return None
+        config = dict(row[0]) if row[0] else {}
+        if not config.get("forward_anomalies"):
+            return None
+
+        from core.integrations.splunk import SplunkConnector
+        return SplunkConnector.from_config(config), config.get("anomaly_index")
+
+    def _splunk_runner_env(self) -> Dict[str, str]:
+        '''
+        collect SPLUNK_* credential env from the enabled 'splunk'
+        integration_settings so a runner CONTAINER can authenticate to
+        UI-configured Splunk (the runner reads SPLUNK_* from its env). returns
+        {} when splunk is not configured/enabled.
+
+        passed as EPHEMERAL container environment at dispatch — never written
+        into input_data / the persisted ModelRun, so creds are not stored in
+        the DB. (#145: previously the runner only saw process env, so
+        UI-configured Splunk did not authenticate.)
+        '''
+        try:
+            from sqlalchemy import text
+            with get_db_context() as db:
+                row = db.execute(text(
+                    "SELECT config, enabled FROM integration_settings "
+                    "WHERE integration_type = 'splunk'"
+                )).fetchone()
+            if not row or not row[1]:
+                return {}
+            config = dict(row[0]) if row[0] else {}
+            mapping = {
+                "host": "SPLUNK_HOST", "token": "SPLUNK_TOKEN",
+                "username": "SPLUNK_USERNAME", "password": "SPLUNK_PASSWORD",
+                "hec_url": "SPLUNK_HEC_URL", "hec_token": "SPLUNK_HEC_TOKEN",
+            }
+            env: Dict[str, str] = {}
+            for key, env_name in mapping.items():
+                val = config.get(key)
+                if val:
+                    env[env_name] = str(val)
+            if "verify_ssl" in config:
+                env["SPLUNK_VERIFY_SSL"] = "true" if config.get("verify_ssl") else "false"
+            return env
+        except Exception as e:
+            logger.warning(f"could not load splunk runner env: {e}")
+            return {}
+
+    def _forward_anomalies_to_splunk(self, anomalies) -> None:
+        '''
+        best-effort (docker mode): forward this run's in-memory anomalies to
+        Splunk via HEC when the 'splunk' integration is enabled and has
+        forward_anomalies set. never raises into the execution path.
+        '''
+        if not anomalies:
+            return
+        try:
+            target = self._splunk_forward_target()
+            if target is None:
+                return
+            connector, index = target
+            sent = connector.send_anomalies(list(anomalies), index=index)
+            logger.info(f"forwarded {sent}/{len(anomalies)} anomalies to splunk")
+        except Exception as e:
+            logger.warning(f"splunk anomaly forwarding failed: {e}")
+
+    def _forward_run_anomalies_to_splunk_k8s(self, run_id) -> None:
+        '''
+        best-effort (kubernetes mode): the model runner persists anomalies
+        directly to the DB tagged with run_id, so the result dict is empty
+        and the in-memory docker path above never fires — this was the
+        forwarding-dead-in-prod bug (#145). re-read this run's anomalies by
+        run_id in bounded batches and forward them to Splunk HEC. never raises.
+        '''
+        try:
+            target = self._splunk_forward_target()
+            if target is None:
+                return
+            connector, index = target
+
+            from sqlalchemy import text
+            batch_size = 5000
+            offset = 0
+            total = 0
+            total_sent = 0
+            while True:
+                with get_db_context() as db:
+                    rows = db.execute(text(
+                        "SELECT entity_id, entity_type, risk_score, anomaly_type, details "
+                        "FROM anomalies WHERE run_id = :run_id "
+                        "ORDER BY risk_score DESC LIMIT :lim OFFSET :off"
+                    ), {"run_id": str(run_id), "lim": batch_size, "off": offset}).fetchall()
+                if not rows:
+                    break
+                batch = [{
+                    "entity_id": r[0],
+                    "entity_type": r[1],
+                    "risk_score": float(r[2]) if r[2] else 0,
+                    "anomaly_type": r[3],
+                    "details": r[4],
+                } for r in rows]
+                total += len(batch)
+                total_sent += connector.send_anomalies(batch, index=index)
+                offset += batch_size
+                if len(rows) < batch_size:
+                    break
+            if total:
+                logger.info(
+                    f"forwarded {total_sent}/{total} anomalies to splunk "
+                    f"(kubernetes, run {run_id})"
+                )
+        except Exception as e:
+            logger.warning(f"splunk k8s anomaly forwarding failed: {e}")
 
     def execute_model_background(
         self,
@@ -496,6 +634,22 @@ class ModelOrchestrator:
             # For inference, pass artifact path so runner can load trained model
             if artifact_path_env:
                 env_vars["ARTIFACT_PATH"] = artifact_path_env
+
+            # for splunk-source runs, pass UI-configured Splunk creds as
+            # ephemeral container env so the runner can authenticate (#145).
+            _ds = (input_data or {}).get("data_source") or (input_data or {}).get("type")
+            if _ds == "splunk":
+                splunk_env = self._splunk_runner_env()
+                # match the DB/ES rewrite so a host- or compose-local Splunk is
+                # reachable from the runner's default-bridge network (#145)
+                for _k in ("SPLUNK_HOST", "SPLUNK_HEC_URL"):
+                    if splunk_env.get(_k):
+                        splunk_env[_k] = (
+                            splunk_env[_k]
+                            .replace("localhost", "host.docker.internal")
+                            .replace("127.0.0.1", "host.docker.internal")
+                        )
+                env_vars.update(splunk_env)
 
             container = client.containers.run(
                 image=image_name,

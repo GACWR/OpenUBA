@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Trash2, Edit2, X, Loader2, CheckCircle2, XCircle, Zap, Brain, Bot, Sparkles, Database, Cpu, Save, Shield } from "lucide-react"
+import { Plus, Trash2, Edit2, X, Loader2, CheckCircle2, XCircle, Zap, Brain, Bot, Sparkles, Database, Cpu, Save, Shield, Mail, Search } from "lucide-react"
 import { useAuth } from '@/lib/auth-provider'
 import { useUIStore } from '@/lib/state/ui-store'
 
@@ -22,13 +22,13 @@ function getAuthHeaders(): Record<string, string> {
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
-type IntegrationType = 'ollama' | 'openai' | 'claude' | 'gemini' | 'elasticsearch' | 'spark'
+type IntegrationType = 'ollama' | 'openai' | 'claude' | 'gemini' | 'elasticsearch' | 'spark' | 'smtp' | 'splunk'
 
 interface IntegrationDef {
     type: IntegrationType
     name: string
     description: string
-    category: 'llm' | 'data'
+    category: 'llm' | 'data' | 'notifications'
     icon: React.ReactNode
     color: string
     fields: FieldDef[]
@@ -140,6 +140,43 @@ const INTEGRATION_DEFS: IntegrationDef[] = [
                     { value: 'cluster', label: 'Cluster' },
                 ],
             },
+        ],
+    },
+    {
+        type: 'smtp',
+        name: 'Email (SMTP)',
+        description: 'Send realtime alert notifications over email',
+        category: 'notifications',
+        icon: <Mail className="h-5 w-5" />,
+        color: 'text-rose-500 bg-rose-500/10',
+        fields: [
+            { key: 'host', label: 'SMTP Host', type: 'text', placeholder: 'smtp.gmail.com', required: true },
+            { key: 'port', label: 'Port', type: 'text', placeholder: '587' },
+            { key: 'username', label: 'Username', type: 'text', placeholder: 'alerts@yourorg.com' },
+            { key: 'password', label: 'Password', type: 'password', placeholder: '' },
+            { key: 'from_addr', label: 'From Address', type: 'text', placeholder: 'openuba@yourorg.com' },
+            { key: 'default_recipients', label: 'Default Recipients', type: 'text', placeholder: 'soc@yourorg.com, oncall@yourorg.com' },
+            { key: 'use_tls', label: 'Use STARTTLS', type: 'toggle' },
+            { key: 'use_ssl', label: 'Use SSL', type: 'toggle' },
+        ],
+    },
+    {
+        type: 'splunk',
+        name: 'Splunk',
+        description: 'Search Splunk as a data source and forward anomalies via HEC',
+        category: 'data',
+        icon: <Search className="h-5 w-5" />,
+        color: 'text-lime-500 bg-lime-500/10',
+        fields: [
+            { key: 'host', label: 'Management URL', type: 'text', placeholder: 'https://splunk:8089' },
+            { key: 'token', label: 'REST Token', type: 'password', placeholder: 'Bearer token (or use username/password)' },
+            { key: 'username', label: 'Username', type: 'text', placeholder: 'admin' },
+            { key: 'password', label: 'Password', type: 'password', placeholder: '' },
+            { key: 'hec_url', label: 'HEC URL', type: 'text', placeholder: 'https://splunk:8088' },
+            { key: 'hec_token', label: 'HEC Token', type: 'password', placeholder: '' },
+            { key: 'anomaly_index', label: 'Anomaly Index (output)', type: 'text', placeholder: 'openuba' },
+            { key: 'forward_anomalies', label: 'Forward anomalies to Splunk', type: 'toggle' },
+            { key: 'verify_ssl', label: 'Verify SSL', type: 'toggle' },
         ],
     },
 ]
@@ -397,6 +434,7 @@ function IntegrationsPanel() {
 
     const llmDefs = INTEGRATION_DEFS.filter(d => d.category === 'llm')
     const dataDefs = INTEGRATION_DEFS.filter(d => d.category === 'data')
+    const notificationDefs = INTEGRATION_DEFS.filter(d => d.category === 'notifications')
     const activeDef = configPanel ? INTEGRATION_DEFS.find(d => d.type === configPanel) : null
 
     return (
@@ -404,7 +442,7 @@ function IntegrationsPanel() {
             <Card>
                 <CardHeader>
                     <CardTitle>Integrations</CardTitle>
-                    <CardDescription>Configure LLM providers and external data services.</CardDescription>
+                    <CardDescription>Configure LLM providers, external data services, and notification channels.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                     <div>
@@ -452,6 +490,31 @@ function IntegrationsPanel() {
                             ))}
                         </div>
                     </div>
+
+                    {notificationDefs.length > 0 && (
+                        <div>
+                            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Notifications</h3>
+                            <div className="space-y-3">
+                                {notificationDefs.map(def => (
+                                    <div key={def.type} className="flex items-center justify-between p-4 border border-white/5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${def.color}`}>
+                                                {def.icon}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium">{def.name}</p>
+                                                <p className="text-sm text-muted-foreground">{def.description}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            {statusBadge(def.type)}
+                                            <Button variant="outline" size="sm" onClick={() => openConfigPanel(def.type)}>Configure</Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

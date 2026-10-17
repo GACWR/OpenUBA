@@ -62,6 +62,17 @@ class RuleResponse(BaseModel):
         from_attributes = True
 
 
+class AlertCreate(BaseModel):
+    severity: str = Field(default="medium", pattern="^(critical|high|medium|low)$")
+    message: str = Field(..., min_length=1)
+    entity_id: Optional[str] = None
+    entity_type: Optional[str] = "user"
+    rule_id: Optional[UUID] = None
+    context: Optional[dict] = None
+    notify: bool = False
+    recipients: Optional[Union[str, List[str]]] = None
+
+
 class AlertResponse(BaseModel):
     id: UUID
     rule_id: UUID

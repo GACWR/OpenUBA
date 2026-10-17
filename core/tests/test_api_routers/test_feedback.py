@@ -7,6 +7,35 @@ import pytest
 from uuid import uuid4
 from datetime import datetime
 from fastapi.testclient import TestClient
+from core.fastapi_app import app
+from core.auth import get_current_user
+from core.db.connection import get_db
+
+
+@pytest.fixture(autouse=True)
+def _as_admin():
+    '''authenticate every request in this module as an admin'''
+    app.dependency_overrides[get_current_user] = lambda: {
+        "username": "admin", "user_id": str(uuid4()), "role": "admin", "payload": {},
+    }
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture
+def unauthenticated_client(_as_admin):
+    '''client with NO auth override → protected routes must 401'''
+    app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides[get_db] = lambda: object()
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.pop(get_db, None)
+
+
+def test_feedback_read_requires_authentication(unauthenticated_client: TestClient):
+    '''GET /feedback must reject unauthenticated callers (write was already guarded)'''
+    resp = unauthenticated_client.get(f"/api/v1/feedback?anomaly_id={uuid4()}")
+    assert resp.status_code == 401
 
 
 def test_submit_feedback(test_client: TestClient):

@@ -24,9 +24,9 @@ OpenUBA aims to be the standard open-source User & Entity Behavior Analytics (UE
 
 ### Model Registry & Ecosystem
 - Multi-backend model registry with adapter pattern (`core/registry/registry_service.py`)
-- 11 functional adapters split into code registries (local FS, GitHub, OpenUBA Hub) and weights registries (local FS, HuggingFace, Kubeflow), plus 5 legacy generic adapters
+- Adapters for code registries (local FS, GitHub, OpenUBA Hub) and weights registries (local FS, HuggingFace, Kubeflow)
 - Registry service with unit tests (`core/tests/test_registry/`)
-- SHA-256 hashing scaffold (`core/hash.py`) — not yet wired to install-time integrity verification
+- Install-time SHA-256 model integrity verification (`core/services/model_installer.py`) that gates installation on a checksum match
 - **Community model marketplace — OpenUBA Hub LIVE at https://openuba.org** (Next.js Model Hub in sibling repo `openuba-model-hub`, CNAME `openuba.org`, static catalog of reference models). Backend client adapter ships in `core/registry/adapters/openuba_hub_adapter.py`.
 
 ### Scheduling & Async
@@ -67,9 +67,7 @@ OpenUBA aims to be the standard open-source User & Entity Behavior Analytics (UE
 
 Honest list of items the Current State touches but does not fully deliver, with code citations:
 
-- Postgres migration is incomplete — `core/model.py`, `core/user.py`, `core/process.py` still call `ReadJSONFileFS` / `WriteJSONFileFS` on `core/storage/*.json` (`users.json`, `models.json`, `model_sessions.json`, `scheme.json`). Repos (`core/repositories/`) + migration script (`core/db/migrations/migrate_from_files.py`) exist; cutover in progress.
 - `/metrics` endpoint at `core/api_routers/data.py:201` emits domain JSON (Spark/ES counters), not Prometheus exposition format. No `opentelemetry-*` or `prometheus_client` in `requirements.txt`; no OpenTelemetry SDK init in `core/`.
-- `core/hash.py` `HashLargeFile` references undefined `filename` / `hashlib` and is not wired into any install-time integrity flow. Scaffold only.
 - `core/tests/test_graphql.py` is a 24-LOC smoke test (GETs `/`, checks for an `endpoints` key) — does not exercise a GraphQL query, schema introspection, or PostGraphile.
 - `core/registry/adapters/openuba_hub_adapter.py` now defaults to `https://openuba.org`, but the live Hub serves a static Next.js catalog rather than the `/ml/` JSON contract the adapter expects — Hub-side JSON endpoint needs publishing.
 - `k8s/postgres.yaml` is a vanilla single-replica Deployment + PVC, not CloudNativePG. HA Postgres moved to Phase 1.
@@ -80,10 +78,8 @@ Honest list of items the Current State touches but does not fully deliver, with 
 - [ ] Horizontal pod autoscaling for Spark workers (`k8s/spark-deployment.yaml` hardcodes `replicas: 1`; no `autoscaling/v2` resources anywhere)
 - [ ] Multi-tenant isolation (namespace-per-tenant + `tenant_id` across tables / repositories / RBAC; today there is one `openuba` namespace and zero tenant-scoped code)
 - [ ] Production-grade observability — Prometheus exposition-format `/metrics` + OpenTelemetry SDK self-instrumentation (current: domain-JSON metrics endpoint only)
-- [ ] Complete the JSON-file → Postgres cutover (remove `ReadJSONFileFS` / `WriteJSONFileFS` callers in `core/model.py`, `core/user.py`, `core/process.py`; make migration mandatory on startup)
 - [ ] Migrate Postgres deployment to CloudNativePG operator (HA `Cluster` CR, automated failover, scheduled backups) — moved here from Current State per audit
 - [ ] GraphQL query-level test coverage (replace smoke test with real query / mutation / schema-introspection suite against PostGraphile)
-- [ ] Wire SHA-256 model integrity check into install path (fix `core/hash.py:HashLargeFile`, gate `model_installer` on checksum)
 
 ## Phase 2: CNCF Integration (Q4 2026)
 
@@ -111,3 +107,4 @@ Honest list of items the Current State touches but does not fully deliver, with 
 ### Note on governance maturity (longest pole)
 
 The governance framework is **shipped** — `GOVERNANCE.md`, `MAINTAINERS.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `ADOPTERS.md` (PR #137). What is missing is *demonstration of using it*: the 2-maintainer approval path defined in `GOVERNANCE.md` is currently inoperable with 1 maintainer, `ADOPTERS.md` has 1 entry (the host org), there are no public TSC meeting notes, and no governance-tagged decisions on record. Both blockers resolve only via sustained external contributor + adopter outreach — i.e., they bottleneck on Phase 3's contributor-diversity item, which is the steepest CNCF Sandbox → Incubation gate this project faces.
+

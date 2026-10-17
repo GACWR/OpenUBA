@@ -20,7 +20,45 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
 # jwt settings
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+# the old insecure fallback literal — rejected explicitly so a stale env can't re-enable it
+_INSECURE_SECRET = "your-secret-key-change-in-production"
+# HS256 keys shorter than this are brute-forceable; refuse to start with a weak key
+_MIN_SECRET_LEN = 32
+
+
+class ConfigError(RuntimeError):
+    '''raised at startup when required security configuration is missing or weak'''
+
+
+def _load_secret_key() -> str:
+    '''
+    load the jwt signing key from the environment, failing closed.
+
+    raises ConfigError (at import time) if JWT_SECRET_KEY is unset, equal to the
+    old committed placeholder, or too short to be safe. this makes a real
+    deployment fail fast with a clear error instead of silently signing tokens
+    with a public key (issue #149).
+    '''
+    value = os.getenv("JWT_SECRET_KEY")
+    if not value:
+        raise ConfigError(
+            "JWT_SECRET_KEY is not set. refusing to start with an insecure default. "
+            "set JWT_SECRET_KEY to a strong random value (e.g. `openssl rand -hex 32`)."
+        )
+    if value == _INSECURE_SECRET:
+        raise ConfigError(
+            "JWT_SECRET_KEY is set to the known insecure placeholder. "
+            "set JWT_SECRET_KEY to a strong random value."
+        )
+    if len(value) < _MIN_SECRET_LEN:
+        raise ConfigError(
+            f"JWT_SECRET_KEY is too short ({len(value)} chars); "
+            f"require at least {_MIN_SECRET_LEN}."
+        )
+    return value
+
+
+SECRET_KEY = _load_secret_key()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 480
 
@@ -87,30 +125,35 @@ async def get_current_user(
             raise credentials_exception
 
         # verify user still exists in the database (catches stale tokens
-        # from before a cluster/db reset)
+        # from before a cluster/db reset). legitimately-issued tokens ALWAYS
+        # carry user_id (see /auth/login), so a token without user_id is
+        # forged / malformed and must never be trusted with a role. (issue #149)
         user_id = payload.get("user_id")
-        if user_id:
-            from core.db import get_db_context
-            try:
-                with get_db_context() as db:
-                    row = db.execute(
-                        text("SELECT id FROM users WHERE id = CAST(:uid AS uuid)"),
-                        {"uid": user_id},
-                    ).fetchone()
-                    if row is None:
-                        logger.warning(f"stale token: user {user_id} not found in database")
-                        raise credentials_exception
-            except HTTPException:
-                raise
-            except Exception as e:
-                err_msg = str(e).lower()
-                # only allow through if the users table doesn't exist yet (during migrations)
-                # all other DB errors (connection refused, timeouts) must reject the request
-                if "relation" in err_msg and "does not exist" in err_msg:
-                    logger.debug(f"user existence check skipped (table missing): {e}")
-                else:
-                    logger.error(f"user existence check failed: {e}")
+        if not user_id:
+            logger.warning("token missing user_id — rejecting (possible forgery)")
+            raise credentials_exception
+
+        from core.db import get_db_context
+        try:
+            with get_db_context() as db:
+                row = db.execute(
+                    text("SELECT id FROM users WHERE id = CAST(:uid AS uuid)"),
+                    {"uid": user_id},
+                ).fetchone()
+                if row is None:
+                    logger.warning(f"stale token: user {user_id} not found in database")
                     raise credentials_exception
+        except HTTPException:
+            raise
+        except Exception as e:
+            err_msg = str(e).lower()
+            # only allow through if the users table doesn't exist yet (during migrations)
+            # all other DB errors (connection refused, timeouts) must reject the request
+            if "relation" in err_msg and "does not exist" in err_msg:
+                logger.debug(f"user existence check skipped (table missing): {e}")
+            else:
+                logger.error(f"user existence check failed: {e}")
+                raise credentials_exception
 
         return {
             "username": username,
@@ -170,9 +213,18 @@ def require_permission(page: str, access: str = "read"):
         except HTTPException:
             raise
         except Exception as e:
-            logger.warning(f"permission check failed: {e}")
-            # if table doesn't exist yet or other error, allow access
-            pass
+            err_msg = str(e).lower()
+            # only allow through if the role_permissions table doesn't exist yet
+            # (e.g. first boot before seed_defaults runs / during migrations).
+            # every other error (DB down, timeout, bad query) must FAIL CLOSED. (issue #149)
+            if "relation" in err_msg and "does not exist" in err_msg:
+                logger.warning(f"permission check skipped (table missing): {e}")
+            else:
+                logger.error(f"permission check failed, denying access: {e}")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="permission check failed",
+                )
 
         return current_user
 

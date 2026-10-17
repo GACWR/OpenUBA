@@ -266,12 +266,20 @@ def query_elasticsearch(index, query_body, es_host=None):
 # ─── UBA-Specific Query Methods ─────────────────────────────────────
 
 
-def query_anomalies(entity_id=None, model_id=None, min_risk=None,
+def query_anomalies(entity_id=None, model_id=None, run_id=None, min_risk=None,
                     max_risk=None, limit=1000):
-    """Query anomalies from the platform."""
+    """Query anomalies from the platform (optionally scoped to one run)."""
     return _get_client().query_anomalies(entity_id=entity_id, model_id=model_id,
-                                         min_risk=min_risk, max_risk=max_risk,
-                                         limit=limit)
+                                         run_id=run_id, min_risk=min_risk,
+                                         max_risk=max_risk, limit=limit)
+
+
+def evaluate_run(run_id, malicious_entities, all_entities=None, threshold=50.0,
+                 scenarios=None):
+    """Score a run's detections against ground truth (precision/recall/f1)."""
+    return _get_client().evaluate_run(run_id, malicious_entities,
+                                      all_entities=all_entities,
+                                      threshold=threshold, scenarios=scenarios)
 
 
 def get_entity_risk(entity_id):
@@ -287,6 +295,15 @@ def query_cases(status=None, severity=None, limit=100):
 def list_rules(enabled=True):
     """List detection rules."""
     return _get_client().list_rules(enabled=enabled)
+
+
+def send_alert(message, severity="medium", entity_id=None, entity_type="user",
+               rule_id=None, context=None, notify=False, recipients=None):
+    """Raise an alert from a model (set notify=True to also send email + in-app)."""
+    return _get_client().send_alert(
+        message, severity=severity, entity_id=entity_id, entity_type=entity_type,
+        rule_id=rule_id, context=context, notify=notify, recipients=recipients,
+    )
 
 
 __all__ = [
@@ -346,7 +363,9 @@ __all__ = [
     "query_elasticsearch",
     # UBA queries
     "query_anomalies",
+    "evaluate_run",
     "get_entity_risk",
     "query_cases",
     "list_rules",
+    "send_alert",
 ]

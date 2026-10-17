@@ -607,19 +607,39 @@ class OpenUBAClient:
 
     # ─── UBA-Specific Query Methods ─────────────────────────────────
 
-    def query_anomalies(self, entity_id=None, model_id=None, min_risk=None,
-                        max_risk=None, limit=1000):
-        '''query anomalies from the platform'''
+    def query_anomalies(self, entity_id=None, model_id=None, run_id=None,
+                        min_risk=None, max_risk=None, limit=1000):
+        '''query anomalies from the platform (optionally scoped to one run)'''
         params = {"limit": limit}
         if entity_id:
             params["entity_id"] = entity_id
         if model_id:
             params["model_id"] = str(model_id)
+        if run_id:
+            params["run_id"] = str(run_id)
         if min_risk is not None:
             params["min_risk_score"] = min_risk
         if max_risk is not None:
             params["max_risk_score"] = max_risk
         return self._get("/api/v1/anomalies", params=params)
+
+    def evaluate_run(self, run_id, malicious_entities, all_entities=None,
+                     threshold=50.0, scenarios=None):
+        '''
+        score a model run's detections against a ground-truth set of malicious
+        entities. Returns precision / recall / f1 / false_positive_rate (+ per-
+        scenario recall) — the shape you can store in an experiment run's metrics.
+        '''
+        payload = {
+            "run_id": str(run_id),
+            "malicious_entities": list(malicious_entities),
+            "threshold": threshold,
+        }
+        if all_entities is not None:
+            payload["all_entities"] = list(all_entities)
+        if scenarios is not None:
+            payload["scenarios"] = {k: list(v) for k, v in scenarios.items()}
+        return self._post("/api/v1/evaluate/run", payload)
 
     def get_entity_risk(self, entity_id):
         '''get entity risk profile'''
@@ -637,6 +657,33 @@ class OpenUBAClient:
     def list_rules(self, enabled=True):
         '''list detection rules'''
         return self._get("/api/v1/rules", params={"enabled": enabled})
+
+    def send_alert(self, message, severity="medium", entity_id=None,
+                   entity_type="user", rule_id=None, context=None,
+                   notify=False, recipients=None):
+        '''
+        raise an alert from a model.
+
+        Set notify=True to also deliver realtime notifications (SMTP email +
+        in-app). `recipients` (list or comma-separated string) overrides the
+        SMTP default recipient list configured in Settings. Requires the
+        configured token to have alerts:write permission.
+        '''
+        payload = {
+            "message": message,
+            "severity": severity,
+            "entity_type": entity_type,
+            "notify": notify,
+        }
+        if entity_id is not None:
+            payload["entity_id"] = entity_id
+        if rule_id is not None:
+            payload["rule_id"] = rule_id
+        if context is not None:
+            payload["context"] = context
+        if recipients is not None:
+            payload["recipients"] = recipients
+        return self._post("/api/v1/alerts", payload)
 
     # ─── Data Query Methods ─────────────────────────────────────────
 
