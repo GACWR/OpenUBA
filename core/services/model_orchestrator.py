@@ -639,7 +639,17 @@ class ModelOrchestrator:
             # ephemeral container env so the runner can authenticate (#145).
             _ds = (input_data or {}).get("data_source") or (input_data or {}).get("type")
             if _ds == "splunk":
-                env_vars.update(self._splunk_runner_env())
+                splunk_env = self._splunk_runner_env()
+                # match the DB/ES rewrite so a host- or compose-local Splunk is
+                # reachable from the runner's default-bridge network (#145)
+                for _k in ("SPLUNK_HOST", "SPLUNK_HEC_URL"):
+                    if splunk_env.get(_k):
+                        splunk_env[_k] = (
+                            splunk_env[_k]
+                            .replace("localhost", "host.docker.internal")
+                            .replace("127.0.0.1", "host.docker.internal")
+                        )
+                env_vars.update(splunk_env)
 
             container = client.containers.run(
                 image=image_name,

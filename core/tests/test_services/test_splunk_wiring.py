@@ -184,3 +184,24 @@ def test_splunk_runner_env_empty_when_disabled():
     ctx = _patch_db_with_splunk_row({"host": "x"}, enabled=False)
     with patch.object(orch_mod, "get_db_context", ctx):
         assert orch._splunk_runner_env() == {}
+
+
+# ─── settings: masked secrets must not overwrite stored ones on save (#145) ──
+
+def test_merge_preserving_secrets_keeps_unchanged_token():
+    from core.api_routers.settings import _merge_preserving_secrets, _mask_sensitive_fields
+    stored = {"host": "https://s:8089", "hec_token": "HECTOKEN-abcdef-1234567890",
+              "token": "resttoken12345"}
+    masked = _mask_sensitive_fields(stored)
+    # UI echoes back the masked secrets unchanged + edits a non-secret field
+    incoming = {"host": "https://s2:8089", "hec_token": masked["hec_token"], "token": masked["token"]}
+    merged = _merge_preserving_secrets(incoming, stored)
+    assert merged["hec_token"] == "HECTOKEN-abcdef-1234567890"   # real value kept
+    assert merged["token"] == "resttoken12345"
+    assert merged["host"] == "https://s2:8089"                   # non-secret edit applied
+
+
+def test_merge_preserving_secrets_accepts_real_change():
+    from core.api_routers.settings import _merge_preserving_secrets
+    merged = _merge_preserving_secrets({"hec_token": "brandnewtoken67890"}, {"hec_token": "oldtoken12345"})
+    assert merged["hec_token"] == "brandnewtoken67890"           # actual change persisted
