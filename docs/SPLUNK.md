@@ -68,6 +68,11 @@ the model as a DataFrame (numeric columns are coerced automatically). Searches
 that don't start with `search` or a generating command (`|`) are prefixed with
 `search` for you.
 
+`splunk_index` is optional and scopes the search to that index (it's injected
+as `index=<name>` unless the SPL already pins one, or is a `|` command). Index
+names are restricted to letters, digits, `_` and `-`; to search multiple or
+wildcard indexes, put `index=...` directly in `splunk_search` instead.
+
 ## Forwarding anomalies to Splunk
 
 Enable **Forward anomalies to Splunk** in the integration config. After each

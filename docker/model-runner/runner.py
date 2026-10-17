@@ -5,6 +5,7 @@ model runner script for containerized execution
 '''
 
 import os
+import re
 import sys
 import json
 import logging
@@ -58,6 +59,27 @@ def _assert_safe_url(url: str) -> None:
                 f"egress host '{host}' resolves to blocked address {ip} "
                 f"(link-local/metadata or unspecified; possible SSRF)"
             )
+
+
+def _build_splunk_query(search: str, splunk_index: str = None) -> str:
+    '''
+    normalize an SPL search (prefix `search` when it's not a generating `|`
+    command) and scope it to splunk_index when one is set and the query doesn't
+    already pin an index. (#145 — the index field was accepted but never used)
+    '''
+    q = (search or "").strip()
+    if not q:
+        raise ValueError("splunk_search required for splunk data source")
+    if not (q.startswith("|") or q.lower().startswith("search ")):
+        q = "search " + q
+    if splunk_index:
+        # splunk_index is user-controlled; restrict to real index-name chars so
+        # it can't inject extra SPL (e.g. "foo | delete") when interpolated
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", splunk_index):
+            raise ValueError(f"invalid splunk_index: {splunk_index!r}")
+        if q.lower().startswith("search ") and "index=" not in q.lower():
+            q = f"search index={splunk_index} " + q[len("search "):]
+    return q
 
 
 class ModelLogHandler(logging.Handler):
@@ -448,9 +470,7 @@ def _load_data_for_model(input_data: dict):
             password = os.getenv("SPLUNK_PASSWORD", "")
             verify_ssl = os.getenv("SPLUNK_VERIFY_SSL", "true").lower() in ("1", "true", "yes", "on")
 
-            q = search.strip()
-            if not (q.startswith("|") or q.lower().startswith("search ")):
-                q = "search " + q
+            q = _build_splunk_query(search, input_data.get("splunk_index"))
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
             if token:
                 headers["Authorization"] = f"Bearer {token}"

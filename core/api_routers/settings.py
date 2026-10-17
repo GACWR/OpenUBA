@@ -119,6 +119,14 @@ async def update_integration(
         raise HTTPException(status_code=400, detail=f"invalid integration type: {integration_type}")
 
     with get_db_context() as db:
+        # read the stored config first so masked secrets echoed back from the UI
+        # don't overwrite the real token/password (GET returns them masked). (#145)
+        existing = db.execute(text(
+            "SELECT config FROM integration_settings WHERE integration_type = :t"
+        ), {"t": integration_type}).fetchone()
+        stored_config = dict(existing[0]) if (existing and existing[0]) else {}
+        merged_config = _merge_preserving_secrets(body.config, stored_config)
+
         # upsert
         db.execute(text(
             "INSERT INTO integration_settings (integration_type, enabled, config) "
@@ -129,7 +137,7 @@ async def update_integration(
         ), {
             "t": integration_type,
             "e": body.enabled,
-            "c": _serialize_config(body.config),
+            "c": _serialize_config(merged_config),
         })
         db.commit()
 
@@ -325,10 +333,13 @@ async def _test_splunk(config: dict) -> dict:
     return SplunkConnector.from_config(config).test_connection()
 
 
+_SENSITIVE_KEYS = ("api_key", "token", "hec_token", "password")
+
+
 def _mask_sensitive_fields(config: dict) -> dict:
     '''mask api keys / tokens / passwords in config for safe display'''
     masked = dict(config)
-    for key in ("api_key", "token", "hec_token", "password"):
+    for key in _SENSITIVE_KEYS:
         if key in masked and masked[key]:
             val = str(masked[key])
             if len(val) > 8:
@@ -336,6 +347,22 @@ def _mask_sensitive_fields(config: dict) -> dict:
             else:
                 masked[key] = "****"
     return masked
+
+
+def _merge_preserving_secrets(incoming: dict, stored: dict) -> dict:
+    '''
+    GET returns secrets masked, so the UI sends the mask back on save. if an
+    incoming secret field still equals the masked form of the stored value, the
+    user didn't change it — keep the real stored value instead of persisting the
+    placeholder (which would corrupt the token/password). (#145)
+    '''
+    merged = dict(incoming or {})
+    stored = stored or {}
+    masked_stored = _mask_sensitive_fields(stored)
+    for key in _SENSITIVE_KEYS:
+        if key in merged and key in stored and merged[key] == masked_stored.get(key):
+            merged[key] = stored[key]
+    return merged
 
 
 def _serialize_config(config: dict) -> str:
